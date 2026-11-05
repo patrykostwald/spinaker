@@ -36,7 +36,7 @@ def _scrape_user(username, supplied_id, headers):
     from datetime import timedelta
     budget = 'twitter:' + timezone.now().strftime('%Y-%m')
     params = {'max_results': 10, 'tweet.fields': 'created_at,public_metrics,attachments',
-        'expansions': 'attachments.media_keys', 'media.fields': 'url,preview_image_url'}
+        'expansions': 'attachments.media_keys', 'media.fields': 'url,preview_image_url,variants,duration_ms'}
     if source.last_tweet_id:
         params['since_id'] = source.last_tweet_id
     else:

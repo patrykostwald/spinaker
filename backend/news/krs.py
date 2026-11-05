@@ -19,10 +19,27 @@ import requests
 logger = logging.getLogger(__name__)
 
 API = 'https://api-krs.ms.gov.pl/api/krs/{kind}/{krs}'
-HEADERS = {'User-Agent': 'spin.clinic KRS check (+https://spin.clinic/o-nas)'}
-# Oficjalna wyszukiwarka KRS nie ma stałych linków do podmiotów — linkujemy do publicznej strony podmiotu
-# z danymi KRS (nadpisz w KRS_PUBLIC_URL, np. innym serwisem); urzędowy odpis zostaje jako dowód przy relacji.
-PUBLIC_URL = os.environ.get('KRS_PUBLIC_URL', '').strip() or 'https://rejestr.io/krs/{krs_int}'
+HEADERS = {'User-Agent': 'spin.clinic KRS check (+https://spin.clinic/o-nas)', 'Accept': 'application/json'}
+# Oficjalna wyszukiwarka KRS Ministerstwa Sprawiedliwości nie ma stałych linków do podmiotów, więc link główny
+# prowadzi do niej (numer KRS stoi obok), a rejestr.io jest tylko dodatkowym, nieurzędowym odnośnikiem.
+# Urzędowy odpis zostaje jako dowód przy relacji.
+MS_SEARCH_URL = 'https://wyszukiwarka-krs.ms.gov.pl/'
+PUBLIC_URL = os.environ.get('KRS_PUBLIC_URL', '').strip() or MS_SEARCH_URL
+EXTRA_URL = 'https://rejestr.io/krs/{krs_int}'
+SINCE_NOTE = 'Data wpisu w KRS: od kiedy osoba figuruje w rejestrze. Nie zawsze jest to data faktycznego objęcia funkcji.'
+
+
+def official_register_url(url, krs_number=''):
+    """Link urzędowy: starsze wpisy z rejestr.io lub bez adresu zamieniamy na wyszukiwarkę KRS MS."""
+    if url and 'rejestr.io' not in url:
+        return url
+    return MS_SEARCH_URL
+
+
+def extra_register_url(krs_number):
+    digits = re.sub(r'\D', '', str(krs_number or ''))
+    return EXTRA_URL.format(krs_int=int(digits)) if digits else ''
+
 
 STATE_OWNERS = ('SKARB PAŃSTWA',)
 MUNICIPAL_OWNERS = ('GMINA ', 'MIASTO ', 'POWIAT ', 'WOJEWÓDZTWO ', 'MIASTO STOŁECZNE')
@@ -49,6 +66,8 @@ class Extract:
     kind: str
     owners: list[str] = field(default_factory=list)  # nazwy wspólników/założycieli będących instytucjami (np. SKARB PAŃSTWA)
     persons: list[Person] = field(default_factory=list)
+    nip: str = ''  # identyfikatory podmiotu (nie osób) z działu 1 odpisu; same cyfry
+    regon: str = ''
 
     @property
     def official_url(self) -> str:
@@ -73,12 +92,30 @@ def normalize_krs(value) -> str:
     return digits.zfill(10) if 0 < len(digits) <= 10 else ''
 
 
+def identifiers(subject: dict) -> dict[str, str]:
+    """NIP i REGON podmiotu z danePodmiotu.identyfikatory (same cyfry; NIP 10, REGON 9 albo 14 cyfr), inaczej puste."""
+    ids = (subject or {}).get('identyfikatory') or {}
+    nip = re.sub(r'\D', '', str(ids.get('nip') or ''))
+    regon = re.sub(r'\D', '', str(ids.get('regon') or ''))
+    return {'nip': nip if len(nip) == 10 else '', 'regon': regon if len(regon) in (9, 14) else ''}
+
+
 def _current(values: list) -> dict:
     """Aktualna wartość pola z historią (bez nrWpisuWykr), a gdy wszystkie wykreślone — ostatnia."""
     if not isinstance(values, list) or not values:
         return {}
     live = [value for value in values if isinstance(value, dict) and not value.get('nrWpisuWykr')]
     return (live or values)[-1]
+
+
+def _text(value, key: str) -> str:
+    """Pole tekstowe odpisu: OdpisPelny daje historię [{key: ..., nrWpisuWprow: ...}], OdpisAktualny zwykły tekst (P1-16: przez to nazwa
+    z odpisu aktualnego wychodziła pusta i podmiot uchodził za „brak w rejestrze”)."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return str(value.get(key) or '')
+    return str(_current(value).get(key) or '')
 
 
 def _kind(legal_form: str) -> str:
@@ -160,9 +197,9 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     body = odpis.get('dane') or {}
     header = odpis.get('naglowekP') or odpis.get('naglowekA') or {}
     subject = (body.get('dzial1') or {}).get('danePodmiotu') or {}
-    name = str(_current(subject.get('nazwa') or []).get('nazwa') or '')
-    legal_form = str(_current(subject.get('formaPrawna') or []).get('formaPrawna') or '')
-    extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form))
+    name = _text(subject.get('nazwa') or [], 'nazwa')
+    legal_form = _text(subject.get('formaPrawna') or [], 'formaPrawna')
+    extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form), **identifiers(subject))
     extract.owners = _owners({k: v for k, v in (body.get('dzial1') or {}).items() if k != 'danePodmiotu'})
     persons: list[Person] = []
     dates = _entry_dates(header)
@@ -172,28 +209,41 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     return extract
 
 
-def fetch(krs: str, full: bool = True, timeout: float = 30) -> Extract | None:
-    """Odpis z oficjalnego API: najpierw rejestr przedsiębiorców, potem stowarzyszeń i fundacji. None — brak podmiotu."""
+def fetch_status(krs: str, full: bool = True, timeout: float = 30) -> tuple[Extract | None, str]:
+    """(odpis, status): ok | missing (404 w obu rejestrach, P i S) | error (sieć, HTTP inne niż 200/404, nieczytelna odpowiedź).
+    Błąd rejestru to nie „nie ma podmiotu”: wywołujący ma to rozróżniać. Jedno ponowienie przy 429/5xx/sieci."""
     krs = normalize_krs(krs)
     if not krs:
-        return None
+        return None, 'missing'
+    url = API.format(kind='OdpisPelny' if full else 'OdpisAktualny', krs=krs)
     for register in ('P', 'S'):
-        url = API.format(kind='OdpisPelny' if full else 'OdpisAktualny', krs=krs)
-        try:
-            response = requests.get(url, params={'rejestr': register, 'format': 'json'}, headers=HEADERS, timeout=(5, timeout))
-        except requests.RequestException as error:
-            logger.warning('KRS %s: %s', krs, type(error).__name__)
-            return None
+        response = None
+        for attempt in (1, 2):
+            try:
+                response = requests.get(url, params={'rejestr': register, 'format': 'json'}, headers=HEADERS, timeout=(5, timeout))
+            except requests.RequestException as error:
+                logger.warning('KRS %s (%s): %s', krs, register, type(error).__name__)
+                response = None
+            if response is not None and response.status_code not in (429, 500, 502, 503, 504):
+                break
+        if response is None:
+            return None, 'error'
         if response.status_code == 404:
             continue
         if response.status_code != 200:
-            logger.warning('KRS %s: http %s', krs, response.status_code)
-            return None
+            logger.warning('KRS %s (%s): http %s', krs, register, response.status_code)
+            return None, 'error'
         try:
-            return parse(krs, register, response.json())
-        except ValueError:
-            return None
-    return None
+            return parse(krs, register, response.json()), 'ok'
+        except (ValueError, AttributeError, TypeError, KeyError):
+            logger.warning('KRS %s (%s): nieczytelna odpowiedź', krs, register)
+            return None, 'error'
+    return None, 'missing'
+
+
+def fetch(krs: str, full: bool = True, timeout: float = 30) -> Extract | None:
+    """Odpis z oficjalnego API: najpierw rejestr przedsiębiorców (P), potem stowarzyszeń i fundacji (S). None - brak podmiotu albo błąd."""
+    return fetch_status(krs, full, timeout)[0]
 
 
 def _upper(value: str) -> str:

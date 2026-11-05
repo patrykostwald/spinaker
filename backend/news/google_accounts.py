@@ -15,6 +15,7 @@ from django.core.cache import cache
 from django.core.validators import validate_email
 from django.db import transaction
 from django.http import HttpResponseRedirect
+from news.account_security import safe_next
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -113,7 +114,9 @@ class GoogleStartView(APIView):
             'state': state, 'nonce': nonce, 'verifier': verifier, 'created': time.time(),
             'redirect_uri': redirect_uri,
             'consent': request.query_params.get('accepted_terms') == 'true'
-                       and request.query_params.get('accepted_privacy') == 'true',
+                       and request.query_params.get('adult') == 'true',
+            'newsletter': request.query_params.get('newsletter') == 'true',
+            'next': safe_next(request.query_params.get('next')),
             'terms_version': settings.ACCOUNT_TERMS_VERSION,
             'privacy_version': settings.ACCOUNT_PRIVACY_VERSION,
         }
@@ -160,6 +163,8 @@ class GoogleCallbackView(APIView):
                         username='czytelnik_' + secrets.token_hex(8), email=claims['email'], password=None)
                     identity = AccountIdentity.objects.create(
                         user=user, email=claims['email'], email_verified=True, google_sub=claims['sub'],
+                        adult_declared_at=timezone.now(),
+                        newsletter_consent_at=timezone.now() if flow.get('newsletter') else None,
                         accepted_terms_version=flow['terms_version'],
                         accepted_privacy_version=flow['privacy_version'], accepted_at=timezone.now())
                 if not identity.user.is_active:
@@ -169,4 +174,5 @@ class GoogleCallbackView(APIView):
             # Provider errors and invalid signatures receive the same public result.
             # Never log tokens, authorization codes, email addresses, or secrets.
             return failed
-        return HttpResponseRedirect(destination)
+        back = safe_next(flow.get('next'))
+        return HttpResponseRedirect(settings.ACCOUNT_PUBLIC_URL.rstrip('/') + back if back else destination)

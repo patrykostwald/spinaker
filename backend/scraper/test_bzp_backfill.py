@@ -20,7 +20,7 @@ def source(db):
         source=source, version=1, status='approved', channel='api', allowed_scope='metadata',
         endpoint=SEARCH_URL, terms_url='https://ezamowienia.gov.pl/', evidence={'basis': 'test'},
         reviewed_at=timezone.now(), reviewed_by='test',
-        valid_until=timezone.now() + timedelta(days=30))
+        valid_until=timezone.now() + timedelta(days=30), daily_request_cap=1000)
     return source
 
 

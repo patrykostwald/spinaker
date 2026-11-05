@@ -36,16 +36,40 @@ class PoliticalAccount(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     confirmation_fingerprint = models.CharField(max_length=64, blank=True, editable=False)
     enabled = models.BooleanField(default=False)
-    poll_interval_minutes = models.PositiveSmallIntegerField(default=15,
-        validators=[MinValueValidator(1), MaxValueValidator(1440)])
+    disabled_at = models.DateTimeField(null=True, blank=True, editable=False)
+    name_history = models.JSONField(default=list, blank=True, editable=False)
+    poll_interval_minutes = models.PositiveIntegerField(default=15,
+        validators=[MinValueValidator(1), MaxValueValidator(525600)])
+    include_replies = models.BooleanField(default=True, verbose_name='Czytaj odpowiedzi')
+    include_reposts = models.BooleanField(default=False, verbose_name='Czytaj podania dalej')
+    last_verified_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
+    last_profile_read_at = models.DateTimeField(null=True, blank=True, editable=False)
     poll_cursor = models.JSONField(default=dict, blank=True, editable=False)
     next_poll_at = models.DateTimeField(default=timezone.now, db_index=True, editable=False)
     last_polled_at = models.DateTimeField(null=True, editable=False)
     last_error = models.CharField(max_length=120, blank=True, editable=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
+    # Miniatura konta (news/x_avatars.py, 13.10): tylko https://pbs.twimg.com/profile_images/..., wariant _bigger.
+    avatar_url = models.URLField(max_length=500, blank=True, editable=False)
+    avatar_checked_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     def __str__(self):
         return f'@{self.handle} — {self.get_camp_display()}'
+
+    def save(self, *args, **kwargs):
+        fields = kwargs.get('update_fields')
+        previous = type(self).objects.filter(pk=self.pk).first() if self.pk else None
+        extra = set()
+        if previous and (fields is None or 'enabled' in fields) and previous.enabled != self.enabled:
+            self.disabled_at = None if self.enabled else timezone.now()
+            extra.add('disabled_at')
+        if previous and (fields is None or 'display_name' in fields) and previous.display_name != self.display_name:
+            self.name_history = [*previous.name_history, {'name': previous.display_name,
+                'until': timezone.now().isoformat(), 'source': 'database'}]
+            extra.add('name_history')
+        if fields is not None:
+            kwargs['update_fields'] = set(fields) | extra
+        super().save(*args, **kwargs)
 
     def identity_fingerprint(self):
         values = [self.user_id, self.handle.lower(), self.display_name, self.camp,
@@ -73,6 +97,40 @@ class PoliticalAccount(models.Model):
         self.confirmed_by, self.confirmed_at = staff, timezone.now()
         self.confirmation_fingerprint = self.identity_fingerprint()
         self.save(update_fields=['confirmed_by', 'confirmed_at', 'confirmation_fingerprint'])
+
+
+class AccountWardenRun(models.Model):
+    """Durable run journal; reservations survive worker loss and remain visible in costs."""
+    started_at = models.DateTimeField(default=timezone.now, db_index=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    lookups = models.PositiveIntegerField(default=0)
+    report = models.JSONField(default=dict)
+
+
+class WardenReview(models.Model):
+    account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='warden_reviews')
+    reason = models.TextField()
+    category = models.CharField(max_length=24)
+    first_decision = models.CharField(max_length=12, default='disable')
+    fingerprint = models.CharField(max_length=64)
+    evidence = models.JSONField(default=dict)
+    second_evidence = models.JSONField(default=dict, blank=True)
+    second_decision = models.CharField(max_length=12, blank=True)
+    status = models.CharField(max_length=16, default='pending', db_index=True,
+        choices=[(v, v) for v in ('pending', 'owner', 'disabled', 'kept', 'superseded')])
+    created_at = models.DateTimeField(default=timezone.now)
+    due_at = models.DateTimeField(db_index=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+')
+    lease_until = models.DateTimeField(null=True, blank=True)
+    lease_token = models.CharField(max_length=32, blank=True)
+    last_error = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['account'], condition=Q(status__in=['pending', 'owner']),
+            name='warden_one_open_review')]
 
 
 class PoliticalAccountCandidate(models.Model):
@@ -186,6 +244,7 @@ class PublicFigure(models.Model):
         help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
     organisations_checked_at = models.DateTimeField(null=True, blank=True, db_index=True,
         help_text='Kiedy agent KRS ostatnio szukał podmiotów tej osoby.')
+    account_discovery_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     source_checked_at = models.DateTimeField(default=timezone.now)
     parliamentary_roster_entry = models.ForeignKey(ParliamentaryRosterEntry, null=True, blank=True,
         on_delete=models.PROTECT, related_name='public_figure_profiles',
@@ -349,6 +408,10 @@ class RegisteredOrganisation(models.Model):
     register = models.CharField(max_length=1, blank=True, help_text='Rejestr KRS: P — przedsiębiorców, S — stowarzyszeń i fundacji.')
     sector = models.CharField(max_length=12, choices=ORGANISATION_SECTORS, default='unknown', db_index=True)
     sector_note = models.TextField(blank=True, help_text='Skąd wiemy, że podmiot jest państwowy lub komunalny.')
+    # Drzewo przepływu pieniędzy (właściciel 6.10): identyfikatory podmiotu z odpisu KRS. Zamówienia (TED, BZP) i dotacje (FTS)
+    # łączymy wyłącznie po NIP, KRS albo REGON - nigdy po samej nazwie.
+    nip = models.CharField(max_length=10, blank=True, db_index=True, help_text='NIP z odpisu KRS (same cyfry).')
+    regon = models.CharField(max_length=14, blank=True, db_index=True, help_text='REGON z odpisu KRS (same cyfry).')
     source_checked_at = models.DateTimeField(default=timezone.now)
     archived = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -573,6 +636,7 @@ class SocialHandleEvidence(models.Model):
             raise ValidationError('Ręczny dowód konta może dotyczyć wyłącznie rekordu osoby publicznej.')
 
 class PoliticalPost(models.Model):
+    watch_priority = models.BooleanField(default=False, editable=False)
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='posts')
     post_id = models.CharField(max_length=19, unique=True, validators=[ID_VALIDATOR])
     url = models.URLField(max_length=1024)
@@ -631,6 +695,8 @@ class PoliticalDraft(models.Model):
 class PoliticalRead(models.Model):
     """Conservative pre-request reservation, not a statement of X billing."""
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='api_reads')
+    account_ids = models.JSONField(default=list, editable=False)
+    response_body = models.BinaryField(null=True, editable=False)
     started_at = models.DateTimeField(default=timezone.now, db_index=True)
     finished_at = models.DateTimeField(null=True)
     reserved_posts = models.PositiveSmallIntegerField()

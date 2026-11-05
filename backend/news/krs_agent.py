@@ -65,7 +65,7 @@ SECTORS = {'state', 'municipal', 'public', 'private', 'ngo'}
 
 
 def enabled() -> bool:
-    return os.environ.get('KRS_AGENT_ENABLED', '').strip().lower() == 'true' and clinic_ai._gemini_ready()
+    return os.environ.get('KRS_AGENT_ENABLED', '').strip().lower() == 'true' and clinic_ai.paid_ready()
 
 
 def _budget_key() -> str:
@@ -95,7 +95,7 @@ def discover(figure: PublicFigure, debug: dict | None = None) -> list[dict]:
     who = f'{figure.canonical_name} — {figure.role_title}' + (f', {figure.organisation}' if figure.organisation else '')
     queries = '\n'.join(f'- {query}' for query in _queries(_display_name(figure.canonical_name)))
     prompt = f'Osoba: {who}\n\nWyszukaj w Google co najmniej:\n{queries}'
-    response = clinic_ai._call_gemini(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000)
+    response = clinic_ai._call_paid(SYSTEM, prompt, SCHEMA, web_search=True, max_tokens=16000, task='krs')
     usage = clinic_ai._usage(response)
     _spend(usage)
     found = clinic_ai._search_results(response.content)
@@ -198,7 +198,7 @@ def _save(figure: PublicFigure, extract: krs.Extract, candidate: dict, method: s
     organisation, _ = RegisteredOrganisation.objects.update_or_create(krs_number=extract.krs, defaults={
         'name': _pretty(extract.name) or candidate['name'], 'kind': extract.kind, 'legal_form': extract.legal_form.lower(),
         'register': extract.register, 'official_register_url': extract.public_url, 'sector': sector, 'sector_note': note,
-        'source_checked_at': timezone.now()})
+        'source_checked_at': timezone.now(), **{k: v for k, v in (('nip', extract.nip), ('regon', extract.regon)) if v}})
     role = (person.function if person and person.function else candidate['role']) or 'funkcja w organie'
     role = role[:1].lower() + role[1:] if not role[:2].isupper() else role.lower()
     status = ('former' if person.until else 'current') if person else ('current' if candidate['current'] else 'former')

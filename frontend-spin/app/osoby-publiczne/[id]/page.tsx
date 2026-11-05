@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { PublicFigurePage } from '@spin-clinic/ui';
 
 export const metadata: Metadata = {
-  title: 'Profil osoby publicznej — spin.clinic',
+  title: 'Profil osoby publicznej - spin.clinic',
   description: 'Funkcja publiczna, oficjalne głosowania, potwierdzone relacje i materiały z Bazy.',
 };
 

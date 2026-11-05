@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * BottomSheet — telefoniczny odpowiednik dropdownu/modala (docs/UI_KIT_PLAN.md → «Mobilne
+ * BottomSheet - telefoniczny odpowiednik dropdownu/modala (docs/UI_KIT_PLAN.md → «Mobilne
  * rozkłady»: «Dropdowny i filtry na telefonie to dolne arkusze»). Fizyka jest DOKŁADNIE tą samą
  * fizyką, co zamykanie portalu: 1:1 za palcem, projekcja bezwładności, decyzja po znaku prędkości,
  * gumowa granica u góry (patrz `portal/useDragDismiss.ts`, R4).
  *
- * `AnimatePresence` jest zamontowany NA STAŁE wewnątrz tego komponentu — wywołujący warunkuje
+ * `AnimatePresence` jest zamontowany NA STAŁE wewnątrz tego komponentu - wywołujący warunkuje
  * tylko `open`, nigdy nie odmontowuje samego `<BottomSheet>` (plan → «Portal»: warunkowy ma być
  * tylko dziecko `AnimatePresence`, nie ona sama).
  */
@@ -27,7 +27,7 @@ export type BottomSheetProps = {
   title?: ReactNode;
   children: ReactNode;
   className?: string;
-  /** Nadpisuje wygenerowane `id` powierzchni — potrzebne np. `Dropdown`u dla `aria-controls`. */
+  /** Nadpisuje wygenerowane `id` powierzchni - potrzebne np. `Dropdown`u dla `aria-controls`. */
   id?: string;
 };
 

@@ -1,0 +1,22 @@
+{
+  "version": "2026-10-13",
+  "description": "Domeny urzędowe, parlamentarne i partyjne: potwierdzony adres e-mail z tej domeny przy zgłoszeniu błędu pary „Wcześniej i teraz” zdejmuje parę z API do decyzji człowieka (jak VerifiedReporter). Dopasowanie po sufiksie (poddomeny też), bez wielkości liter. Lista do przeglądu prawnika; zmiany przez komendę domeny_urzedowe (dziennik w bazie).",
+  "domains": [
+    {"domain": "sejm.gov.pl", "kind": "parlament", "label": "Kancelaria Sejmu (posłowie, biura)", "status": "potwierdzona", "source": "https://www.sejm.gov.pl (adresy poselskie imie.nazwisko@sejm.gov.pl na stronach posłów)", "checked": "2026-10-13"},
+    {"domain": "senat.gov.pl", "kind": "parlament", "label": "Kancelaria Senatu", "status": "potwierdzona", "source": "https://www.senat.gov.pl (adresy senatorskie)", "checked": "2026-10-13"},
+    {"domain": "europarl.europa.eu", "kind": "parlament", "label": "Parlament Europejski (europosłowie)", "status": "potwierdzona", "source": "https://www.europarl.europa.eu/meps (adresy imie.nazwisko@europarl.europa.eu)", "checked": "2026-10-13"},
+    {"domain": "kprm.gov.pl", "kind": "urzad", "label": "Kancelaria Prezesa Rady Ministrów", "status": "potwierdzona", "source": "https://www.gov.pl/web/premier (kontakt kprm.gov.pl)", "checked": "2026-10-13"},
+    {"domain": "prezydent.pl", "kind": "urzad", "label": "Kancelaria Prezydenta RP", "status": "potwierdzona", "source": "https://www.prezydent.pl (kontakt)", "checked": "2026-10-13"},
+    {"domain": "platforma.org", "kind": "partia", "label": "Platforma Obywatelska (KO)", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona partii); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "pis.org.pl", "kind": "partia", "label": "Prawo i Sprawiedliwość", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona partii); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "psl.pl", "kind": "partia", "label": "Polskie Stronnictwo Ludowe", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona partii); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "polska2050.pl", "kind": "partia", "label": "Polska 2050", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona partii); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "lewica.org.pl", "kind": "partia", "label": "Nowa Lewica", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona partii); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "partiarazem.pl", "kind": "partia", "label": "Partia Razem", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona partii); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "konfederacja.pl", "kind": "partia", "label": "Konfederacja", "status": "do potwierdzenia", "source": "backend/news/account_warden_sources.py (strona ugrupowania); używanie domeny w e-mailach do potwierdzenia", "checked": "2026-10-13"},
+    {"domain": "koalicjaobywatelska.pl", "kind": "klub", "label": "Koalicja Obywatelska (klub i komitet)", "status": "do potwierdzenia", "source": "nazwa publiczna klubu KO; brak w danych repo - sprawdzić stronę i rekord MX (domeny_urzedowe sprawdz)", "checked": "2026-10-13"},
+    {"domain": "ruchnarodowy.net", "kind": "partia", "label": "Ruch Narodowy (Konfederacja)", "status": "do potwierdzenia", "source": "strona partii (wiedza publiczna); brak w danych repo - sprawdzić", "checked": "2026-10-13"},
+    {"domain": "nowanadzieja.pl", "kind": "partia", "label": "Nowa Nadzieja (Konfederacja)", "status": "do potwierdzenia", "source": "strona partii (wiedza publiczna); brak w danych repo - sprawdzić", "checked": "2026-10-13"},
+    {"domain": "konfederacjakoronypolskiej.pl", "kind": "partia", "label": "Konfederacja Korony Polskiej", "status": "do potwierdzenia", "source": "strona partii (wiedza publiczna); brak w danych repo - sprawdzić", "checked": "2026-10-13"}
+  ]
+}

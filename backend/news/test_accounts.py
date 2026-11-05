@@ -40,7 +40,7 @@ def token(client):
 def test_register_csrf_password_and_no_privilege_escalation():
     client = APIClient(enforce_csrf_checks=True)
     data = {'username': 'Reader', 'email': 'reader@example.org', 'accepted_terms': True,
-            'accepted_privacy': True, 'password': 'Str0ng~unique~zxcv!', 'is_staff': True, 'is_superuser': True}
+            'adult': True, 'password': 'Str0ng~unique~zxcv!', 'is_staff': True, 'is_superuser': True}
     assert client.post('/api/account/register/', data, format='json').status_code == 403
     csrf = token(client)
     with patch('news.account_lifecycle.queue_verification'):
@@ -90,16 +90,16 @@ def test_x_connection_is_opt_in_and_can_be_removed(user):
     assert client.get('/api/account/x-connection/').status_code == 403
     client.force_authenticate(user)
     assert client.get('/api/account/x-connection/').data == {
-        'connected': False, 'username': '', 'oauth_enabled': False, 'connect_url': None,
+        'connected': False, 'username': '', 'use_x_name': False, 'oauth_enabled': False, 'connect_url': None,
     }
-    assert client.get('/api/account/x-connection/start/').status_code == 503
+    assert client.get('/api/account/x-connection/start/').status_code == 404
     UserXConnection.objects.create(user=user, x_user_id='123', username='reader_on_x')
     assert client.get('/api/account/x-connection/').data['connected'] is True
     assert client.delete('/api/account/x-connection/').status_code == 204
     assert not UserXConnection.objects.filter(user=user).exists()
 
 
-@override_settings(X_USER_OAUTH_ENABLED=True, X_USER_OAUTH_CLIENT_ID='client-id',
+@override_settings(X_OAUTH_CLIENT_ID='client-id', X_OAUTH_CLIENT_SECRET='secret', ACCOUNT_PUBLIC_URL='https://portal.example',
                    X_USER_OAUTH_REDIRECT_URI='https://portal.example/api/account/x-connection/callback/',
                    X_USER_OAUTH_SUCCESS_PATH='/konto')
 def test_x_connection_uses_pkce_and_discards_oauth_token(user):
@@ -108,7 +108,7 @@ def test_x_connection_uses_pkce_and_discards_oauth_token(user):
     start = client.get('/api/account/x-connection/start/')
     assert start.status_code == 302
     assert 'code_challenge=' in start['Location'] and 'scope=users.read' in start['Location']
-    state = client.session['x_oauth_state']
+    state = client.session['account_x_oauth']['state']
     token_response = Mock()
     token_response.json.return_value = {'access_token': 'must-not-be-persisted'}
     identity_response = Mock()
@@ -116,13 +116,13 @@ def test_x_connection_uses_pkce_and_discards_oauth_token(user):
     with patch('news.accounts.requests.post', return_value=token_response) as post, \
          patch('news.accounts.requests.get', return_value=identity_response):
         callback = client.get('/api/account/x-connection/callback/', {'state': state, 'code': 'code-from-x'})
-    assert callback.status_code == 302 and callback['Location'] == '/konto?x=connected'
+    assert callback.status_code == 302 and callback['Location'] == 'https://portal.example/konto?x=connected'
     connection = UserXConnection.objects.get(user=user)
     assert connection.x_user_id == '765' and connection.username == 'reader_x'
     assert post.call_args.kwargs['data']['code_verifier']
     assert 'must-not-be-persisted' not in str(connection.__dict__)
     # The state was consumed; reusing the redirect is rejected without a second exchange.
-    assert client.get('/api/account/x-connection/callback/', {'state': state, 'code': 'code-from-x'})['Location'] == '/konto?x=failed'
+    assert client.get('/api/account/x-connection/callback/', {'state': state, 'code': 'code-from-x'})['Location'] == 'https://portal.example/konto?x=failed'
 
 
 def test_topics_owner_only_max_ten_and_db_cap(user, article):
@@ -193,7 +193,8 @@ def test_opinion_unicode_budget_csrf_and_pagination(user, article):
     assert len(client.get(url + '?positive_page=2').data['positive']['results']) == 3
 
 
-def test_one_opinion_per_user_on_published_thread(user):
+def test_one_opinion_per_user_on_published_thread(user, settings):
+    settings.THREADS_ENABLED = True  # przy fladze false API portalowych wątków jest ukryte (zlecenie 110)
     published = Thread.objects.create(title='Published', slug='published', published=True)
     draft = Thread.objects.create(title='Draft', slug='draft', published=False)
     client = APIClient()

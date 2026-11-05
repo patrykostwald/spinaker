@@ -1,5 +1,7 @@
 """Official records: retain the original payload and replace a roll call atomically."""
 from datetime import datetime, time, timedelta
+from contextvars import ContextVar
+from contextlib import contextmanager
 from zoneinfo import ZoneInfo
 import json
 from time import sleep
@@ -15,6 +17,18 @@ API = 'https://api.sejm.gov.pl'
 VOTE_CODES = {'YES', 'NO', 'ABSTAIN', 'NO_VOTE', 'ABSENT', 'VOTE_VALID', 'VOTE_INVALID', 'PRESENT'}
 
 
+_current_votes = ContextVar('current_sejm_votes', default=False)
+
+
+@contextmanager
+def current_voting_budget():
+    token = _current_votes.set(True)
+    try:
+        yield
+    finally:
+        _current_votes.reset(token)
+
+
 def fetch_json(path, *, return_receipt=False, **params):
     provider = 'eli' if path.startswith('/eli/') else 'sejm'
     source = official_source(provider)
@@ -25,7 +39,8 @@ def fetch_json(path, *, return_receipt=False, **params):
         raise AccessDenied('no_approved_instruction')
     response = fetch_feed(request_url, hostname_transport=True, audit_source=source,
         audit_instruction=instruction, requested_kind=FetchAttempt.RequestedKind.API_RECORD,
-        return_receipt=return_receipt)
+        return_receipt=return_receipt,
+        budget_share=1.0 if _current_votes.get() and "/votings" in path else BACKFILL_SHARE)
     if return_receipt:
         raw, receipt = response
         return json.loads(raw.decode('utf-8')), receipt
@@ -38,7 +53,7 @@ def fetch_json_paced(path, *, max_host_deferrals=3, **params):
         try:
             return fetch_json(path, **params)
         except HostRateLimited as exc:
-            if attempt >= max_host_deferrals:
+            if attempt >= max_host_deferrals or exc.retry_after_seconds > 10:
                 raise
             sleep(max(0.01, exc.retry_after_seconds))
 
@@ -99,7 +114,7 @@ def save_voting(data, term, sitting, number, *, fetch_attempt=None):
 def import_voting(term, sitting, number, *, guard=None):
     if not official_access_allowed('sejm', f'/sejm/term{term}/votings/{sitting}/{number}'):
         return 0
-    data, receipt = fetch_json(f'/sejm/term{term}/votings/{sitting}/{number}', return_receipt=True)
+    data, receipt = fetch_json_paced(f'/sejm/term{term}/votings/{sitting}/{number}', return_receipt=True)
     if guard:
         guard()
     return save_voting(data, term, sitting, number, fetch_attempt=receipt)
@@ -114,7 +129,7 @@ def _import_voting_pages(term, guard=None, **filters):
     while True:
         if guard:
             guard()
-        rows = fetch_json(f'/sejm/term{term}/votings/search', offset=offset, limit=100, **filters)
+        rows = fetch_json_paced(f'/sejm/term{term}/votings/search', offset=offset, limit=100, **filters)
         if not isinstance(rows, list):
             raise ValueError('Invalid voting search page; import incomplete')
         if not rows:
@@ -214,10 +229,10 @@ def import_prints(term):
     return count
 
 
-def import_eli_changes(since):
+def import_eli_changes(since, *, offset=0, max_pages=None, checkpoint=None):
     if not official_access_allowed('eli', '/eli/changes/acts'):
         return 0
-    count, offset, seen = 0, 0, set()
+    count, seen, pages = 0, set(), 0
     while True:
         payload = fetch_json_paced('/eli/changes/acts', since=since, offset=offset)
         items = payload['items']
@@ -231,8 +246,14 @@ def import_eli_changes(since):
             count += save_document(row, 'eli', identity, API + '/eli/acts/' + identity,
                 'https://eli.gov.pl/eli/' + identity + '/ogl', ArticleCategory.LEGISLATION, 'promulgation')
         offset += len(items)
-        if offset >= payload.get('totalCount', offset):
-            return count
+        complete = offset >= payload.get('totalCount', offset)
+        if checkpoint:
+            checkpoint(offset, complete, count)
+        pages += 1
+        if complete:
+            return count if max_pages is None else {'count': count, 'complete': True}
+        if max_pages is not None and pages >= max_pages:
+            return {'count': count, 'complete': False}
         if not items:
             raise ValueError('Incomplete ELI changes pagination')
 
@@ -251,6 +272,8 @@ def backfill_budget_left(provider, path):
     return used < int(instruction.daily_request_cap) * BACKFILL_SHARE
 
 
-def official_access_allowed(provider, path):
+def official_access_allowed(provider, path, *, source=None, channel='api'):
+    if provider == 'metadata':
+        return approved_instruction(source, channel, path) is not None
     source = official_source(provider)
     return approved_instruction(source, SourceAccessInstruction.Channel.API, API + path) is not None

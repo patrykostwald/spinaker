@@ -1,0 +1,61 @@
+{
+  "process_index": [
+    {"ELI": "MP/2023/1261", "UE": "NO", "changeDate": "2023-11-14T11:44:49", "documentType": "projekt uchwały", "number": "1", "passed": true, "printsConsideredJointly": ["2"], "processStartDate": "2023-11-13", "term": 10, "title": "Poselski projekt uchwały w sprawie testowej", "urgencyStatus": "NORMAL"},
+    {"UE": "NO", "changeDate": "2026-09-17T11:08:45", "documentType": "wniosek (bez druku)", "number": "18073-z", "passed": false, "term": 10, "title": "Wniosek testowy", "urgencyStatus": "NORMAL"}
+  ],
+  "process": {
+    "ELI": "MP/2023/1261", "UE": "NO", "address": "WMP20230001261", "changeDate": "2023-11-14T11:44:49", "closureDate": "2023-11-13",
+    "displayAddress": "M.P. 2023 poz. 1261", "documentDate": "2023-11-13", "documentType": "projekt uchwały", "documentTypeEnum": "DRAFT_RESOLUTION",
+    "links": [{"href": "https://eli.gov.pl/eli/MP/2023/1261/ogl", "rel": "eli"}],
+    "number": "1", "passed": true, "printsConsideredJointly": ["2"], "processStartDate": "2023-11-13", "shortenProcedure": false, "term": 10,
+    "title": "Poselski projekt uchwały w sprawie testowej", "titleFinal": "w sprawie testowej", "urgencyStatus": "NORMAL",
+    "stages": [
+      {"date": "2023-11-13", "stageName": "Projekt wpłynął do Sejmu", "printNumber": "1", "stageType": "Start"},
+      {"children": [{"date": "2023-11-13", "stageName": "Skierowanie", "committeeCode": "Sejm", "stageType": "Referral", "type": "NORMAL"}],
+       "date": "2023-11-13", "stageName": "Skierowano do I czytania na posiedzeniu Sejmu", "stageType": "ReadingReferral"},
+      {"children": [{"date": "2023-11-13", "stageName": "Głosowanie", "stageType": "Voting",
+         "voting": {"abstain": 0, "date": "2023-11-13T18:02:12", "kind": "ELECTRONIC", "no": 0, "notParticipating": 2, "sitting": 1, "sittingDay": 1, "term": 10, "title": "Pkt. 2 Projekty uchwał (druki nr 1 i 2)", "totalVoted": 458, "votingNumber": 2, "yes": 458}}],
+       "date": "2023-11-13", "stageName": "I czytanie na posiedzeniu Sejmu", "decision": "podjęto uchwałę", "sittingNum": 1, "stageType": "SejmReading"}
+    ]
+  },
+  "committees": [
+    {"appointmentDate": "2023-11-21", "code": "ASW", "compositionDate": "2023-11-21", "name": "Komisja Administracji i Spraw Wewnętrznych", "nameGenitive": "Komisji Administracji i Spraw Wewnętrznych", "type": "STANDING",
+     "members": [{"club": "A", "firstName": "Jan", "id": 1, "joinDate": "2023-11-21", "lastFirstName": "Przykładowy Jan", "lastName": "Przykładowy", "function": "przewodniczący"},
+                 {"club": "B", "firstName": "Anna", "id": 2, "joinDate": "2023-11-21", "lastFirstName": "Testowa Anna", "lastName": "Testowa"}]}
+  ],
+  "committee_sittings": [
+    {"code": "ASW", "num": 1, "date": "2023-11-21", "startDateTime": "2023-11-21T10:00:00", "endDateTime": "2023-11-21T11:00:00", "closed": false, "remote": false, "room": "sala nr 118, bud. C", "status": "FINISHED", "agenda": "<p>Wybór prezydium Komisji.</p>"},
+    {"code": "ASW", "num": 42, "date": "2024-05-15", "startDateTime": "2024-05-15T12:00:00", "closed": false, "remote": false, "status": "FINISHED",
+     "jointWith": [{"code": "SPC", "num": 7}], "video": [{"videoLink": "https://www.sejm.gov.pl/Sejm10.nsf/transmisje.xsp?unid=TEST"}],
+     "agenda": "<p>Rozpatrzenie rządowego projektu ustawy o zmianie ustawy testowej (druk nr 123).</p><p>Pierwsze czytanie projektów (druki nr 1 i 2).</p>"}
+  ],
+  "krs_bulletin": ["1450", "2851", "123456", "123456", "7980"],
+  "krs_extract": {
+    "odpis": {
+      "rodzaj": "Aktualny",
+      "naglowekA": {"rejestr": "RejP", "numerKRS": "0000123456", "dataCzasOdpisu": "06.10.2026 00:12:13", "stanZDnia": "05.10.2026",
+                    "dataRejestracjiWKRS": "04.10.2001", "numerOstatniegoWpisu": 49, "dataOstatniegoWpisu": "05.10.2026",
+                    "sygnaturaAktSprawyDotyczacejOstatniegoWpisu": "WA.XII NS-REJ.KRS/1/26/1",
+                    "oznaczenieSaduDokonujacegoOstatniegoWpisu": "SĄD REJONOWY TESTOWY, XII WYDZIAŁ GOSPODARCZY KRAJOWEGO REJESTRU SĄDOWEGO", "stanPozycji": 4},
+      "dane": {
+        "dzial1": {"danePodmiotu": {"formaPrawna": "SPÓŁKA AKCYJNA", "nazwa": "TESTOWA SPÓŁKA S.A."}},
+        "dzial2": {"reprezentacja": {"sklad": [{"nazwisko": {"nazwiskoICzlon": "K*******"}, "imiona": {"imie": "J***"}, "identyfikator": {"pesel": "8**********"}, "funkcjaWOrganie": "PREZES ZARZĄDU"}]}}
+      }
+    }
+  },
+  "ted_page": {
+    "notices": [
+      {"notice-type": "can-standard", "publication-number": "674307-2026", "publication-date": "2026-10-01+02:00",
+       "buyer-name": {"pol": ["Sąd Apelacyjny Testowy"]}, "buyer-country": ["POL"],
+       "notice-title": {"eng": "Poland – Computer equipment – Zakup komputerów", "pol": "Polska – Urządzenia komputerowe – Zakup komputerów"},
+       "classification-cpv": ["30200000", "30213100", "30200000"], "total-value": 6133530.3, "total-value-cur": ["PLN"],
+       "winner-name": {"pol": ["Firma A Sp. z o.o.", "Firma B Sp. z o.o."]}, "winner-identifier": ["9291808578", "5242872114"], "winner-country": ["POL", "POL"],
+       "links": {"html": {"POL": "https://ted.europa.eu/pl/notice/-/detail/674307-2026"}}},
+      {"notice-type": "cn-standard", "publication-number": "674227-2026", "publication-date": "2026-10-01+02:00",
+       "buyer-name": {"pol": ["Państwowe Gospodarstwo Wodne Wody Polskie"]}, "buyer-country": ["POL"],
+       "notice-title": {"pol": "Polska – Usługi – Dostawa energii"}, "classification-cpv": ["09123000"],
+       "links": {}}
+    ],
+    "totalNoticeCount": 2, "iterationNextToken": null, "timedOut": false
+  }
+}

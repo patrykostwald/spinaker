@@ -2,7 +2,7 @@
  * Zwijanie serii niemal identycznych materiałów jednego źródła (np. „Wniosek złożony podczas 32. sesji
  * Rady Miasta…” × 12) w jeden box z dopiskiem „+N podobnych”. Klucz: źródło + pierwsze 6 słów tytułu
  * przycięte do 4 znaków (odmiana: „wniosek/wnioski”, „złożony/złożone” dają ten sam klucz).
- * Kolejność zachowana — zostaje pierwszy (najnowszy) materiał serii.
+ * Kolejność zachowana - zostaje pierwszy (najnowszy) materiał serii.
  */
 
 import type { Article } from "../../types";

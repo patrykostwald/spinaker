@@ -1,0 +1,59 @@
+/* Strona /przeszlosc/aplikacja (port v3, PWA seria 2). Osobny plik: v3.css ma równoległego właściciela.
+   Zasady: boksy bez ramek (tło tonalne + odstęp), jeden rytm sekcji (--pt-sec z .px), tytuły w jednej linii, boksy jednego rzędu
+   równej wysokości (górny tytuł przy górze, uwaga przy dolnej krawędzi), cele 44 px, zero pasków, treść 16 / 1,6 (telefon 17 / 1,55).
+   Laws of UX: Common Region, Proximity, Similarity, Fitts, Von Restorff. */
+.pt-v3 .px.pa .pa-head { display: grid; gap: 12px; max-width: 760px; min-width: 0; }
+.pt-v3 .px.pa .pa-head h1 { margin: 0; font: 600 clamp(30px, 3.6vw, 44px)/1.12 var(--sc-font-display); letter-spacing: -.03em; text-wrap: balance; }
+.pt-v3 .px.pa .pa-lead { margin: 0; max-width: 56ch; font-size: 17px; line-height: 1.6; color: var(--sc-text-2); }
+.pt-v3 .px.pa .pa-act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: 12px; }
+.pt-v3 .px.pa .pa-act p { margin: 0; min-height: 44px; display: flex; align-items: center; max-width: 52ch; font-size: 15px; line-height: 1.5; color: var(--sc-text-2); }
+
+.pt-v3 .px.pa .pa-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.pt-v3 .px.pa .pa-card { display: grid; grid-template-rows: auto 1fr auto; gap: 16px; min-width: 0; padding: 24px 20px; border-radius: 12px; background: var(--sc-surface); }
+.pt-v3 .px.pa .pa-card__top { min-width: 0; }
+.pt-v3 .px.pa .pa-card h3 { margin: 0; font: 600 17px/1.35 var(--sc-font-display); letter-spacing: -.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--sc-text); }
+/* platforma tego urządzenia: konwencja terminala (akcent + ">" przed i "_" po), bez dodatkowej etykiety; czytnik dostaje "to urządzenie" */
+.pt-v3 .px.pa .pa-card h3 { position: relative; }
+.pt-v3 .px.pa .pa-card h3::before { content: ">"; position: absolute; left: -14px; top: .1em; font: 500 13px/1.6 var(--sc-font-sans); color: var(--sc-accent); opacity: 0; }
+.pt-v3 .px.pa .pa-card[data-here] h3 { color: var(--sc-accent); }
+.pt-v3 .px.pa .pa-card[data-here] h3::before { opacity: 1; }
+.pt-v3 .px.pa .pa-card[data-here] h3::after { content: "_"; display: inline-block; margin-left: 2px; font: 500 13px/1 var(--sc-font-sans); animation: pt-blink 1.2s steps(1, end) infinite; }
+.pt-v3 .px.pa .pa-card ol { margin: 0; padding: 0; list-style: none; counter-reset: pa; display: grid; align-content: start; gap: 12px; }
+.pt-v3 .px.pa .pa-card li { counter-increment: pa; position: relative; padding-left: 32px; line-height: 1.55; color: var(--sc-text-2); }
+.pt-v3 .px.pa .pa-card li::before { content: counter(pa); position: absolute; left: 0; top: 0; width: 24px; font: 500 14px/1.7 var(--sc-font-sans); font-variant-numeric: tabular-nums; color: var(--sc-text-3); }
+.pt-v3 .px.pa .pa-card__note { margin: 0; padding-top: 14px; border-top: 1px solid var(--sc-line); font-size: 14px; line-height: 1.5; color: var(--sc-text-3); }
+
+.pt-v3 .px.pa .pa-shots { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.pt-v3 .px.pa .pa-shots figure { max-width: 260px; }
+.pt-v3 .px.pa .pa-shots figure { margin: 0; display: grid; grid-template-rows: auto 1fr; gap: 12px; min-width: 0; }
+.pt-v3 .px.pa .pa-shots img { display: block; width: 100%; height: auto; aspect-ratio: 390 / 844; border-radius: 12px; background: var(--sc-surface); }
+.pt-v3 .px.pa .pa-shots figcaption { font-size: 14px; line-height: 1.5; color: var(--sc-text-2); }
+
+.pt-v3 .px.pa .pa-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.pt-v3 .px.pa .pa-box { display: grid; align-content: start; gap: 16px; min-width: 0; padding: 24px; border-radius: 12px; background: var(--sc-surface); }
+.pt-v3 .px.pa .pa-box h3 { margin: 0; font: 600 17px/1.35 var(--sc-font-display); letter-spacing: -.005em; color: var(--sc-text); }
+.pt-v3 .px.pa .pa-box ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pt-v3 .px.pa .pa-box li { position: relative; padding-left: 20px; line-height: 1.55; color: var(--sc-text-2); }
+.pt-v3 .px.pa .pa-box li::before { content: ">"; position: absolute; left: 0; top: .2em; font: 500 13px/1.5 var(--sc-font-sans); color: var(--sc-accent); }
+.pt-v3 .px.pa .pa-more { display: flex; flex-wrap: wrap; gap: 0 24px; margin: 24px 0 0; }
+.pt-v3 .px.pa .pa-more a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.pt-v3 .px.pa .pa-more a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 999.98px) {
+  .pt-v3 .px.pa .pa-grid { grid-template-columns: minmax(0, 1fr); }
+  .pt-v3 .px.pa .pa-card { padding: 24px; }
+}
+@media (max-width: 760px) {
+  .pt-v3 .px.pa .pa-two { grid-template-columns: minmax(0, 1fr); }
+  .pt-v3 .px.pa .pa-shots { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .pt-v3 .px.pa .pa-shots li:nth-child(n + 3) { display: none; }
+}
+@media (max-width: 640px) {
+  html body .pt-v3 .px.pa .pa-lead { font-size: 17px; }
+  html body .pt-v3 .px.pa :is(.pa-act p, .pa-card__note, .pa-shots figcaption) { font-size: 14px; color: var(--sc-text-2); }
+  html body .pt-v3 .px.pa .pa-act p { font-size: 15px; }
+  html body .pt-v3 .px.pa .pa-card h3 { white-space: normal; overflow: visible; }
+  html body .pt-v3 .px.pa :is(.pa-card li, .pa-box li) { font-size: 17px; line-height: 1.55; font-weight: 450; }
+  html body .pt-v3 .px.pa .pa-act .px-btn { width: 100%; }
+  html body .pt-v3 .px.pa .pa-box { padding: 20px 16px; }
+}

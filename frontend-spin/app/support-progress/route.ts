@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-// Cel i zebrana kwota z .env.production (SUPPORT_MONTHLY_GOAL_PLN, SUPPORT_MONTHLY_RAISED_PLN) — czytane przy
+// Cel i zebrana kwota z .env.production (SUPPORT_MONTHLY_GOAL_PLN, SUPPORT_MONTHLY_RAISED_PLN) - czytane przy
 // każdym zapytaniu, więc zmiana kwoty nie wymaga przebudowy. Pasek wsparcia nad stopką pobiera to raz na wizytę.
 export const dynamic = 'force-dynamic';
 
-// Stan zbiórki zapisany w kodzie — działa po samym wdrożeniu; zmienne z .env.production mają pierwszeństwo, gdy są ustawione.
+// Stan zbiórki zapisany w kodzie - działa po samym wdrożeniu; zmienne z .env.production mają pierwszeństwo, gdy są ustawione.
 // 30.09.2026: 40 zł (10 + 30) z 1500 zł miesięcznie.
 const GOAL_PLN = 1500;
 const RAISED_PLN = 40;

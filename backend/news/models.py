@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from .thread_review_models import ThreadReview, ThreadReviewRound  # noqa: F401
 from django.conf import settings
 from uuid import uuid4
 from django.core.exceptions import ValidationError
@@ -643,7 +644,7 @@ class Article(models.Model):
 class Thread(models.Model):
     title = models.CharField("tytuł", max_length=255)
     editorial_slot = models.CharField(max_length=16, blank=True, default='',
-        choices=[('', 'Pozostałe nitki'), ('government', 'Przekaz dnia obozu rządzącego'),
+        choices=[('', 'Pozostałe spinki'), ('government', 'Przekaz dnia obozu rządzącego'),
                  ('opposition', 'Przekaz dnia opozycji')])
     slug = models.SlugField("slug", max_length=255, unique=True)
     thread_type = models.CharField(
@@ -766,6 +767,8 @@ class ParliamentaryVoting(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["term", "sitting", "number"], name="unique_sejm_voting")]
+        # v3: lista głosowań /api/przeszlosc/glosowania/ (filtr kadencji i złączenie z datą artykułu)
+        indexes = [models.Index(fields=["term", "article"], name="voting_term_article_v3")]
 
 
 class OfficialRevision(models.Model):
@@ -789,6 +792,8 @@ class Ballot(models.Model):
     class Meta:
         ordering = ["name", "mp_id"]
         constraints = [models.UniqueConstraint(fields=["voting", "mp_id"], name="unique_mp_ballot")]
+        # v3: filtr klubu w liście głosowań; na PostgreSQL tworzony CONCURRENTLY (migracja 0163)
+        indexes = [models.Index(fields=["club", "voting"], name="ballot_club_voting_v3")]
 
 
 class EvidenceLink(models.Model):
@@ -819,6 +824,28 @@ class RepairerState(models.Model):
     """Durable run/mail bookkeeping, independent of the 30-day action retention."""
     key = models.CharField(max_length=40, unique=True)
     data = models.JSONField(default=dict)
+
+
+class DutyAlarm(models.Model):
+    key = models.CharField(max_length=180, unique=True)
+    rule = models.CharField(max_length=48, db_index=True)
+    severity = models.CharField(max_length=12, choices=[('critical', 'Krytyczny'), ('warning', 'Uwaga')])
+    title = models.CharField(max_length=240)
+    details = models.JSONField(default=dict)
+    repairer = models.CharField(max_length=160, blank=True)
+    instruction = models.CharField(max_length=300)
+    status = models.CharField(max_length=8, default='open', db_index=True,
+                              choices=[('open', 'Otwarty'), ('closed', 'Zamknięty')])
+    since = models.DateTimeField(default=timezone.now)
+    first_seen = models.DateTimeField(default=timezone.now)
+    last_seen = models.DateTimeField(default=timezone.now)
+    occurrences = models.PositiveIntegerField(default=0)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    last_dispatch_at = models.DateTimeField(null=True, blank=True)
+    dispatch_note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['first_seen', 'pk']
 
 
 class ImportState(models.Model):
@@ -960,15 +987,20 @@ class AIResearchCall(models.Model):
 
 
 from .wallet_models import WalletBalance  # noqa: E402,F401
+from .report_models import InstitutionalReport, ReportReview, ReportDailyBudget, ReportObservation  # noqa: E402,F401
+from .agent_models import AgentNote, SebaReview, BuildTicket  # noqa: E402,F401
+from .political_models import WardenReview  # noqa: E402,F401
 from .account_models import (  # noqa: E402,F401
     SavedTopic, ArticleOpinion, ThreadOpinion, ThreadFavorite, ArticleFavorite,
     PersonalContextThread, PersonalContextThreadItem, CommentReport,
 )
 from .community_models import CommunityLink, CommunityThreadOpinion, CommunityThreadReport  # noqa: E402,F401
-from .clinic_models import SpinDiagnosis, ClinicDailyMessage, SpinOpinion, XAccountSuggestion, SocialPost, CouncilCharterAcceptance  # noqa: E402,F401
+from .clinic_models import SpinDiagnosis, ClinicAuthorReply, ClinicDailyMessage, SpinOpinion, XAccountSuggestion, SocialPost, CouncilCharterAcceptance, PositionScan, PositionCheck, ReceptionCheck  # noqa: E402,F401
+from .social_models import SocialMaterial, SocialTask, SocialAssistantUsage  # noqa: E402,F401
+from .clinic_discussion_models import ClinicComment, ClinicCommentReport, InterviewOpinion, DailyMessageOpinion, ClinicCommentAppeal  # noqa: E402,F401
 from .newsletter_models import NewsletterSubscriber  # noqa: E402,F401
-from .push_models import PushSubscription, PushEvent  # noqa: E402,F401
-from .political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
+from .push_models import PushSubscription, PushEvent, PushDelivery  # noqa: E402,F401
+from .political_models import AccountWardenRun, PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
 from .evidence_snapshot import (  # noqa: E402,F401
     EvidenceSnapshot,
     SnapshotArtifactType,
@@ -989,3 +1021,17 @@ from .evidence_extraction import (  # noqa: E402,F401
 
 from .account_models import AccountIdentity
 from .notification_models import Follow, Notification, NotificationSettings, NotificationEvent
+from .poll_models import PollVote
+from .interview_vote_models import InterviewBallot, InterviewCandidate, InterviewMessage, InterviewSubmission, InterviewVote
+from .feedback_models import BugReport, ClientNote, JourneyStep  # noqa: E402,F401
+
+from .thread_social_models import ThreadComment, ThreadCommentReaction, ThreadRateEvent, ThreadModerationReport, ThreadModerationDecision, ThreadModerationMail  # noqa: E402,F401
+
+from .public_records_models import PublicRecord, PublicRecordPerson, PublicCollectionState, PublicCollectionJob  # noqa: E402,F401
+from .przeszlosc_models import PrzeszloscAlert  # noqa: E402,F401
+from .sales_models import SalesLead, WeeklyReportIssue  # noqa: E402,F401
+
+from .analysis_models import CoordinatedCluster, VotingDeviationSnapshot  # noqa: E402,F401
+from .zrodla_models import CitedArticle, SejmVideoSpin  # noqa: E402,F401
+from .poczta_models import MailboxState, MailMessage, MailOutboxLog  # noqa: E402,F401
+from .rcl_models import LegislativeProject, LegislativeStage, LegislativeDocument, LegislativeChange, RclFetchEvent  # noqa: E402,F401

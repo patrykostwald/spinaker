@@ -10,7 +10,7 @@ import { FIXTURE_STATES, makeArticle, makeArticles } from "../fixtures";
 export const meta = {
   id: "karty",
   title: "Karty",
-  lead: "NewsCard — jeden komponent, cztery rozmiary, sześć stanów danych. Najechanie: stopień A, po 400 ms jeden wspólny przedpodgląd w warstwie nad stroną; klik — pełny ekran morfingiem.",
+  lead: "NewsCard - jeden komponent, cztery rozmiary, sześć stanów danych. Najechanie: stopień A, po 400 ms jeden wspólny przedpodgląd w warstwie nad stroną; klik - pełny ekran morfingiem.",
 };
 
 const BADGE_CATEGORIES = ["article", "document", "video", "voting"] as const;
@@ -42,12 +42,12 @@ export function Section() {
       <h3 className="sc-t-title-m sc-section__sub">Odznaka kategorii (na medium, nad zdjęciem)</h3>
       <div style={{ display: "grid", gap: "var(--sc-s-4)", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
         {BADGE_CATEGORIES.map((category, index) => (
-          // R0: явный id — иначе id брался из счётчика модуля и расходился между сервером и клиентом (гидратация).
+          // R0: явный id - иначе id брался из счётчика модуля и расходился между сервером и клиентом (гидратация).
           <NewsCard key={category} article={makeArticle({ id: -(300 + index), category })} size="medium" />
         ))}
       </div>
 
-      <h3 className="sc-t-title-m sc-section__sub">Karta large — stack i split (split od 900px wzwyż)</h3>
+      <h3 className="sc-t-title-m sc-section__sub">Karta large - stack i split (split od 900px wzwyż)</h3>
       <div style={{ display: "grid", gap: "var(--sc-s-5)" }}>
         <NewsCard article={FIXTURE_STATES[0].article} size="large" layout="stack" />
         <NewsCard article={FIXTURE_STATES[5].article} size="large" layout="split" />
@@ -86,7 +86,7 @@ export function Section() {
 
       <BounceRig />
 
-      <h3 className="sc-t-title-m sc-section__sub">Siatka 12 kart — zachowanie krawędziowe (transform-origin)</h3>
+      <h3 className="sc-t-title-m sc-section__sub">Siatka 12 kart - zachowanie krawędziowe (transform-origin)</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-4)" }}>
         Najedź na kartę przy krawędzi siatki: powinna rosnąć do wewnątrz (stopień B po 400ms), nie poza ekran.
       </p>
@@ -100,7 +100,7 @@ export function Section() {
 }
 
 /**
- * Suwak steruje parametrem `bounce` sprężyny `ui` na izolowanym stanowisku obok — te same wartości,
+ * Suwak steruje parametrem `bounce` sprężyny `ui` na izolowanym stanowisku obok - te same wartości,
  * których NewsCard używa wewnętrznie na stopniach A/B (docs/UI_KIT_PLAN.md → «Trzy stopnie»:
  * 0.18/0.26s na A, 0.22/0.38s na B). NewsCard nie przyjmuje własnego propa `transition` (kontrakt
  * propów jest zamrożony), więc strojenie na żywo pokazujemy na osobnym, wizualnie identycznym pudełku.
@@ -112,7 +112,7 @@ function BounceRig() {
 
   return (
     <div>
-      <h3 className="sc-t-title-m sc-section__sub">Stopnie A/B — regulator odbicia (bounce)</h3>
+      <h3 className="sc-t-title-m sc-section__sub">Stopnie A/B - regulator odbicia (bounce)</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-3)" }}>
         Izolowane stanowisko: ten sam parametr <code>bounce</code> sprężyny <code>ui</code>, tutaj pokazany osobno, żeby dało się go
         przesuwać na żywo.
@@ -132,7 +132,7 @@ function BounceRig() {
       <div className="sc-showcase__seg" role="group" aria-label="Podgląd stopnia" style={{ marginBottom: "var(--sc-s-4)" }}>
         {(["rest", "a", "b"] as const).map((s) => (
           <button key={s} type="button" aria-pressed={stage === s} onClick={() => setStage(s)}>
-            {s === "rest" ? "spoczynek" : s === "a" ? "A — podświetlenie" : "B — przedpodgląd"}
+            {s === "rest" ? "spoczynek" : s === "a" ? "A - podświetlenie" : "B - przedpodgląd"}
           </button>
         ))}
       </div>

@@ -14,13 +14,14 @@ from django.conf import settings
 from PIL import Image, ImageDraw, ImageOps
 
 from news.techniques import FAMILY_LABELS
-from news.x_card import _font, EMOJI
+from news.spin_colors import CLAIM_COLORS, FAMILY_COLORS, VERDICT_COLORS, strength_bar, strength_color, tabular_score
+from news.x_card import _font, EMOJI, glue_short
 
-VERSION = 'v6'
-FORMATS = {'diagnoza', 'skrot'}
-COLORS = {'spin': '#ff6b6b', 'partial': '#f2b441', 'no_spin': '#4ed18a', 'unclear': '#a6a6a6'}
+VERSION = 'v10'
+FORMATS = {'diagnoza', 'skrot', 'szczegoly'}
+COLORS = VERDICT_COLORS
 MUTED, ACCENT = '#a6a6a6', '#4a9eff'
-FAMILIES = {'dane': '#7ea6d8', 'przedstawienie': '#d2a86a', 'spor': '#b58ad8'}
+FAMILIES = {key: FAMILY_COLORS[key] for key in FAMILY_LABELS}
 MAX_BYTES = 5 * 1024 * 1024
 
 
@@ -83,7 +84,7 @@ def fetch_image(url):
 
 
 def _wrap(draw, value, font, width):
-    words = EMOJI.sub('', str(value if value is not None else '')).split()
+    words = glue_short(EMOJI.sub('', str(value if value is not None else '')).split())
     lines, line = [], ''
     for word in words:
         if draw.textlength(word, font=font) > width:
@@ -191,7 +192,16 @@ def _quote(data):
     return ' '.join(words[:25]) + ('…' if len(words) > 25 else '')
 
 
-def _draw_panel(draw, data, box):
+MODEL_LABELS = [('gpt', 'GPT'), ('claude', 'Claude'), ('gemini', 'Gemini'), ('gemma', 'Gemma'), ('qwen', 'Qwen'),
+                ('mistral', 'Mistral'), ('bielik', 'Bielik'), ('nemotron', 'Nemotron'), ('llama', 'Llama'), ('deepseek', 'DeepSeek')]
+
+
+def _model_label(model):
+    value = str(model or '').lower()
+    return next((label for key, label in MODEL_LABELS if key in value), (str(model or '').split('/')[-1].split('-')[0] or '?').capitalize())
+
+
+def _draw_panel(draw, data, box, fill='#0f0f0f'):
     """Wspólny panel obu formatów; grafiki mają tę samą linię dołu."""
     left, top, right, bottom = box
     scale = min((right - left) / 868, (bottom - top) / 272)
@@ -201,7 +211,7 @@ def _draw_panel(draw, data, box):
     families = scan.get('families') or {}
     counts = [families.get(key, {}).get('technique_types', 0) for key in FAMILIES]
     total = sum(v.get('technique_types', 0) for v in families.values())
-    draw.rounded_rectangle(box, radius=22 * scale, fill='#0f0f0f')
+    draw.rounded_rectangle(box, radius=22 * scale, fill=fill)
     def text(value, x, y, end, size=15, color=MUTED, weight=500):
         selected = round(size * scale)
         return _text(draw, value, (x, y, end, y + selected + 10), size=selected, color=color, weight=weight)
@@ -212,42 +222,42 @@ def _draw_panel(draw, data, box):
             draw.rounded_rectangle((x, y, x + max(height, width * min(1, fraction)), y + height), radius=height / 2, fill=color)
     numbers = [data.get('intensity', 0), council.get('verdict_agreement') or '—', claims.get('checked', 0), total]
     suffixes = ['/100', 'zgodne', plural_pl(numbers[2], 'sprawdzone', 'sprawdzone', 'sprawdzonych'), plural_pl(total, 'typ', 'typy', 'typów')]
-    for i, title in enumerate(['NASILENIE SPINU', 'KONSYLIUM AI', 'TWIERDZENIA', 'TECHNIKI']):
+    for i, title in enumerate(['SIŁA SPINU', 'KONSYLIUM AI', 'TWIERDZENIA', 'TECHNIKI']):
         edge = left + cell * i
         if i:
             draw.line((edge, top, edge, bottom), fill='#262626', width=1)
         x, end = edge + 20 * scale, edge + cell - 18 * scale
         text(title, x, top + 22 * scale, end, size=14, weight=700, color='#8c8c8c')
         number_size = round(44 * scale)
-        text(numbers[i], x, top + 57 * scale, end, size=44, weight=700, color=ACCENT if i == 0 else '#ffffff')
+        text(numbers[i], x, top + 57 * scale, end, size=44, weight=700, color=strength_color(numbers[i]) if i == 0 else '#ffffff')
         offset = draw.textlength(str(numbers[i]), font=_font(number_size, 700))
         text(suffixes[i], x + offset + 5 * scale, top + 80 * scale, end, size=15)
         # Obszar wykresów: 104 jednostki, wspólny dół nad marginesem.
         y = bottom - 126 * scale
         width = end - x
         if i == 0:
-            bar(x, bottom - 53 * scale, width, max(0, (data.get('intensity') or 0)) / 100, ACCENT)
+            strength_bar(draw, (x, bottom - 53 * scale, end, bottom - 45 * scale), data.get('intensity'))
             for label, fraction in [('0', 0), ('50', .5), ('100', 1)]:
                 label_width = draw.textlength(label, font=_font(round(13 * scale))) + 5
                 tick_x = x + (width - label_width) * fraction
                 text(label, tick_x, bottom - 32 * scale, end + 3, size=13)
         elif i == 1:
-            votes = council.get('votes') or []
-            for j, key in enumerate(['gpt', 'qwen', 'gemini']):
-                vote = next((v for v in votes if key in str(v.get('model', '')).lower()), {})
+            # Tylko modele, które oceniły wpis (bez „—” dla milczących), najwyżej trzy wiersze.
+            votes = [v for v in council.get('votes') or [] if v.get('intensity') is not None and not v.get('missing')
+                     and v.get('status') != 'brak odpowiedzi'][:3]
+            for j, vote in enumerate(votes):
                 row_y = y + 14 * scale + j * 33 * scale
-                text(['GPT', 'Qwen', 'Gemini'][j], x, row_y, x + width * .4, size=14)
+                text(_model_label(vote.get('model')), x, row_y, x + width * .65, size=14)
                 score = vote.get('intensity')
-                bar(x + width * .41, row_y + 6 * scale, width * .28, max(0, score or 0) / 100, ACCENT)
-                text(score if score is not None else '—', x + width * .73, row_y, end - 9 * scale, size=15, color='#ffffff', weight=700)
+                tabular_score(draw, end - 11 * scale, row_y, score, _font(round(15 * scale), 700), '#ffffff')
                 dot_x = end - 4 * scale
                 draw.ellipse((dot_x, row_y + 6 * scale, dot_x + 8 * scale, row_y + 14 * scale), fill=COLORS.get(vote.get('verdict'), MUTED))
         elif i == 2:
             # Pięć kategorii musi zmieścić się z czytelną legendą (minimum 18 px).
             y = bottom - 158 * scale
             entries = [(key, label, color) for key, label, color in [
-                ('supported', 'potw.', '#4ed18a'), ('misleading', 'mylące', '#f2b441'),
-                ('contradicted', 'sprzeczne', '#ff6b6b'), ('unverified', 'niespr.', MUTED),
+                ('supported', 'potw.', CLAIM_COLORS['supported']), ('misleading', 'mylące', CLAIM_COLORS['misleading']),
+                ('contradicted', 'sprzeczne', CLAIM_COLORS['contradicted']), ('unverified', 'niespr.', CLAIM_COLORS['unverified']),
                 ('opinions', plural_pl(claims.get('opinions', 0), 'opinia', 'opinie', 'opinii'), '#8c8c8c')]
                 if claims.get(key, 0)]
             units = sum(claims[key] for key, _, _ in entries)
@@ -272,9 +282,11 @@ def _draw_panel(draw, data, box):
                 text(f'{claims[key]} {label}', x + 13 * scale, row_y, end, size=max(18, 18 / scale), color='#ffffff')
         else:
             maximum = max(1, *counts)
-            for j, (label, shade, count) in enumerate(zip(['Dane', 'Emocje', 'Spór'], FAMILIES.values(), counts)):
-                row_y = y + 14 * scale + j * 33 * scale
-                text(label, x, row_y, x + width * .45, size=14)
+            entries = [(key, shade, count) for (key, shade), count in zip(FAMILIES.items(), counts)
+                       if key != 'inne' or count]
+            for j, (key, shade, count) in enumerate(entries):
+                row_y = y + 14 * scale + j * (26 if len(entries) == 4 else 33) * scale
+                text(FAMILY_LABELS[key].split()[0], x, row_y, x + width * .45, size=14, color=shade)
                 bar(x + width * .47, row_y + 6 * scale, width * .32, count / maximum, shade)
                 text(count, x + width * .86, row_y, end + 3, size=15, color='#ffffff', weight=700)
     return bottom
@@ -315,11 +327,83 @@ def _render_short(data):
     return buffer.getvalue()
 
 
+def _render_share(data):
+    """Grafika do udostępnienia (właściciel 5.10): cztery pola o równych odstępach.
+    Lewa góra: wpis autora. Prawa góra: werdykt i „W skrócie”. Prawy dół: wskaźniki. Lewy dół: spin.clinic."""
+    image = Image.new('RGB', (1600, 900), '#0b0b0b')
+    draw = ImageDraw.Draw(image)
+    pad, gap = 48, 24
+    left_end = pad + 600
+    right = left_end + gap
+    end = 1600 - pad
+    bottom_top = 900 - pad - 272
+    top_bottom = bottom_top - gap
+    scan, author, post = data['scan'], data['author'], data['post']
+    def text(value, box, **kwargs):
+        return _text(draw, value, box, **kwargs)
+    for box in ((pad, pad, left_end, top_bottom), (right, pad, end, top_bottom), (pad, bottom_top, left_end, 900 - pad)):
+        draw.rounded_rectangle(box, radius=22, fill='#171717')
+    # lewa góra: wpis autora
+    x, x_end = pad + 28, left_end - 28
+    avatar = fetch_image(author.get('avatar_url'))
+    if avatar is not None:
+        _paste(image, avatar, (x, pad + 28, x + 56, pad + 84), 28)
+    else:
+        draw.ellipse((x, pad + 28, x + 56, pad + 84), fill='#303030')
+        text(''.join(p[0] for p in author.get('name', '').split()[:2]).upper(), (x + 9, pad + 44, x + 49, pad + 76), size=20, minimum=14, weight=700)
+    party = (author.get('party') or {}).get('short')
+    text(author.get('name', '') + (f', {party}' if party else ''), (x + 72, pad + 30, x_end, pad + 58), size=22, minimum=17, weight=700)
+    text(f"{_date(post.get('published_at'))} · wpis na X", (x + 72, pad + 62, x_end, pad + 88), size=18, color=MUTED)
+    body_top = pad + 108
+    if _deleted(post):
+        text('Wpis usunięty przez autora', (x, body_top, x_end, top_bottom - 28), size=24, lines=3, color=MUTED)
+    else:
+        media = post.get('media') or []
+        attachment = fetch_image(media[0].get('url')) if media else None
+        if attachment is not None:
+            _paste(image, attachment, (x, body_top, x_end, body_top + 170), 14)
+            body_top += 170 + 18
+        text(post.get('text', ''), (x, body_top, x_end, top_bottom - 24), size=22, minimum=19, lines=100, tight=True)
+    # prawa góra: werdykt i „W skrócie”
+    rx, r_end = right + 32, end - 32
+    shade = COLORS.get(data.get('verdict'), MUTED)
+    verdict = data.get('verdict_label') or ''
+    badge_end = rx + int(draw.textlength(verdict, font=_font(18, 700)) + 30)
+    draw.rounded_rectangle((rx, pad + 30, badge_end, pad + 64), radius=17, outline=shade, width=2)
+    text(verdict, (rx + 14, pad + 37, badge_end - 12, pad + 63), size=18, color=shade, weight=700)
+    text('W SKRÓCIE · DR. SPIN (AI)', (badge_end + 16, pad + 39, r_end, pad + 64), size=16, weight=700, color='#8c8c8c')
+    synthesis = scan.get('synthesis') or {}
+    lead = synthesis.get('lead') or data.get('headline')
+    lead_bottom = text(lead, (rx, pad + 88, r_end, pad + 88 + 3 * 46), size=42, minimum=32, lines=3, weight=700, tight=True)
+    summary = data.get('summary') or ' '.join(synthesis.get('points') or [])
+    text(summary, (rx, lead_bottom + 22, r_end, top_bottom - 28), size=27, minimum=20, lines=6, color='#cfcfcf', tight=True)
+    # prawy dół: wskaźniki
+    _draw_panel(draw, data, (right, bottom_top, end, 900 - pad), fill='#171717')
+    # lewy dół: spin.clinic
+    mark = _font(44, 800)
+    x0, base = pad + 28, bottom_top + 40
+    top = mark.getbbox('spin', anchor='ls')[1]
+    for part, colour in (('spin', '#ffffff'), ('.', ACCENT), ('clinic', '#ffffff')):
+        width = draw.textlength(part, font=mark)
+        dy = mark.getbbox(part, anchor='ls')[1] - top
+        text(part, (x0 - 2, base + dy, x0 + width + 8, base + 56 + dy), size=44, weight=800, color=colour)
+        x0 += width
+    text('Klinika spinu: jak politycy obu stron kręcą przekazem. Ta sama miara dla rządzących i opozycji.',
+         (pad + 28, bottom_top + 112, left_end - 28, bottom_top + 200), size=20, minimum=17, lines=3, color='#cfcfcf')
+    text(f"spin.clinic/klinika/{data['id']} · diagnoza {_date(scan.get('diagnosed_at'))}",
+         (pad + 28, 900 - pad - 52, left_end - 28, 900 - pad - 22), size=18, minimum=15, color=MUTED)
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
 def render(data, card_format='diagnoza'):
     if card_format not in FORMATS:
         raise ValueError('Unknown card format')
     if card_format == 'skrot':
         return _render_short(data)
+    if card_format == 'diagnoza':
+        return _render_share(data)
     image = Image.new('RGB', (1600, 900), '#0b0b0b')
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle((40, 40, 1560, 834), radius=28, fill='#171717')
@@ -382,7 +466,8 @@ def render(data, card_format='diagnoza'):
     text('RODZINA TECHNIK', (right, table_top, 932, table_top + 27), size=15, weight=700, color='#8c8c8c')
     text('TECHNIKI W ANALIZOWANYM MATERIALE', (952, table_top, 1460, table_top + 27), size=14, weight=700, color='#8c8c8c')
     text('TYPY', (1475, table_top, end, table_top + 27), size=14, color='#8c8c8c')
-    for index, (family, shade) in enumerate(FAMILIES.items()):
+    entries = [(family, shade) for family, shade in FAMILIES.items() if family != 'inne' or counts[family]]
+    for index, (family, shade) in enumerate(entries):
         y = table_top + 34 + index * 42
         draw.line((right, y, end, y), fill='#262626')
         draw.rounded_rectangle((right, y + 17, right + 9, y + 26), radius=2, fill=shade)
@@ -391,12 +476,22 @@ def render(data, card_format='diagnoza'):
         text(' · '.join(names) or 'Nie wskazano', (952, y + 12, 1455, y + 40), size=17, minimum=14, color='#ffffff' if names else '#8c8c8c')
         text(counts[family], (1480, y + 12, end, y + 40), size=18, weight=700)
     loaded = scan.get('loaded') or {}
-    loaded_top = table_top + 170
+    loaded_top = table_top + 44 + 42 * len(entries)
     if loaded and loaded_top + 28 <= 802:
         label = f"Słowa nacechowane: {loaded['count']}"
         words = ' · '.join(item['word'] for item in loaded.get('words', []))
         text(label + (' · ' + words if words else ''), (right, loaded_top, end, loaded_top + 28), size=18, color=MUTED)
-    text(f"spin.clinic/klinika/{data['id']}", (38, 858, 560, 890), size=18, color=MUTED)
+    # Znak spin.clinic w lewym dolnym rogu i pełny adres pod nim – kto zobaczy kartę na X, wie, gdzie wejść (właściciel 2.10.2026).
+    mark_font = _font(28, 800)
+    x0 = 40
+    top = mark_font.getbbox('spin', anchor='ls')[1]
+    for part, colour in (('spin', '#ffffff'), ('.', ACCENT), ('clinic', '#ffffff')):
+        width = draw.textlength(part, font=mark_font)
+        # pola dosuwają tekst do górnej krawędzi glifu – kropkę obniżamy o różnicę, żeby stała na linii pisma
+        dy = mark_font.getbbox(part, anchor='ls')[1] - top
+        text(part, (x0 - 2, 840 + dy, x0 + width + 6, 878 + dy), size=28, weight=800, color=colour)
+        x0 += width
+    text(f"www.spin.clinic/klinika/{data['id']}", (38, 874, 700, 900), size=16, color=MUTED)
     footer = 'Diagnoza AI · rządzący i opozycja według tych samych zasad'
     footer_x = 1560 - draw.textlength(footer, font=_font(18))
     text(footer, (footer_x - 2, 858, 1562, 890), size=18, color=MUTED)

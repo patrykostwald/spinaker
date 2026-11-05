@@ -1,5 +1,5 @@
 /**
- * Grupy źródeł (Publiczne · Media · Top media) — jedna definicja dla selektora w pasku kategorii,
+ * Grupy źródeł (Publiczne · Media · Top media) - jedna definicja dla selektora w pasku kategorii,
  * filtrów Bazy i linków w globalnej stopce. Grupa to parametr adresu `?zrodla=`, więc stopka
  * (w layoucie, poza stroną główną) może ją ustawić zwykłym linkiem.
  * Podział wyznacza backend (`portal_group`: lista wiodących mediów + instytucje publiczne); heurystyka
@@ -34,7 +34,7 @@ export function groupSources(sources: Source[]): Record<SourceGroup, Source[]> {
   return groups;
 }
 
-/** Tylko źródła, z których faktycznie pobieramy materiały — kandydaci (np. media czekające na zgodę) nie mają treści. */
+/** Tylko źródła, z których faktycznie pobieramy materiały - kandydaci (np. media czekające na zgodę) nie mają treści. */
 export function activeSources(sources: Source[]): Source[] {
   return sources.filter((source) => source.is_active !== false);
 }

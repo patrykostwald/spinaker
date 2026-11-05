@@ -9,12 +9,12 @@ from django.utils import timezone
 from news import clinic
 from news.clinic_models import SpinDiagnosis
 from news.political_models import PoliticalPost
-from news.techniques import CANONICAL_TECHNIQUES, FAMILIES, technique_groups
+from news.techniques import CANONICAL_TECHNIQUES, FAMILIES, SEMEVAL_MAP, DEFINITIONS, technique_groups
 from news.clinic_scan import scan_data
 from news.loaded_words import KINDS
 
 MIN_SAMPLE = 10
-CACHE_KEY = 'clinic-public-stats:v5'
+CACHE_KEY = 'clinic-public-stats:v6'
 
 
 def sample(count):
@@ -160,6 +160,8 @@ def stats_data():
                                            for camp, metrics in values.items()}} for day, values in daily.items()],
         'by_camp': {camp: finish(group) for camp, group in camps.items()},
         'by_party': dict(sorted(parties.items())),
+        'technique_definitions': {name: {'definition': DEFINITIONS[name], 'semeval': SEMEVAL_MAP[name]}
+                                  for name in CANONICAL_TECHNIQUES},
         'techniques': {name: {camp: sample(count) for camp, count in counts.items()} for name, counts in techniques.items()},
         'accounts': sorted(accounts.values(), key=lambda item: (-item['diagnosed'], item['account_id'], item['camp']))[:50],
     }

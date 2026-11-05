@@ -1,9 +1,11 @@
 """Owner-scoped APIs for private context threads and comment reports."""
+from news.features import ThreadsEnabledMixin
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,6 +19,12 @@ from news.models import Article, ArticleCategory, Source
 from news.topics import TOPICS
 from news.schema import json_view
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+
+class ThreadAccountsEnabled(BasePermission):
+    def has_permission(self, request, view):
+        from news.features import accounts_enabled, threads_enabled
+        return accounts_enabled() and threads_enabled()
 
 
 def article_favorite_data(row):
@@ -40,8 +48,11 @@ class ArticleFavoritesView(APIView):
 
     def get(self, request):
         rows = ArticleFavorite.objects.filter(user=request.user, article__source__is_active=True).exclude(
-            article__source__catalog_stage='excluded').select_related('article')[:100]
-        return Response({'results': [article_favorite_data(row) for row in rows]})
+            article__source__catalog_stage='excluded').select_related('article')
+        if 'page' in request.query_params:
+            from news.profiles import paginate
+            return Response(paginate(request, rows, article_favorite_data))
+        return Response({'results': [article_favorite_data(row) for row in rows[:100]]})
 
     def post(self, request):
         serializer = ArticleFavoriteInput(data=request.data)
@@ -64,11 +75,17 @@ class ArticleFavoriteDetailView(APIView):
 class ThreadItemInput(serializers.Serializer):
     article_id = serializers.IntegerField(min_value=1, required=False)
     link_id = serializers.IntegerField(min_value=1, required=False)
-    note = serializers.CharField(max_length=280, required=False, allow_blank=True, default='')
+    # przepięcie: boks z oryginalnej spinki (np. diagnoza albo wpis z X ułożony przez Dr. Spina) - materiał kopiowany 1:1
+    box_item_id = serializers.IntegerField(min_value=1, required=False)
+    # wyjaśnienie autora = „tytuł” boksu: dlaczego ten materiał jest w spince; może być długie (właściciel 3.10)
+    note = serializers.CharField(max_length=4000, required=False, allow_blank=True, default='')
+    link_note = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
+    role = serializers.ChoiceField(choices=[c for c, _ in PersonalContextThreadItem.ROLES], required=False, allow_blank=True, default='')
+    link_kind = serializers.ChoiceField(choices=[c for c, _ in PersonalContextThreadItem.LINK_KINDS], required=False, allow_blank=True, default='')
 
     def validate(self, attrs):
-        if bool(attrs.get('article_id')) == bool(attrs.get('link_id')):
-            raise serializers.ValidationError('Element nitki to materiał z Bazy albo link — dokładnie jedno z nich.')
+        if sum(bool(attrs.get(key)) for key in ('article_id', 'link_id', 'box_item_id')) != 1:
+            raise serializers.ValidationError('Element spinki to materiał z Bazy albo link - dokładnie jedno z nich.')
         return attrs
 
 
@@ -76,9 +93,18 @@ MIN_PUBLIC_ITEMS = 2
 
 
 class PersonalContextThreadSerializer(serializers.ModelSerializer):
+    opinions = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    # widoczne na liście: tytuł w jednym wierszu, podtytuł w dwóch (pomiar przy 1280 px, właściciel 4.10)
+    title = serializers.CharField(max_length=65)
+    # czytelnik wybiera rodzaj na starcie kreatora (właściciel 6.10); rodzaje Dr. Spina są zarezerwowane
+    kind = serializers.ChoiceField(choices=PersonalContextThread.READER_KINDS, required=False)
+    description = serializers.CharField(max_length=170, required=False, allow_blank=True)
     source_ids = serializers.PrimaryKeyRelatedField(source='sources', many=True,
         queryset=Source.objects.filter(is_active=True).exclude(catalog_stage='excluded'), required=False)
-    article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=100, required=False)
+    article_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=10, required=False)
+    continues = serializers.PrimaryKeyRelatedField(queryset=PersonalContextThread.objects.all(), required=False, allow_null=True)
+    repin_of = serializers.PrimaryKeyRelatedField(queryset=PersonalContextThread.objects.all(), required=False, allow_null=True)
     articles = serializers.SerializerMethodField(read_only=True)
     items = ThreadItemInput(many=True, required=False, write_only=True)
     elements = serializers.SerializerMethodField(read_only=True)
@@ -87,9 +113,9 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PersonalContextThread
-        fields = ['id', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
-                  'articles', 'items', 'elements', 'is_public', 'published_at', 'hidden_at', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'articles', 'elements', 'published_at', 'hidden_at', 'created_at', 'updated_at']
+        fields = ['id', 'kind', 'continues', 'repin_of', 'title', 'description', 'query', 'categories', 'topics', 'source_ids', 'article_ids',
+                  'articles', 'items', 'elements', 'is_public', 'published_at', 'admitted_at', 'hidden_at', 'created_at', 'updated_at', 'opinions', 'comments_count']
+        read_only_fields = ['id', 'articles', 'elements', 'published_at', 'admitted_at', 'hidden_at', 'created_at', 'updated_at']
 
     def get_articles(self, instance):
         return [
@@ -99,18 +125,25 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
             for item in instance.items.select_related('article').filter(article__isnull=False)
         ]
 
+    def get_opinions(self, instance):
+        from news.community import _counts
+        return _counts([instance.pk])[instance.pk]
+
+    def get_comments_count(self, instance):
+        return instance.comments.filter(hidden_at__isnull=True, deleted_at__isnull=True).count()
+
     def get_elements(self, instance):
         """Wszystkie elementy w kolejności: materiały z Bazy i linki, z notatkami."""
         from news.community import item_data
         return [item_data(item) for item in instance.items.select_related('article__source', 'link').all()]
 
     def validate_items(self, value):
-        if len(value) > 100:
-            raise serializers.ValidationError('Nitka może mieć najwyżej 100 elementów.')
+        if len(value) > 10:
+            raise serializers.ValidationError('Spinka może mieć najwyżej 10 boksów.')
         articles = [row['article_id'] for row in value if row.get('article_id')]
         links = [row['link_id'] for row in value if row.get('link_id')]
         if len(articles) != len(set(articles)) or len(links) != len(set(links)):
-            raise serializers.ValidationError('Jeden materiał może wystąpić w nitce tylko raz.')
+            raise serializers.ValidationError('Jeden materiał może wystąpić w spince tylko raz.')
         if set(Article.objects.filter(pk__in=articles, source__is_active=True).values_list('pk', flat=True)) != set(articles):
             raise serializers.ValidationError('Co najmniej jeden materiał nie jest dostępny.')
         if set(CommunityLink.objects.filter(pk__in=links, hidden_at__isnull=True).values_list('pk', flat=True)) != set(links):
@@ -119,11 +152,41 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        if 'items' in attrs and 'article_ids' in attrs:
+            raise serializers.ValidationError('Podaj jeden zestaw boksów.')
+        previous = attrs.get('continues')
+        if previous:
+            request = self.context.get('request')
+            if not request or previous.owner_id != request.user.pk or self.instance:
+                raise serializers.ValidationError({'continues': 'Wybierz własną poprzednią spinkę przy tworzeniu kontynuacji.'})
+            last = previous.items.last()
+            rows = attrs.get('items') or [{'article_id': pk} for pk in attrs.get('article_ids', [])]
+            if not last or not rows or (rows[0].get('article_id'), rows[0].get('link_id')) != (last.article_id, last.link_id):
+                raise serializers.ValidationError({'continues': 'Pierwszy boks musi być ostatnim boksem poprzedniej spinki.'})
+        original = attrs.get('repin_of')
+        if original:
+            from news.community import public_threads
+            if self.instance and self.instance.repin_of_id != original.pk:
+                raise serializers.ValidationError({'repin_of': 'Przepięcia nie można przenieść do innej spinki.'})
+            if not public_threads().filter(pk=original.pk).exists():
+                raise serializers.ValidationError({'repin_of': 'Przepiąć można tylko opublikowaną spinkę.'})
+            request = self.context.get('request')
+            if request and original.owner_id == request.user.pk:
+                raise serializers.ValidationError({'repin_of': 'Własną spinkę możesz po prostu edytować.'})
+            rows = attrs.get('items') or [{'article_id': pk} for pk in attrs.get('article_ids', [])]
+            key = lambda article, link, box: ('a', article) if article else ('l', link) if link else ('b', box)
+            mine = [key(row.get('article_id'), row.get('link_id'), row.get('box_item_id')) for row in rows]
+            theirs = {key(item.article_id, item.link_id, item.pk if item.box_data is not None else None)
+                      for item in original.items.all() if not (item.link_id and item.link.hidden_at)}
+            if rows and (set(mine) != theirs or len(mine) != len(set(mine))):
+                raise serializers.ValidationError({'repin_of': 'Przepięcie używa dokładnie tych samych boksów co spinka.'})
+        if not original and any(row.get('box_item_id') for row in attrs.get('items') or []):
+            raise serializers.ValidationError({'items': 'Boksy z cudzej spinki można użyć tylko w przepięciu.'})
         if attrs.get('is_public', self.instance.is_public if self.instance else False):
             from news.account_security import require_verified
             from news.community import threads_enabled
             if not threads_enabled():
-                raise serializers.ValidationError({'is_public': 'Publikacja nitek nie jest jeszcze dostępna.'})
+                raise serializers.ValidationError({'is_public': 'Publikacja spinek nie jest jeszcze dostępna.'})
             request = self.context.get('request')
             require_verified(request.user if request else self.instance.owner if self.instance else None)
             if 'items' in attrs:
@@ -133,12 +196,12 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
             else:
                 count = self.instance.items.count() if self.instance else 0
             if count < MIN_PUBLIC_ITEMS:
-                raise serializers.ValidationError({'is_public': f'Opublikować można nitkę z co najmniej {MIN_PUBLIC_ITEMS} elementami.'})
+                raise serializers.ValidationError({'is_public': f'Opublikować można spinkę z co najmniej {MIN_PUBLIC_ITEMS} elementami.'})
         return attrs
 
     def validate_article_ids(self, value):
         if len(value) != len(set(value)):
-            raise serializers.ValidationError('Jeden materiał może wystąpić w nitce tylko raz.')
+            raise serializers.ValidationError('Jeden materiał może wystąpić w spince tylko raz.')
         existing = set(Article.objects.filter(pk__in=value, source__is_active=True).values_list('pk', flat=True))
         if existing != set(value):
             raise serializers.ValidationError('Co najmniej jeden materiał nie jest dostępny.')
@@ -151,10 +214,14 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         return list(dict.fromkeys(value))
 
     def _replace_items(self, instance, rows):
+        boxes = dict(PersonalContextThreadItem.objects.filter(pk__in=[row['box_item_id'] for row in rows if row.get('box_item_id')])
+                     .values_list('pk', 'box_data'))
         PersonalContextThreadItem.objects.filter(thread=instance).delete()
         PersonalContextThreadItem.objects.bulk_create([
             PersonalContextThreadItem(thread=instance, article_id=row.get('article_id'), link_id=row.get('link_id'),
-                                      note=row.get('note', ''), position=position)
+                                      box_data=boxes.get(row.get('box_item_id')), note=row.get('note', ''), role=row.get('role', ''),
+                                      link_kind=row.get('link_kind', '') if position else '',
+                                      link_note=row.get('link_note', '') if position else '', position=position)
             for position, row in enumerate(rows)
         ])
 
@@ -175,8 +242,10 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         rows = self._rows(validated_data) or []
+        sources = validated_data.pop('sources', [])
         self._publication(validated_data)
         instance = PersonalContextThread.objects.create(**validated_data)
+        instance.sources.set(sources)
         self._replace_items(instance, rows)
         return instance
 
@@ -189,14 +258,24 @@ class PersonalContextThreadSerializer(serializers.ModelSerializer):
         return instance
 
 
-@json_view("Prywatne nitki kontekstowe", tags=["konto"])
-class PersonalContextThreadsView(APIView):
-    permission_classes = [IsAuthenticated]
+@json_view("Prywatne spinki kontekstowe", tags=["konto"])
+class PersonalContextThreadsView(ThreadsEnabledMixin, APIView):
+    permission_classes = [IsAuthenticated, ThreadAccountsEnabled]
     throttle_classes = [AccountWriteThrottle]
 
     def get(self, request):
-        rows = PersonalContextThread.objects.filter(owner=request.user).prefetch_related('items__article', 'sources')[:100]
-        return Response({'results': PersonalContextThreadSerializer(rows, many=True).data})
+        rows = PersonalContextThread.objects.filter(owner=request.user).prefetch_related('items__article', 'sources')
+        state = serializers.ChoiceField(choices=['all', 'draft', 'published', 'hidden']).run_validation(request.query_params.get('status', 'all'))
+        if state == 'draft':
+            rows = rows.filter(is_public=False, hidden_at__isnull=True)
+        elif state == 'published':
+            rows = rows.filter(is_public=True, hidden_at__isnull=True)
+        elif state == 'hidden':
+            rows = rows.filter(hidden_at__isnull=False)
+        if 'page' in request.query_params:
+            from news.profiles import paginate
+            return Response(paginate(request, rows, lambda row: PersonalContextThreadSerializer(row).data))
+        return Response({'results': PersonalContextThreadSerializer(rows[:100], many=True).data})
 
     def post(self, request):
         serializer = PersonalContextThreadSerializer(data=request.data, context={'request': request})
@@ -206,10 +285,10 @@ class PersonalContextThreadsView(APIView):
         return Response(PersonalContextThreadSerializer(instance).data, status=201)
 
 
-@json_view("Prywatna nitka kontekstowa", tags=["konto"])
+@json_view("Prywatna spinka kontekstowa", tags=["konto"])
 @extend_schema_view(get=extend_schema(operation_id="account_context_threads_detail_retrieve"))
-class PersonalContextThreadDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+class PersonalContextThreadDetailView(ThreadsEnabledMixin, APIView):
+    permission_classes = [IsAuthenticated, ThreadAccountsEnabled]
     throttle_classes = [AccountWriteThrottle]
 
     def _get(self, request, thread_id):
@@ -256,6 +335,10 @@ class CommentReportsView(APIView):
         if values.get('article_opinion_id'):
             target['article_opinion'] = get_object_or_404(ArticleOpinion, pk=values['article_opinion_id'])
         else:
+            from news.features import threads_enabled
+            if not threads_enabled():
+                from django.http import Http404
+                raise Http404
             target['thread_opinion'] = get_object_or_404(ThreadOpinion, pk=values['thread_opinion_id'])
         try:
             with transaction.atomic():

@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./lib/api";
+export * from "./lib/typography";
 export * from "./lib/utils";
 export * from "./lib/portal";
 export * from "./lib/useDebouncedValue";
@@ -46,7 +47,8 @@ export { AIResearch } from './components/AIResearch';
 
 export { SourcesCatalog } from './components/SourcesCatalog';
 export { PoliticalReview } from './components/PoliticalReview';
-export { AccountProfile, PublicAccountProfile } from './components/AccountProfile';
+export { AccountProfile } from './components/AccountProfile';
+export { PublicSocialProfile as PublicAccountProfile } from './components/PublicSocialProfile';
 export { ThreadFavoriteButton } from './components/ThreadFavoriteButton';
 
 export { PublicFigureProfile } from "./components/PublicFigureProfile";
@@ -54,14 +56,17 @@ export { PublicFigureDirectory, PublicFigurePage } from "./components/PublicFigu
 export * from "./lib/publicFigures";
 export { ClinicDatabase } from "./components/clinic/ClinicDatabase";
 export { ClinicInterviewArchive, ClinicMessageArchive, ClinicInterviewPage } from "./components/clinic/ClinicArchives";
+export { InterviewVoting } from "./components/clinic/InterviewVoting";
 export { ClinicPage } from "./components/clinic/ClinicPage";
 export { WeeklyReport } from "./components/clinic/WeeklyReport";
 export { ReportArchive } from "./components/clinic/ReportArchive";
 export { MessageDetail } from "./components/clinic/MessageDetail";
 export * from "./lib/clinicReports";
 export { SpinDetail } from "./components/clinic/SpinDetail";
+export { ClinicCorrections } from "./components/clinic/ClinicCorrections";
 export { ClinicQueue } from "./components/clinic/ClinicQueue";
 export { ClinicIndicators, ClinicShowcase } from "./components/clinic/ClinicIndicators";
+export { ClinicNav } from "./components/clinic/ClinicNav";
 export { NewsletterSignup, NEWSLETTER_CONSENT } from "./components/NewsletterSignup";
 export { ShareThreadOnX } from "./components/ShareThreadOnX";
 export { TouchScrollGuard } from "./components/TouchScrollGuard";
@@ -74,13 +79,24 @@ export * from "./lib/community";
 export * from "./lib/features";
 export { HowItWorksFilm } from "./components/HowItWorksFilm";
 export { CouncilRecruitmentLog, CouncilRoster } from "./components/clinic/CouncilRoster";
+export { CouncilLoops } from "./components/clinic/CouncilLoops";
 export { siteNavigation, socialChannels } from "./lib/siteNavigation";
 
 export { sourceDirectory, directoryGroup, channelIdentity } from "./lib/sourceDirectory";
 export { CommandPanel } from './components/CommandPanel';
+export { PetlePanel } from './components/PetlePanel';
 
 export { AccountRecovery } from "./components/AccountRecovery";
 export { AccountDelete } from "./components/AccountDelete";
 export { TERMS_VERSION } from './lib/account';
 
 export { HowToRead } from "./components/clinic/SpinParts";
+
+export { SEMEVAL_MAP, SEMEVAL_UNRECOGNIZED } from "./lib/semeval";
+export { SocialPanel, SocialInbox, SocialPasswordSetup } from './components/SocialPanel';
+
+export { ThreadAppealPage } from './components/community/ThreadAppealPage';
+export { SocialNavigation } from './components/community/SocialNavigation';
+export { SectionBar } from './components/community/SectionBar';
+// „Wcześniej i teraz” (13.10.2026): strona jednej pary (/klinika/stanowiska/<id>); funkcje i typy pary w "@spin-clinic/ui/kit"
+export { PositionPairPage } from './components/clinic/PositionPairPage';

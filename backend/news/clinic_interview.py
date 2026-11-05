@@ -18,6 +18,7 @@ from datetime import timedelta
 import requests
 
 from news.techniques import CATEGORY_PROMPT, CATEGORY_SCHEMA, technique_category
+from django.core.cache import cache
 from django.utils import timezone
 
 from news import clinic_ai
@@ -168,12 +169,11 @@ def _transcribe_part(url: str, start: int | None = None, end: int | None = None)
     body = {
         'contents': [{'parts': [part, {'text': prompt}]}],
         'generationConfig': {'responseMimeType': 'application/json', 'responseSchema': TRANSCRIPT_SCHEMA,
-                             'mediaResolution': 'MEDIA_RESOLUTION_LOW', 'maxOutputTokens': 60000, 'temperature': 0},
+                             'mediaResolution': 'MEDIA_RESOLUTION_LOW', 'maxOutputTokens': 60000, 'temperature': 0,
+                             **clinic_ai.gemini_thinking('transcript')},
     }
     try:
-        response = requests.post(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
-                                 json=body, timeout=(10, 900),
-                                 headers={'x-goog-api-key': os.environ['GEMINI_API_KEY'].strip()})
+        response = clinic_ai.gemini_post(model, body, timeout=(10, 900), task='transcript')
     except requests.RequestException:
         raise clinic_ai.ClinicAIError('gemini_connection')
     if response.status_code != 200:
@@ -187,7 +187,7 @@ def _transcribe_part(url: str, start: int | None = None, end: int | None = None)
         raise clinic_ai.ClinicAIError(f'gemini_invalid_json {reason}'.strip())
     usage = payload.get('usageMetadata', {})
     return data, {'model': model, 'input_tokens': usage.get('promptTokenCount', 0),
-                  'output_tokens': usage.get('candidatesTokenCount', 0)}
+                  'output_tokens': clinic_ai.gemini_output_tokens(usage)}
 
 
 def _chunk(url: str, start: int, end: int) -> tuple[list[dict], dict, dict]:
@@ -328,7 +328,7 @@ def diagnose_transcript(meta: dict, transcript: str) -> dict:
             if 'credit balance' not in error.code.lower() and error.code != 'connection':
                 raise
     if response is None:
-        response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000)
+        response = clinic_ai._call_gemini(INTERVIEW_SYSTEM, user, INTERVIEW_SCHEMA, web_search=True, max_tokens=24000, task='interview')
     data = clinic_ai._json_from_text(response.content)
     result = clean_interview(data, transcript, clinic_ai._search_results(response.content))
     result['usage'] = clinic_ai._usage(response)
@@ -410,14 +410,39 @@ def claim(interview: ClinicInterview) -> bool:
     taken = ClinicInterview.objects.filter(pk=interview.pk, status='queued').update(status=IN_PROGRESS)
     if taken:
         interview.status = IN_PROGRESS
+        cache.set(_claim_key(interview.pk), timezone.now().isoformat(), CLAIM_TTL)
     return bool(taken)
 
 
-def run_interviews(limit: int = 1) -> dict:
+# Znacznik „w trakcie” żyje dłużej niż najdłuższe zadanie (30 min). Gdy go brak, proces padł (limit czasu,
+# restart przy wgraniu wersji) i wywiad wraca do kolejki zamiast utknąć na zawsze (właściciel 2.10.2026).
+CLAIM_TTL = 40 * 60
+
+
+def _claim_key(pk) -> str:
+    return f'clinic-interview-claim-{pk}'
+
+
+def release_stuck() -> list[int]:
+    stuck = [pk for pk in ClinicInterview.objects.filter(status=IN_PROGRESS).values_list('pk', flat=True)
+             if cache.get(_claim_key(pk)) is None]
+    if stuck:
+        ClinicInterview.objects.filter(pk__in=stuck, status=IN_PROGRESS).update(status='queued')
+        logger.warning('interview: wywiady %s utknęły w trakcie opracowania, wracają do kolejki', stuck)
+    return stuck
+
+
+def run_interviews(limit: int = 1, *, day=None) -> dict:
     if not enabled():
         return {'status': 'disabled'}
     done = {}
-    for interview in ClinicInterview.objects.filter(status='queued').order_by('created_at')[:limit]:
+    released = release_stuck()
+    if released:
+        done['released'] = released
+    queued = ClinicInterview.objects.filter(status='queued')
+    if day is not None:
+        queued = queued.filter(day=day)
+    for interview in queued.order_by('created_at')[:limit]:
         if not claim(interview):
             continue
         process(interview)
@@ -431,10 +456,16 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
     if not interview:
         return None
     from news.clinic import ASSESSMENT_LABELS
+    from news.clinic_discussion import counts
     from news.clinic_models import VERDICTS
+    from news.interview_votes import selection_label
     guest = interview.guest_analysis or {}
     return {
+        'opinions': {'positive': interview.positive_count, 'negative': interview.negative_count} if hasattr(interview, 'positive_count') else counts(interview.opinions.all()),
+        'comment_count': interview.discussion_count if hasattr(interview, 'discussion_count') else interview.comments.count(),
         'id': interview.pk, 'day': interview.day, 'url': interview.url, 'video_id': interview.video_id,
+        'selection_label': selection_label(interview), 'selection_method': interview.selection_method,
+        'selection_votes': interview.selection_votes,
         'title': interview.title, 'channel': interview.channel, 'thumbnail_url': interview.thumbnail_url,
         'guest_name': interview.guest_name, 'guest_role': interview.guest_role, 'host_name': interview.host_name,
         'headline': interview.headline, 'summary': interview.summary, 'overall': interview.overall,
@@ -449,7 +480,12 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
 
 
 def _published_interviews():
-    return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).order_by('-day', '-diagnosed_at')
+    from django.db.models import Count, Q
+    return ClinicInterview.objects.filter(status='approved', hidden_at__isnull=True).annotate(
+        positive_count=Count('opinions', filter=Q(opinions__polarity='positive'), distinct=True),
+        negative_count=Count('opinions', filter=Q(opinions__polarity='negative'), distinct=True),
+        discussion_count=Count('comments', distinct=True),
+    ).order_by('-day', '-diagnosed_at')
 
 
 def _edition(limit: int = 12):
@@ -548,12 +584,17 @@ def _duration_seconds(iso: str) -> int:
     return ((days * 24 + hours) * 60 + minutes) * 60 + secs
 
 
-def _politician_names() -> list[str]:
-    """Nazwiska polityków z oficjalnych kont czytanych w Klinice — do rozpoznania, że film jest z politykiem."""
+def _politician_full_names() -> set[str]:
     from news.clinic import figures_by_account, reading_accounts
     accounts = list(reading_accounts())
     figures = figures_by_account([account.pk for account in accounts])
     names = {(figures[account.pk].canonical_name if account.pk in figures else account.display_name) for account in accounts}
+    return names
+
+
+def _politician_names() -> list[str]:
+    """Nazwiska polityków z oficjalnych kont czytanych w Klinice — do rozpoznania, że film jest z politykiem."""
+    names = _politician_full_names()
     party_words = ('partia', 'prawo', 'platforma', 'polska', 'polski', 'konfederacja', 'lewica', 'stronnictwo',
                    'obywatelsk', 'ruch', 'korona', 'klub', 'koalicja', 'razem', 'republika')
     surnames = set()
@@ -735,17 +776,53 @@ def rank_interviews(day) -> list[dict]:
         if not snippet['top'] and loudness < HOT_LOUDNESS:
             continue
         ranked.append({'video_id': item['id'], 'loudness': loudness, 'score': loudness * (3 if snippet['top'] else 1),
+                       'views': int(stats.get('viewCount', 0)),
+                       'duration': _duration_seconds((item.get('contentDetails') or {}).get('duration', '')),
                        'title': snippet.get('title', ''), 'description': snippet.get('description', ''),
                        'channel': snippet.get('channelTitle', ''), 'top': snippet['top']})
     return sorted(ranked, key=lambda row: row['score'], reverse=True)
 
 
-def find_loudest_interview(day, exclude=()) -> dict | None:
-    """Pierwszy z rankingu, który darmowy klasyfikator uznał za wywiad (tytuł i opis) — dopiero on idzie do płatnej analizy."""
+def reader_pick_enabled() -> bool:
+    """Dwa wywiady dnia (właściciel 4.10): pierwszy wybiera Dr. Spin (ranking wyświetleń), drugi czytelnicy głosami."""
+    return os.environ.get('INTERVIEW_READER_PICK', 'true').strip().lower() == 'true'
+
+
+def reader_min_votes() -> int:
+    try:
+        return max(1, int(os.environ.get('INTERVIEW_READER_MIN_VOTES', '3')))
+    except ValueError:
+        return 3
+
+
+def find_loudest_interview(day, exclude=(), mode=None, exclude_guests=()) -> dict | None:
+    """Głosy, potem dotychczasowy ranking. Pomijamy gościa z poprzedniego dnia.
+    mode='auto': tylko ranking wyświetleń (wybór Dr. Spina); mode='votes': tylko głosy czytelników (min. próg)."""
+    from news.interview_votes import ranked_candidates, previous_guest_keys
     names = set(_politician_names()) | set(_top_politicians())
-    for candidate in rank_interviews(day)[:8]:
-        if candidate['video_id'] in exclude:
-            continue
+    previous_keys, previous_name = previous_guest_keys(day)
+    rows = list(ranked_candidates(day))
+    eligible = [row for row in rows if row.video_id not in exclude
+                and not previous_keys.intersection(row.guest_keys)
+                and not (previous_name and previous_name == row.guest_name.casefold().strip())]
+    if mode == 'auto':
+        eligible = sorted((row for row in eligible if row.from_ranking), key=lambda row: (-row.score, -row.views, row.video_id))
+    if mode == 'votes':
+        guests = {name.casefold().strip() for name in exclude_guests if name}
+        eligible = [row for row in eligible if row.vote_count >= reader_min_votes()
+                    and row.guest_name.casefold().strip() not in guests]
+    for row in eligible:
+        candidate = {key: getattr(row, key) for key in ('video_id', 'title', 'description', 'channel', 'loudness', 'top', 'guest_name')}
+        tied = row.vote_count > 0 and sum(other.vote_count == row.vote_count for other in eligible) > 1
+        candidate.update(selection_votes=row.vote_count,
+                         selection_method='tie' if tied else 'votes' if row.vote_count else 'views')
+        if mode == 'auto':
+            candidate.update(selection_votes=0, selection_method='views')
+        if mode == 'votes':
+            candidate['selection_method'] = 'votes'
+            return candidate
+        if mode != 'auto' and (row.vote_count or not row.from_ranking):
+            return candidate
         import time
         ok, reason = looks_like_interview(candidate['title'], candidate['description'], candidate['channel'])
         if ok is None:
@@ -758,17 +835,102 @@ def find_loudest_interview(day, exclude=()) -> dict | None:
     return None
 
 
-def pick_yesterday() -> dict:
-    """Codziennie rano: najważniejszy wywiad z politykiem z poprzedniego dnia (jeśli zespół nie wskazał go sam)."""
+TRANSIENT_ERRORS = ('gemini_402', 'gemini_429', 'gemini_5', 'gemini_connection', 'gemini_daily_budget', 'youtube_quota',
+                    'connection', 'rate_limited', 'free_models_unavailable', 'timeout')
+
+
+def _transient_error_q():
+    from django.db.models import Q
+    query = Q()
+    for prefix in TRANSIENT_ERRORS:
+        query |= Q(error__startswith=prefix)
+    return query
+
+
+def _queue_pick(day, best):
+    interview = queue_interview(f"https://www.youtube.com/watch?v={best['video_id']}", day)
+    interview.title, interview.channel = best['title'], best['channel']
+    interview.guest_name = best.get('guest_name', '')[:200]
+    interview.selection_method = best.get('selection_method', 'views')
+    interview.selection_votes = best.get('selection_votes', 0)
+    interview.save(update_fields=['title', 'channel', 'guest_name', 'selection_method', 'selection_votes'])
+    return interview
+
+
+def _pick_two(day, *, next_candidate=False):
+    """Wybór Dr. Spina (ranking) i wybór czytelników (głosy, próg). Każdy wybór liczony osobno; powtórne wywołanie
+    uzupełnia tylko brakujący. Błąd chwilowy wraca do kolejki jak dotąd."""
+    active = ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'approved', 'pending_review'])
+    has_readers = active.filter(selection_method__in=['votes', 'tie']).exists()
+    has_auto = active.exclude(selection_method__in=['votes', 'tie']).exists()
+    retry = (ClinicInterview.objects.filter(day=day, status='failed').filter(_transient_error_q()).order_by('created_at').first())
+    if retry and not next_candidate:
+        retry.status, retry.error = 'queued', ''
+        retry.save(update_fields=['status', 'error'])
+        return {'status': 'requeued', 'day': str(day), 'id': retry.pk, 'title': retry.title}
+    tried = set(ClinicInterview.objects.values_list('video_id', flat=True))
+    queued, first_best = [], None
+    if not has_auto:
+        best = find_loudest_interview(day, exclude=tried, mode='auto')
+        if best:
+            queued.append(_queue_pick(day, best))
+            first_best = best
+            tried.add(best['video_id'])
+    if not has_readers:
+        guests = list(active.values_list('guest_name', flat=True)) + [row.guest_name for row in queued]
+        best = find_loudest_interview(day, exclude=tried, mode='votes', exclude_guests=guests)
+        if best:
+            interview = _queue_pick(day, best)
+            queued.append(interview)
+            from news.notify import queue_event
+            queue_event('vote_result', interview.pk)
+    if not queued:
+        return {'status': 'already_chosen' if has_auto or has_readers else 'none_found', 'day': str(day)}
+    first = queued[0]
+    extra = {'loudness': first_best['loudness'], 'top_politician': first_best['top']} if first_best else {}
+    return {'status': 'queued', 'day': str(day), 'id': first.pk, 'title': first.title, 'channel': first.channel,
+            'ids': [row.pk for row in queued]} | extra
+
+
+def pick_yesterday(*, next_candidate=False) -> dict:
+    """Głosowanie zamyka się o 7:00; beat i Ratownik korzystają z tego samego wyniku."""
     if not enabled():
         return {'status': 'disabled'}
-    day = timezone.localdate() - timedelta(days=1)
-    if ClinicInterview.objects.filter(day=day, status__in=['queued', 'approved']).exists():
+    from django.db import transaction
+    from news.interview_votes import yesterday, closing_at, lock_ballot
+    day = yesterday()
+    if timezone.now() < closing_at(day):
+        return {'status': 'voting_open', 'day': str(day)}
+    with transaction.atomic():
+        lock_ballot(day)  # serializes selection with the last vote and concurrent rescuers
+        return _pick_day(day, next_candidate=next_candidate)
+
+
+def _pick_day(day, *, next_candidate=False):
+    if reader_pick_enabled():
+        return _pick_two(day, next_candidate=next_candidate)
+    if ClinicInterview.objects.filter(day=day, status__in=['queued', 'flagged', 'approved', 'pending_review']).exists():
         return {'status': 'already_chosen', 'day': str(day)}
-    tried = set(ClinicInterview.objects.filter(day=day).values_list('video_id', flat=True))
+    # Błąd chwilowy (brak środków, limit) nie przekreśla wywiadu: po doładowaniu wraca do kolejki (właściciel 2.10).
+    retry = (ClinicInterview.objects.filter(day=day, status='failed')
+             .filter(_transient_error_q()).order_by('created_at').first())
+    if retry and not next_candidate:
+        retry.status, retry.error = 'queued', ''
+        retry.save(update_fields=['status', 'error'])
+        return {'status': 'requeued', 'day': str(day), 'id': retry.pk, 'title': retry.title}
+    # Ranking includes overnight uploads, so a video can occur in two daily pools.
+    # Never move an existing interview to another day via queue_interview().
+    tried = set(ClinicInterview.objects.values_list('video_id', flat=True))
     best = find_loudest_interview(day, exclude=tried)
     if not best:
         return {'status': 'none_found', 'day': str(day)}
     interview = queue_interview(f"https://www.youtube.com/watch?v={best['video_id']}", day)
+    interview.title, interview.channel = best['title'], best['channel']
+    interview.guest_name = best.get('guest_name', '')[:200]
+    interview.selection_method = best.get('selection_method', 'views')
+    interview.selection_votes = best.get('selection_votes', 0)
+    interview.save(update_fields=['title', 'channel', 'guest_name', 'selection_method', 'selection_votes'])
+    from news.notify import queue_event
+    queue_event('vote_result', interview.pk)
     return {'status': 'queued', 'day': str(day), 'id': interview.pk, 'title': best['title'], 'channel': best['channel'],
             'loudness': best['loudness'], 'top_politician': best['top']}

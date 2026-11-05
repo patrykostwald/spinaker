@@ -6,6 +6,8 @@ const publicFeatures = {
   THREADS_ENABLED: process.env.NEXT_PUBLIC_THREADS_ENABLED === 'true',
   PUSH_ENABLED: process.env.NEXT_PUBLIC_PUSH_ENABLED === 'true',
   APP_ENABLED: process.env.NEXT_PUBLIC_APP_ENABLED === 'true',
+  // „Wcześniej i teraz” (zmiana stanowiska): domyślnie wyłączona; w podglądzie właściciela (cookie sc_preview) włączona
+  POSITION_PAIRS_ENABLED: process.env.NEXT_PUBLIC_POSITION_PAIRS === 'true',
 };
 export type FeatureName = keyof typeof publicFeatures;
 export function isPreview() {

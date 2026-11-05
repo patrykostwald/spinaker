@@ -50,9 +50,9 @@ export default function SourcesPage() {
   return <InfoPage className="sc-source-page" eyebrow="KATALOG" title="Źródła"
     lead="Źródła wiadomości: aktywne oraz kandydatury czekające na weryfikację kanału i zasad wykorzystania. Dowody do konkretnej diagnozy znajdziesz przy jej twierdzeniach.">
     <dl className="sc-source-page__stats">
-      <div><dt>W katalogu</dt><dd>{stats?.catalog_total ?? '—'}</dd></div>
-      <div><dt>Aktywne</dt><dd>{stats?.active ?? '—'}</dd></div>
-      <div><dt>Oczekuje na odpowiedź</dt><dd>{stats?.awaiting_response ?? '—'}</dd></div>
+      <div><dt>W katalogu</dt><dd>{stats?.catalog_total ?? '-'}</dd></div>
+      <div><dt>Aktywne</dt><dd>{stats?.active ?? '-'}</dd></div>
+      <div><dt>Oczekuje na odpowiedź</dt><dd>{stats?.awaiting_response ?? '-'}</dd></div>
     </dl>
     <section className="sc-source-page__suggestion"><p>ROZBUDOWA BAZY</p><h2>Zaproponuj źródło</h2><p>Podaj adres strony, którą warto sprawdzić. Każde źródło weryfikujemy przed uruchomieniem.</p>
       <form className="sc-search-form" onSubmit={suggest}><SearchField label="Adres proponowanego źródła" value={suggestion} onChange={setSuggestion} placeholder="https://…" inputType="url" required /><Button type="submit" variant="primary" disabled={!contact}>Wyślij sugestię</Button></form>

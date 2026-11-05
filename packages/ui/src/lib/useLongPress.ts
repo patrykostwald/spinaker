@@ -3,7 +3,7 @@
 import { useRef, type PointerEvent } from "react";
 
 /**
- * Przytrzymanie palcem (ok. 0,45 s) wywołuje akcję — np. rozwija przycięty wpis albo wywiad na telefonie.
+ * Przytrzymanie palcem (ok. 0,45 s) wywołuje akcję - np. rozwija przycięty wpis albo wywiad na telefonie.
  * Tylko dotyk: mysz i pióro nie reagują. Ruch palca (przewijanie) anuluje przytrzymanie.
  */
 export function useLongPress(action: () => void, delay = 450) {

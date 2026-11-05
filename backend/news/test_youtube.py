@@ -238,3 +238,10 @@ def test_mixed_channels_keep_only_public_affairs():
     assert public_affairs('Tusk o budżecie na 2027 rok')
     assert public_affairs('Gość Radia ZET: minister zdrowia')
     assert not public_affairs('Najlepsze hity lata 2026 — składanka')
+
+
+def test_kanal_zero_parsing_helpers():
+    from news.management.commands.kanal_zero import NAME_AT_START, series, seconds, fold
+    assert NAME_AT_START.match('RADOSŁAW SIKORSKI: Rosja nie wygra | Rozmowa Kanału Zero').group(1) == 'RADOSŁAW SIKORSKI'
+    assert series('Tytuł | Raport Międzynarodowy') == 'Raport Międzynarodowy'
+    assert seconds('PT1H2M3S') == 3723 and fold('Łódź') == 'łodz'

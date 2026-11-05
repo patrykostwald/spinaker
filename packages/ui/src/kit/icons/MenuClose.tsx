@@ -6,7 +6,7 @@ import { iconStroke, iconA11yProps } from "./types";
 import { useMotionTokens } from "../motion/useMotionTokens";
 
 export interface MenuCloseProps extends IconProps {
-  /** false — hamburger (menu); true — krzyżyk (close). Trzy kreski morfują transformem/opacity. */
+  /** false - hamburger (menu); true - krzyżyk (close). Trzy kreski morfują transformem/opacity. */
   open: boolean;
 }
 

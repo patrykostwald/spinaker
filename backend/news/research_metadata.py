@@ -143,7 +143,7 @@ _NETWORK = FastNetwork()
 def _claim(job_id, source_id):
     now = timezone.now()
     with transaction.atomic():
-        job = ArchiveJob.objects.select_for_update().select_related('source').filter(pk=job_id).first()
+        job = ArchiveJob.objects.select_for_update(of=('self',)).select_related('source').filter(pk=job_id).first()
         if (job is None or job.source_id != source_id or job.kind != 'page'
                 or job.status not in ('pending', 'error', 'running')
                 or job.available_at > now or not source_accepts(job.source, job.url)):
