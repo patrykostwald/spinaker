@@ -267,6 +267,9 @@ export type ClinicAccount = {
 
 export const CAMP_LABELS: Record<Camp, string> = { government: "Rządzący", opposition: "Opozycja" };
 export const CAMPS: Camp[] = ["government", "opposition"];
+// Konta spoza dwóch obozów (koła, niezrzeszeni) mają diagnozy, ale nie wchodzą do porównań obozów.
+export const campLabel = (camp: string) =>
+  (CAMP_LABELS as Record<string, string>)[camp] ?? (camp === "other" ? "Inni i niezrzeszeni" : camp === "public" ? "Instytucja publiczna" : "");
 
 export const getClinicPage = () => apiFetch<ClinicPageData>("/api/clinic/");
 export type ArchivePage<T> = { results: T[]; next_page: number | null; count: number };

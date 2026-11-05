@@ -31,7 +31,8 @@ def approve_rss(source):
 def test_catalog():
     assert len(RSS_SOURCES) == 43  # The brief labels this as 42, but lists 43.
     assert len(INSTITUTIONS) == 16
-    assert len(TWITTER_POLITICIANS) == 40
+    assert len(TWITTER_POLITICIANS) == 39  # 23.10: bez „sjnowacka” (nieustalony właściciel)
+    assert 'sjnowacka' not in TWITTER_POLITICIANS
     assert len(NEWSAPI_TOPICS) == 20
 
 def test_dates_and_urls():

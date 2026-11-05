@@ -19,16 +19,23 @@ export type VoteListRow = {
   id: string; term: number; sitting: number; number: number; title: string; motion: string; date: string | null; kind: string;
   result: { yes?: number; no?: number; abstain?: number; notParticipating?: number } | null;
   majority: { type: string; votes: number } | null; outcome: VoteOutcome | string; url: string; club_votes?: ClubVotes;
+  /** rodzaj PE: liczba głosów europosłów z Polski */
+  polish?: Record<string, number>;
 };
+/** Rodzaj głosowania (dopisek 23.10): Sejm, komisje, Senat, PE; pusty rodzaj z opisem braku. */
+export type VoteKindKey = 'sejm' | 'komisje' | 'senat' | 'pe';
+export type VoteKind = { key: VoteKindKey; label: string; count: number; available: boolean; source: string; url: string; note: string };
+export const VOTE_KINDS: VoteKindKey[] = ['sejm', 'komisje', 'senat', 'pe'];
 export type VotesListResponse = {
   results: VoteListRow[]; total: number; page: number; pages: number; per_page: number;
   filter: { kadencja: number | null; klub: string | null; od: string | null; do: string | null; wynik: string | null; q: string };
   clubs: string[];
-  coverage: { scope: string; complete: boolean; description: string; total_votings: number; terms: { term: number; votings: number; first: string | null; last: string | null }[] };
+  kinds?: VoteKind[];
+  coverage: { scope: string; complete: boolean; description: string; total_votings: number; terms: { term: number; votings: number; first: string | null; last: string | null }[] } | null;
 };
 
-export type VoteFilters = { q: string; klub: string; wynik: '' | VoteOutcome; od: string; do: string };
-export const EMPTY_FILTERS: VoteFilters = { q: '', klub: '', wynik: '', od: '', do: '' };
+export type VoteFilters = { q: string; klub: string; wynik: '' | VoteOutcome; od: string; do: string; rodzaj: VoteKindKey };
+export const EMPTY_FILTERS: VoteFilters = { q: '', klub: '', wynik: '', od: '', do: '', rodzaj: 'sejm' };
 export const MIN_QUERY = 3;
 export const MAX_QUERY = 120;
 export const PER_PAGE = 20;
@@ -41,7 +48,8 @@ export function buildVotesQuery(f: VoteFilters, page = 1, perPage = PER_PAGE): s
   const p = new URLSearchParams();
   const q = f.q.trim().slice(0, MAX_QUERY);
   if (q.length >= MIN_QUERY) p.set('q', q);
-  if (f.klub.trim()) p.set('klub', f.klub.trim());
+  if (f.rodzaj && f.rodzaj !== 'sejm') p.set('rodzaj', f.rodzaj);
+  if (f.klub.trim() && (f.rodzaj ?? 'sejm') === 'sejm') p.set('klub', f.klub.trim());
   if ((OUTCOMES as string[]).includes(f.wynik)) p.set('wynik', f.wynik);
   let od = validDay(f.od) ? f.od : '', do_ = validDay(f.do) ? f.do : '';
   if (od && do_ && od > do_) [od, do_] = [do_, od]; // API odrzuca od > do (400)
@@ -61,6 +69,7 @@ export function parseFilters(search: string): VoteFilters {
     q: (p.get('q') ?? '').slice(0, MAX_QUERY), klub: (p.get('klub') ?? '').slice(0, 40),
     wynik: (OUTCOMES as string[]).includes(wynik) ? (wynik as VoteOutcome) : '',
     od: validDay(od) ? od : '', do: validDay(do_) ? do_ : '',
+    rodzaj: (VOTE_KINDS as string[]).includes(p.get('rodzaj') ?? '') ? (p.get('rodzaj') as VoteKindKey) : 'sejm',
   };
 }
 
@@ -68,6 +77,7 @@ export function parseFilters(search: string): VoteFilters {
 export function filtersToSearch(f: VoteFilters): string {
   const p = new URLSearchParams();
   if (f.q.trim().length >= MIN_QUERY) p.set('q', f.q.trim());
+  if (f.rodzaj && f.rodzaj !== 'sejm') p.set('rodzaj', f.rodzaj);
   if (f.klub) p.set('klub', f.klub);
   if (f.wynik) p.set('wynik', f.wynik);
   if (f.od) p.set('od', f.od);
@@ -76,7 +86,7 @@ export function filtersToSearch(f: VoteFilters): string {
   return s ? `?${s}` : '';
 }
 
-export const hasFilters = (f: VoteFilters) => Boolean(f.q.trim() || f.klub || f.wynik || f.od || f.do);
+export const hasFilters = (f: VoteFilters) => Boolean(f.q.trim() || f.klub || f.wynik || f.od || f.do || (f.rodzaj && f.rodzaj !== 'sejm'));
 export const queryTooShort = (q: string) => q.trim().length > 0 && q.trim().length < MIN_QUERY;
 
 export const OUTCOME_LABEL: Record<string, string> = { przyjete: 'przyjęte', odrzucone: 'odrzucone', nieustalone: 'wynik nieustalony' };

@@ -622,6 +622,8 @@ def diagnose(context: dict) -> dict:
         f"Załączniki: {context.get('media_notes') or 'brak'}",
         '', 'Treść posta:', '<<<', context['text'], '>>>',
     ])
+    from news import urzedy
+    user += '\n\n' + urzedy.blok()  # Korektor 23.10: aktualne urzędy zamiast wiedzy modelu (np. „prezydent Andrzej Duda”)
     # Modele dostają też opis zdjęć, nagrań i podglądy linków.
     from news.post_attachments import describe
     from news.clinic_video_stats import video_camp
@@ -732,6 +734,8 @@ def daily_message(camp_label: str, day: str, posts: list[dict], *, models=None) 
     from news.message_structure import clean_structure
     from news import inception
     prompt, included = _daily_material(camp_label, day, posts)
+    from news import urzedy
+    prompt += '\n\n' + urzedy.blok()  # Korektor 23.10
     camp = 'opposition' if camp_label.casefold() in ('opozycja', 'opposition') else 'government'
     models = tuple(models) if models is not None else DAILY_FREE_MODELS
     if not models or len(models) > len(DAILY_MESSAGE_MODELS) or any(m not in DAILY_MESSAGE_MODELS for m in models):
@@ -885,7 +889,8 @@ def _x_thread_input(diagnosis: dict) -> str:
     lines += [f"- {t.get('name', '')}: „{t.get('quote', '')}” — {t.get('explanation', '')}" for t in diagnosis.get('techniques') or []]
     lines += ['', 'Twierdzenia:']
     lines += [f"- [{c.get('assessment_label', '')}] {c.get('claim', '')} — {c.get('explanation', '')} Źródła: {c.get('sources', [])}" for c in checked_claims(diagnosis.get('claims'))]
-    return '\n'.join(lines)[:9000]
+    from news import urzedy
+    return '\n'.join(lines)[:9000] + '\n\n' + urzedy.blok()  # Korektor 23.10
 
 
 def x_thread(diagnosis: dict) -> dict:

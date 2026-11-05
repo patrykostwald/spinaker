@@ -183,7 +183,7 @@ export function Foot() {
     setInstalled(window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
   }, []);
   return <footer className="px-foot"><span>przeszłość.today prowadzi iapply sp. z&nbsp;o.o. · <a href="https://spin.clinic" target="_blank" rel="noopener noreferrer">dane wspólne ze spin.clinic</a></span>
-    <span><a href="/przeszlosc/jak-to-dziala">Jak to działa</a> · <a href="/przeszlosc/poprawki">Poprawki</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a>{app && <> · <a href="/przeszlosc/aplikacja">{installed ? 'Aplikacja' : 'Zainstaluj aplikację'}</a></>}</span></footer>;
+    <span><a href="/przeszlosc/jak-to-dziala">Jak to działa</a> · <a href="/przeszlosc/poprawki">Poprawki</a> · <a href="/przeszlosc/dane">Stan danych</a> · <a href="https://spin.clinic/polityka-prywatnosci">Prywatność</a>{app && <> · <a href="/przeszlosc/aplikacja">{installed ? 'Aplikacja' : 'Zainstaluj aplikację'}</a></>}</span></footer>;
 }
 
 /** Obserwuj temat albo osobę (sprint 1): e-mail, zgoda, podwójne potwierdzenie; jeden list dziennie o 7:00. */

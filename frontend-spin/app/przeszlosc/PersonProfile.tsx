@@ -7,6 +7,8 @@ import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './Op
 import { WMediach } from './WMediach';
 import { Przybornik, personTools } from './Przybornik';
 import { sumLine } from './DrzewoPieniedzy';
+import { Przeplywy } from './Przeplywy';
+import { GlosowaniaOsoby } from './GlosowaniaOsoby';
 import { Siec, type NetAvailability } from './Siec';
 import { Najwazniejsze } from './Najwazniejsze';
 import { landingIndex, LANDING_RULE_SHORT, ymd, type AssetsDeclarations } from './najwazniejsze-dane';
@@ -253,6 +255,8 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
       </aside>
     </div>
 
+    {(data.votes.available || Boolean(data.open_data?.ep_votes?.count)) && <GlosowaniaOsoby ident={data.slug || data.id} />}
+    <Przeplywy ident={`osoba:${data.slug || data.id}`} />
     {data.denominators && <Siec ident={data.slug || data.id} onAvailability={onNet} />}
     {data.denominators && <Denominators data={data} />}
   </>;

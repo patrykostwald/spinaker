@@ -9,7 +9,7 @@ import { ThreadEditor } from './ThreadEditor';
 import { Button } from '../kit';
 import { Loading } from "../kit/Loading";
 
-type Camp = 'government' | 'opposition' | 'public';
+type Camp = 'government' | 'opposition' | 'public' | 'other';
 
 type XPost = {
   id: number; account: number; account_handle: string; account_display_name: string;
@@ -194,7 +194,7 @@ export function PoliticalReview() {
               <div className="sc-political-post-body">
                 <div className="sc-political-post-meta">
                   <span>@{post.account_handle}{post.account_display_name ? ` · ${post.account_display_name}` : ''}</span>
-                  <span>{post.camp_at_collection === 'government' ? 'obóz rządzący' : post.camp_at_collection === 'opposition' ? 'opozycja' : 'instytucja publiczna'}</span>
+                  <span>{post.camp_at_collection === 'government' ? 'obóz rządzący' : post.camp_at_collection === 'opposition' ? 'opozycja' : post.camp_at_collection === 'other' ? 'inni i niezrzeszeni' : 'instytucja publiczna'}</span>
                   <span>{formatDateTimePl(post.published_at)}</span>
                 </div>
                 <p className="sc-political-post-text">{post.text || '(treść wycofana przez wydawcę)'}</p>

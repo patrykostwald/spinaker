@@ -15,7 +15,7 @@ from django.utils.text import slugify
 
 from news import council_registry as registry
 from news.clinic_council import FREE_CHECK, _json
-from news.management.commands.link_official_x_accounts import CLUB_CAMPS, INSTITUTIONAL_HANDLES, _fold
+from news.management.commands.link_official_x_accounts import CLUB_CAMPS, INSTITUTIONAL_HANDLES, _fold, camp_for
 from news.political_models import ParliamentaryRosterEntry, PublicFigure, PublicFigureRole, SocialHandleEvidence
 from news.social_handle_discovery import SocialDiscoveryError, discover_official_page, discover_for_entry
 
@@ -33,6 +33,15 @@ PARTIES = (
     ('Konfederacja_KP', 'Konfederacja Korony Polskiej', 'https://konfederacjakoronypolskiej.pl/', 'KoronyPolskiej', ('Grzegorz Braun',)),
 )
 HANDLE = re.compile(r'[A-Za-z0-9_]{1,15}\Z')
+# Konta partii, klubów i instytucji nigdy nie są kontem osoby. 22.10 posłom KO przypisano @Platforma_org, posłowi
+# Lewicy @__Lewica i konta polityków z listy na stronie partii, a posłowi Korony @KoronyPolskiej (właściciel 23.10).
+# Źródła: PARTIES wyżej, stara lista pobierania scraper/catalog.py i konta instytucji z migracji 0052/0059.
+NON_PERSON_HANDLES = ({p[3].casefold() for p in PARTIES} | {h.casefold() for h in INSTITUTIONAL_HANDLES}
+                      | {'pisorgpl', 'platforma_org', 'nowalewica', 'polska2050', 'psl_pl', 'konf_liberty',
+                         'partiarazem', 'premierrp', 'prezydentpl', 'kancelariasejmu', 'polskisenat'})
+# Źródła, które same wskazują tożsamość osoby: Wikidata po identyfikatorze Sejmu/PE, lista news/data/osoby_x.csv
+# (oficjalne strony) i link na oficjalnym profilu osoby. Konto z takim dowodem włącza się bez czekania na człowieka.
+STRONG_SOURCES = {'wikidata-id', 'official-list', 'official'}
 OFFICIAL_HOSTS = {'www.gov.pl', 'gov.pl', 'www.sejm.gov.pl', 'sejm.gov.pl', 'www.senat.gov.pl',
                   'senat.gov.pl', 'www.europarl.europa.eu', 'data.europarl.europa.eu'}
 
@@ -124,7 +133,7 @@ def targets(*, persist=True):
         if not (entry and entry.active or cabinet or voivode or leader):
             continue
         club = entry.club if entry else ''
-        camp = CLUB_CAMPS.get(club, '') if club else (CLUB_CAMPS[party[0]] if party else 'government' if cabinet or voivode else '')
+        camp = camp_for(club) if club else (CLUB_CAMPS[party[0]] if party else 'government' if cabinet or voivode else '')
         groups = tuple(g for g, ok in ((entry.source if entry else '', bool(entry and entry.active)),
                        ('cabinet', cabinet), ('voivodes', voivode), ('leaders', leader)) if ok)
         result.append(Target(f'figure:{figure.pk or figure.import_key}', figure.canonical_name, figure.role_title, camp,
@@ -156,6 +165,55 @@ def wikidata_leads():
     return {name: [Lead(h, u, 'wikidata')] for name, matches in people.items() if len(matches) == 1 for h, u in matches}
 
 
+def surname_parts(name):
+    """„Agnieszka Dziemianowicz-Bąk” → ['dziemianowicz', 'bak']: nazwisko (także dwuczłonowe), bez polskich znaków."""
+    words = _fold(name).split()
+    return [part for part in re.split(r'[-\s]+', words[-1]) if len(part) >= 3] if words else []
+
+
+def handle_matches_person(handle, name):
+    folded = re.sub(r'[^a-z0-9]', '', _fold(handle))
+    return any(part in folded for part in surname_parts(name))
+
+
+def person_leads(target, leads):
+    """Linki, które mogą być kontem tej osoby. Strona partii i wyniki wyszukiwania podają wiele kont (stopka, lista
+    klubu), więc liczy się tylko konto z nazwiskiem osoby; z oficjalnej strony z kilkoma kontami — tak samo.
+    Wikidata po identyfikatorze i osoby_x.csv wskazują osobę wprost, ale konto partii i tak odpada."""
+    if target.party_handle:
+        return list(leads)  # konto partii
+    leads = [lead for lead in leads if lead.handle.casefold() not in NON_PERSON_HANDLES]
+    several = len({lead.handle.casefold() for lead in leads if lead.source == 'official'}) > 1
+    return [lead for lead in leads if lead.source in ('wikidata-id', 'official-list', 'wikidata')
+            or (lead.source == 'official' and not several) or handle_matches_person(lead.handle, target.name)]
+
+
+def registry_leads(targets, collect=None):
+    """{figure.pk: [Lead]} z news/data/osoby_x.csv i z Wikidata (P2002) po identyfikatorze PE/Sejmu albo
+    jednoznacznym nazwisku. Tylko konta aktualne; bez skrobania X."""
+    from news import osoby_x
+    figures = {t.figure.import_key: t.figure for t in targets if t.figure and t.figure.pk and t.figure.import_key}
+    result = {}
+
+    def add(key, handle, url, source):
+        figure = figures.get(key)
+        if figure and HANDLE.fullmatch(handle):
+            leads = result.setdefault(figure.pk, [])
+            if all(lead.handle.casefold() != handle.casefold() for lead in leads):
+                leads.append(Lead(handle, url, source))
+    for row in osoby_x.read_rows():
+        if row['stan_konta'] == osoby_x.CURRENT and row['pewnosc'] == osoby_x.HIGH:
+            add(row['osoba_id'], row['konto'], row['zrodlo'], 'official-list')
+    people = [osoby_x.Person(key, osoby_x.display_name(f.canonical_name)) for key, f in figures.items()]
+    rows, _ = (collect or osoby_x.collect)(people) if people else ([], [])
+    for row in rows:
+        if row['stan_konta'] == osoby_x.CURRENT:
+            # „średnia” przy identyfikatorze = starsze konto obok konta z rangą „preferred”: bez automatycznego włączenia.
+            exact = ('P1186' in row['uwagi'] or 'P973' in row['uwagi']) and row['pewnosc'] == osoby_x.HIGH
+            add(row['osoba_id'], row['konto'], row['zrodlo'], 'wikidata-id' if exact else 'wikidata')
+    return result
+
+
 def official_leads(target):
     if not target.figure:
         return []
@@ -168,6 +226,10 @@ def official_leads(target):
         stored = [Lead(e.handle, e.evidence_url, 'official') for e in evidence
                   if urlsplit(e.evidence_url).hostname in OFFICIAL_HOSTS and e.handle.lower() not in INSTITUTIONAL_HANDLES]
     try:
+        if entry and entry.source == 'sejm':
+            # sejm.gov.pl odrzuca pobieranie profili (HTTP 403); nie obchodzimy tego. Posłowie: Wikidata
+            # po identyfikatorze z profilu Sejmu i osoby_x.csv (registry_leads).
+            return stored
         if entry:
             links, url = discover_for_entry(entry, persist=False), entry.profile_url or entry.source_url
         else:

@@ -28,7 +28,7 @@ def mp(name, club, external_id):
 
 
 @pytest.mark.django_db
-def test_plan_matches_only_unique_current_mps_and_known_clubs(monkeypatch):
+def test_plan_matches_only_unique_current_mps_and_unlisted_club_is_other(monkeypatch):
     mp('Jan Kowalski', 'KO', '1')
     mp('Anna Nowak', 'niez.', '2')
     monkeypatch.setattr(command.requests, 'get', lambda *args, **kwargs: wikidata([
@@ -37,7 +37,8 @@ def test_plan_matches_only_unique_current_mps_and_known_clubs(monkeypatch):
     call_command('link_official_x_accounts', '--skip-discovery', '--wikidata', stdout=out)
     text = out.getvalue()
     assert 'POŁĄCZ  @jankowalski → Jan Kowalski · Sejm · KO · government' in text
-    assert 'POMIŃ   @annanowak' in text and '@ktos' not in text
+    # 23.10: posłowie niezrzeszeni są czytani jako obóz „inni”, nie pomijani.
+    assert 'POŁĄCZ  @annanowak → Anna Nowak · Sejm · niez. · other' in text and '@ktos' not in text
     assert not SocialHandleEvidence.objects.exists()
 
 

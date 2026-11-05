@@ -39,7 +39,7 @@ test('zapytanie: tylko poprawne parametry, q od 3 znaków, od > do zamienione, n
 
 test('filtry <-> adres strony i krótkie zapytanie', () => {
   const f = L.parseFilters('?q=Kodeks&klub=PiS&wynik=przyjete&od=2026-01-02&do=2026-02-03');
-  eq({ ...f }, { q: 'Kodeks', klub: 'PiS', wynik: 'przyjete', od: '2026-01-02', do: '2026-02-03' });
+  eq({ ...f }, { q: 'Kodeks', klub: 'PiS', wynik: 'przyjete', od: '2026-01-02', do: '2026-02-03', rodzaj: 'sejm' });
   assert.equal(L.filtersToSearch(f), '?q=Kodeks&klub=PiS&wynik=przyjete&od=2026-01-02&do=2026-02-03');
   assert.equal(L.filtersToSearch(L.EMPTY_FILTERS), '');
   assert.equal(L.parseFilters('?wynik=<script>&od=zły').wynik, '');
@@ -159,4 +159,14 @@ test('pliki: menu z Głosowaniami, sieć w aktach, strona z metadanymi, bez dłu
   }
   const css = read('app/przeszlosc/glosowania-lista.css') + read('app/przeszlosc/siec.css');
   assert.equal(/overflow(-x|-y)?\s*:\s*(auto|scroll)/.test(css), false, 'żadnych kontenerów przewijanych (paski)');
+});
+
+test('rodzaj głosowania (dopisek 23.10): sejm domyślnie, pe w adresie i zapytaniu, klub tylko dla Sejmu', () => {
+  assert.equal(L.parseFilters('?rodzaj=pe').rodzaj, 'pe');
+  assert.equal(L.parseFilters('?rodzaj=<x>').rodzaj, 'sejm');
+  const pe = new URLSearchParams(L.buildVotesQuery({ ...L.EMPTY_FILTERS, rodzaj: 'pe', klub: 'KO' }));
+  assert.equal(pe.get('rodzaj'), 'pe'); assert.equal(pe.get('klub'), null);
+  assert.equal(new URLSearchParams(L.buildVotesQuery(L.EMPTY_FILTERS)).get('rodzaj'), null);
+  assert.equal(L.filtersToSearch({ ...L.EMPTY_FILTERS, rodzaj: 'pe' }), '?rodzaj=pe');
+  assert.equal(L.hasFilters({ ...L.EMPTY_FILTERS, rodzaj: 'pe' }), true);
 });

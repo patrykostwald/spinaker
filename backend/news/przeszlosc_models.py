@@ -38,3 +38,38 @@ class PrzeszloscAlert(models.Model):
     @property
     def label(self):
         return self.query if self.kind == 'topic' else (self.figure.canonical_name if self.figure_id else self.key)
+
+
+class KrsKolejka(models.Model):
+    """Kolejka uzupełniania KRS (sprint 23.10): numer KRS albo NIP podmiotu do sprawdzenia w oficjalnych rejestrach.
+
+    Tylko identyfikatory podmiotów - bez nazw osób. NIP sprawdzamy w Białej liście MF (zwraca numer KRS), KRS w api-krs.ms.gov.pl.
+    Błędy sieci ponawiamy z rosnącą przerwą; „brak w rejestrze” to osobny stan, nie błąd.
+    """
+    KINDS = [('krs', 'numer KRS'), ('nip', 'NIP')]
+    STATUSES = [('pending', 'czeka'), ('ok', 'pobrano odpis'), ('missing', 'brak w rejestrze'),
+                ('no_krs', 'Biała lista nie podaje numeru KRS dla tego NIP'), ('mismatch', 'NIP z KRS niezgodny'),
+                ('error', 'błąd rejestru - ponowimy')]
+
+    kind = models.CharField(max_length=4, choices=KINDS)
+    value = models.CharField(max_length=10)
+    origin = models.CharField(max_length=24, blank=True, help_text='Skąd numer: org, niw, ted_wykonawca, ted_zamawiajacy, bzp, fts.')
+    priority = models.PositiveSmallIntegerField(default=5, help_text='0 najpilniejsze.')
+    status = models.CharField(max_length=10, choices=STATUSES, default='pending', db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_try_at = models.DateTimeField(default=timezone.now, db_index=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+    krs_number = models.CharField(max_length=10, blank=True, help_text='Wynik: numer KRS podmiotu.')
+    organisation = models.ForeignKey('news.RegisteredOrganisation', null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='krs_kolejka')
+    last_error = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['priority', 'next_try_at', 'pk']
+        constraints = [models.UniqueConstraint(fields=['kind', 'value'], name='krs_kolejka_kind_value')]
+        verbose_name = 'kolejka KRS'
+        verbose_name_plural = 'kolejka KRS'
+
+    def __str__(self):
+        return f'{self.kind} {self.value}: {self.status}'
