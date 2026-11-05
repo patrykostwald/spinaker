@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import './odstepstwa.css';
+import { windowNote } from './odstepstwa-okno';
 
 /**
  * Odstępstwa od klubu (plan Architekta 6.10): kto głosuje inaczej niż większość swojego klubu.
@@ -23,6 +24,8 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
   const [data, setData] = useState<Data | null>(null);
   const [club, setClub] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [more, setMore] = useState(false); // pełne listy zamiast pierwszych LIST pozycji; wraca do skrótu przy zmianie klubu lub okresu
+  useEffect(() => { setMore(false); }, [club, period]);
   useEffect(() => {
     let live = true;
     fetch(`/api/przeszlosc/odstepstwa/?okres=${period}`).then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -45,7 +48,7 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
         <dl>
           <div><dt>Głosowania Sejmu w zestawieniu</dt><dd>{data.votings.toLocaleString('pl-PL')}</dd></div>
           <div><dt>Kluby i koła</dt><dd>{data.clubs.length}</dd></div>
-          <div><dt>Głosy inne niż większość klubu przy zgodności klubu ≥ 80%</dt><dd>{total.toLocaleString('pl-PL')}</dd></div>
+          <div><dt>Głosy inne niż większość klubu przy zgodności klubu ≥ 80% (wszystkie kluby razem)</dt><dd>{total.toLocaleString('pl-PL')}</dd></div>
         </dl>
         <div className="pt-devsum__foot">
           <p className="px-note px-dev__range">{data.range.from ? `${day(data.range.from)} - ${day(data.range.to)}` : ''}{data.term ? ` · kadencja ${data.term}` : ''}{data.computed_at ? ` · liczone ${day(data.computed_at)}` : ''}</p>
@@ -65,7 +68,7 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
     </div>
     <p className="px-dev__method">Odstępstwo to głos inny niż większość własnego klubu w&nbsp;tym głosowaniu. Te same progi dla każdego klubu; odstępstwo nie jest zarzutem.</p>
     {data && <p className="px-note px-dev__range">{data.range.from ? `${day(data.range.from)} - ${day(data.range.to)}` : ''} · {data.votings.toLocaleString('pl-PL')} głosowań Sejmu
-      {data.term ? ` · kadencja ${data.term}` : ''}</p>}
+      {data.term ? ` · kadencja ${data.term}` : ''}{windowNote(data.period, data.range.from, data.range.to, day) ? ` · ${windowNote(data.period, data.range.from, data.range.to, day)}` : ''}</p>}
     {data && <div className="px-dev__tabs" role="tablist" aria-label="Klub">
       {data.clubs.map(c => <button key={c.club} type="button" role="tab" id={`dev-tab-${c.club}`} aria-selected={c.club === current?.club}
         aria-controls="dev-panel" onClick={() => setClub(c.club)}>{c.club}<small>{c.members}</small></button>)}
@@ -73,7 +76,7 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
     {current && <div className="px-dev__grid" id="dev-panel" role="tabpanel" aria-labelledby={`dev-tab-${current.club}`}>
       <section className="px-card px-dev__card" aria-labelledby="dev-mps-h">
         <h3 id="dev-mps-h" className="px-h3">Wyższy udział głosów innych niż większość klubu <small>{current.flagged.length}</small></h3>
-        {current.flagged.length ? <ol className="px-dev__list">{current.flagged.slice(0, LIST).map(m => <li key={m.mp_id}>
+        {current.flagged.length ? <ol className="px-dev__list">{(more ? current.flagged : current.flagged.slice(0, LIST)).map(m => <li key={m.mp_id}>
           {m.latest ? <a href={m.latest.url} target="_blank" rel="noopener noreferrer" title={`Ostatni głos inny niż większość klubu: ${m.latest.title}`}>
             <b>{nice(m.name)}</b><span className="px-dev__val">{pct(m.share)}</span>
             <small>{m.deviations} z&nbsp;{m.counted} głosów · ostatnio {short(m.latest.date)}: {m.latest.vote}, klub {m.latest.club_vote} ↗</small></a>
@@ -82,12 +85,15 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
         <p className="px-card__foot">Mediana klubu: {pct(current.median)} · porównano {current.mps} {current.mps === 1 ? 'posła' : 'posłów'} z&nbsp;co najmniej 20 głosami</p>
       </section>
       <section className="px-card px-dev__card" aria-labelledby="dev-reb-h">
-        <h3 id="dev-reb-h" className="px-h3">Głosy inne niż większość klubu <small>{current.rebellions_total}</small></h3>
-        {current.rebellions.length ? <ol className="px-dev__list">{current.rebellions.slice(0, LIST).map(e => <li key={`${e.id}-${e.mp_id}`}>
+        <h3 id="dev-reb-h" className="px-h3">Głosy inne niż większość klubu <small title={`Liczba w klubie ${current.club}`}>{current.rebellions_total}</small></h3>
+        {current.rebellions.length ? <ol className="px-dev__list">{(more ? current.rebellions : current.rebellions.slice(0, LIST)).map(e => <li key={`${e.id}-${e.mp_id}`}>
           <a href={e.url} target="_blank" rel="noopener noreferrer"><b>{nice(e.name)}</b><span className="px-dev__val">{short(e.date)}</span>
             <small>{e.vote}, klub {e.club_vote} ({e.unity}%) · {e.title} ↗</small></a>
         </li>)}</ol> : <p className="px-dev__empty">Brak głosów innych niż większość klubu przy zgodności klubu w&nbsp;tym okresie.</p>}
-        <p className="px-card__foot">Gdy co najmniej 80% klubu głosowało tak samo</p>
+        {current.rebellions.length > LIST && <button type="button" className="px-more" aria-expanded={more} onClick={() => setMore(m => !m)}>
+          {more ? 'Pokaż mniej' : `Pokaż więcej (${current.rebellions.length - LIST})`}</button>}
+        <p className="px-card__foot">Klub {current.club}: gdy co najmniej 80% klubu głosowało tak samo
+          {current.rebellions.length < current.rebellions_total ? ` · pokazujemy ${current.rebellions.length} z ${current.rebellions_total}` : ''}</p>
       </section>
     </div>}
   </section>;
