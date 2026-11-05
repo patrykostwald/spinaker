@@ -44,6 +44,9 @@ export type SiteFooterProps = {
   /** Wiersz nad paskiem stopki `sticky` (np. pasek wsparcia z licznikiem). */
   above?: ReactNode;
   actions?: ReactNode;
+  /** Stałe linki w pasku sticky (komputer): np. Metodologia, Karta, Źródła — bez otwierania „Więcej”. */
+  quickLinks?: { label: string; href: string; current?: boolean }[];
+  quickLinksLabel?: string;
 };
 
 const MotionLink = motion(Link);
@@ -62,7 +65,7 @@ function FooterLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above, actions }: SiteFooterProps) {
+export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, above, actions, quickLinks, quickLinksLabel = "Zaufanie i źródła" }: SiteFooterProps) {
   const m = useMotionTokens();
   const columnsRow = (
     <div className="sc-footer__columns">
@@ -96,14 +99,19 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
       <footer role="contentinfo" className="sc-footer" data-sticky>
         <div className="sc-footer__bar">
           <div className="sc-footer__brand">{brand}</div>
+          {quickLinks?.length ? (
+            <nav className="sc-footer__quick" aria-label={quickLinksLabel}>
+              {quickLinks.map(link => <Link key={link.href} href={link.href} className="sc-footer__quick-link" aria-current={link.current ? "page" : undefined}>{link.label}</Link>)}
+            </nav>
+          ) : null}
           {actions}
-          <details className="sc-footer__more" onKeyDown={event => {
+          <details className="sc-footer__more" onToggle={event => event.currentTarget.querySelector("summary")?.setAttribute("aria-expanded", String(event.currentTarget.open))} onKeyDown={event => {
             if (event.key === "Escape") {
               event.currentTarget.open = false;
               event.currentTarget.querySelector("summary")?.focus();
             }
           }}>
-            <summary>Więcej</summary>
+            <summary aria-expanded="false">Więcej<svg className="sc-footer__more-chevron" aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></summary>
             <div className="sc-footer__menu" onClick={event => {
               if ((event.target as HTMLElement).closest("a")) event.currentTarget.closest("details")?.removeAttribute("open");
             }}>
@@ -121,7 +129,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
     );
     // Jeden dok także bez komunikatu wsparcia; linki i komunikat mieszczą się w menu.
     return (
-      <div className="sc-footer-dock" ref={dockRef}>
+      <div className="sc-footer-dock" ref={dockRef} data-idle="true">
         {bar}
       </div>
     );
@@ -154,6 +162,12 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
 }
 
 
+/** Dok jest „uśpiony” (poza ekranem), dopóki czytelnik nie przewinie ~90% wysokości okna ani nie dotrze do końca strony. */
+function setIdle(node: HTMLElement, y: number, nearBottom: boolean) {
+  if (y > window.innerHeight * 0.9 || nearBottom || node.contains(document.activeElement) || node.querySelector("details[open]")) delete node.dataset.idle;
+  else node.dataset.idle = "true";
+}
+
 function useHideOnScroll() {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -167,6 +181,7 @@ function useHideOnScroll() {
         const node = ref.current;
         if (node) {
           const nearBottom = window.innerHeight + y >= document.documentElement.scrollHeight - 80;
+          setIdle(node, y, nearBottom);
           if (y > last + 6 && y > 120 && !nearBottom && !node.contains(document.activeElement) && !node.querySelector("details[open]")) node.dataset.hidden = "true";
           else if (y < last - 6 || nearBottom || y <= 120) delete node.dataset.hidden;
         }
@@ -178,7 +193,7 @@ function useHideOnScroll() {
       const node = ref.current;
       const target = event.target;
       if (!node || !(target instanceof HTMLElement)) return;
-      if (node.contains(target)) delete node.dataset.hidden;
+      if (node.contains(target)) { delete node.dataset.hidden; delete node.dataset.idle; }
       else {
         node.querySelectorAll("details[open]").forEach(menu => menu.removeAttribute("open"));
         const rect = target.getBoundingClientRect();
@@ -186,9 +201,17 @@ function useHideOnScroll() {
         if (rect.bottom > bottom && rect.top < window.innerHeight) window.scrollBy({ top: rect.bottom - bottom, behavior: "instant" });
       }
     };
+    // Pasek wsparcia nie wyskakuje od pierwszej sekundy: pojawia się po przewinięciu ok. jednego ekranu (F12).
+    if (ref.current) setIdle(ref.current, window.scrollY, window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80);
+    // Wysokość strony zmienia się po wczytaniu danych i po zmianie trasy: wtedy krótka strona nie może zostać z ukrytym dokiem.
+    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => {
+      if (ref.current) setIdle(ref.current, window.scrollY, window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80);
+    });
+    resize?.observe(document.documentElement);
     window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("focusin", onFocus);
     return () => {
+      resize?.disconnect();
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("focusin", onFocus);
     };

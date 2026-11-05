@@ -12,7 +12,9 @@ const links = {
   sources: { label: "Źródła", href: "/zrodla" },
   newsletter: { label: "Newsletter", href: "/newsletter" },
   contact: { label: "Kontakt", href: "/o-nas#kontakt" },
-  support: { label: "Wesprzyj", href: "/wsparcie" },
+  data: { label: "Dane i API", href: "/dane" },
+  rss: { label: "Subskrybuj (RSS)", href: "/dane#rss" },
+  support: { label: "Wesprzyj projekt", href: "/wsparcie" },
   terms: { label: "Zasady korzystania", href: "/zasady-korzystania" },
   privacy: { label: "Prywatność i cookies", href: "/polityka-prywatnosci" },
 } satisfies Record<string, SiteNavigationItem>;
@@ -30,11 +32,13 @@ export const siteNavigation = {
   // Logo prowadzi na główną; pozostałe strony są w stopce („Więcej”) i w menu telefonu.
   primary: [links.clinic, links.council, links.about],
   more: [links.press, links.methodology, links.charter, links.people, links.sources, links.newsletter, links.contact],
+  /** Dowody zaufania: zawsze o jedno kliknięcie od każdej strony (pasek u dołu na komputerze, menu na telefonie). */
+  trust: [links.methodology, links.charter, links.sources],
   support: links.support,
   footer: [
     { title: "Czytaj", links: [links.home, links.clinic, links.people, links.sources, links.newsletter] },
-    { title: "Jak pracujemy", links: [links.council, links.methodology, links.charter] },
-    { title: "Projekt i kontakt", links: [links.about, links.press, links.contact] },
+    { title: "Jak pracujemy", links: [links.council, links.methodology, links.charter, links.data] },
+    { title: "Projekt i kontakt", links: [links.about, links.press, links.contact, links.rss] },
     { title: "Obserwuj", links: socialChannels.map(channel => ({ label: channel.name, href: channel.href })) },
     { title: "Dokumenty prawne", links: [links.terms, links.privacy] },
   ],

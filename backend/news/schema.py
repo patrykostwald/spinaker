@@ -82,13 +82,17 @@ PublicFigureListResponse = inline_serializer("PublicFigureListResponse", {
     "count": serializers.IntegerField(),
     "page": serializers.IntegerField(),
     "page_size": serializers.IntegerField(),
-    "results": serializers.ListField(child=serializers.DictField(), help_text="Profil: id, name, role_category, role_title, organisation, status, official_profile_url, evidence_url, source_checked_at."),
+    "results": serializers.ListField(child=serializers.DictField(), help_text="Profil: id, name, role_category, role_title, organisation, status, official_profile_url, evidence_url, source_checked_at, party, chamber, diagnoses_count."),
+    "facets": serializers.DictField(help_text="Liczności do filtrów: parties (code, short, name, count) i chambers (code, label, count)."),
 })
 
 PUBLIC_FIGURE_LIST_PARAMETERS = [
     OpenApiParameter("q", str, description="Imię, nazwisko, funkcja lub instytucja."),
     OpenApiParameter("role_category", str, description="government / party / parliamentary / european / local / political."),
     OpenApiParameter("status", str, description="current / former."),
+    OpenApiParameter("party", str, description="Klub albo partia (kod, np. KO, PiS, Lewica) z `facets.parties`."),
+    OpenApiParameter("chamber", str, description="sejm / senat / ep (mandat z oficjalnego rejestru)."),
+    OpenApiParameter("sort", str, description="name (domyślnie, po nazwisku, polski alfabet) / diagnoses (najwięcej diagnoz Dr. Spina)."),
     OpenApiParameter("page", int),
     OpenApiParameter("page_size", int, description="1–100, domyślnie 50."),
 ]

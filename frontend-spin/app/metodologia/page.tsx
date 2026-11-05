@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DocLayout } from "@spin-clinic/ui/kit";
+import { DocLayout, Term } from "@spin-clinic/ui/kit";
+import { GLOSSARY } from "@spin-clinic/ui";
 
 export const metadata = {
   title: "Metodologia — spin.clinic",
@@ -13,14 +14,14 @@ const sections = [
   { id: "zgodnosc", label: "Zgodność modeli" }, { id: "twierdzenia", label: "Statusy twierdzeń" },
   { id: "techniki", label: "Rodziny technik" }, { id: "slowa", label: "Słowa nacechowane" },
   { id: "wykresy", label: "Jak liczymy dane" }, { id: "ograniczenia", label: "Ograniczenia" },
-  { id: "korekty", label: "Błędy i wycofanie" },
+  { id: "korekty", label: "Błędy i wycofanie" }, { id: "slowniczek", label: "Słowniczek pojęć" },
 ];
 
 const steps = [
   ["Selekcja", "Strażnik czyta nowe wpisy i wybiera te z tezą do sprawdzenia."],
   ["Konsylium", "Kilka modeli różnych firm osobno ocenia ten sam wpis."],
   ["Dowody", "Twierdzenia trafiają do wyszukiwarki; ocena faktu wymaga źródła."],
-  ["Publikacja", "Diagnoza ukazuje się automatycznie. Człowiek może ją tylko wycofać."],
+  ["Publikacja", "Diagnoza ukazuje się automatycznie, bez przeglądu człowieka; człowiek może ją tylko wycofać. Analiza przejrzana przez operatora ma odznakę „zatwierdzona ręcznie”."],
 ];
 
 const verdicts = [
@@ -33,7 +34,7 @@ const verdicts = [
 const claims = [
   ["ok", "Potwierdzone", "źródła wspierają twierdzenie"],
   ["bad", "Sprzeczne ze źródłami", "źródła przeczą twierdzeniu"],
-  ["mid", "Wprowadzające w błąd", "istotne pominięcie, zniekształcenie lub nieuprawniony wniosek"],
+  ["mid", "Wprowadza w błąd", "istotne pominięcie, zniekształcenie lub nieuprawniony wniosek"],
   ["unverified", "Niezweryfikowane", "brak źródła albo nie da się tego sprawdzić"],
 ];
 
@@ -54,7 +55,7 @@ const measures = [
 
 export default function MethodologyPage() {
   return <DocLayout eyebrow="METODOLOGIA" title="Jak analizujemy przekaz" version="1.0" updatedAt="2026-09-29" sections={sections}
-    lead="Diagnoza dotyczy konkretnego komunikatu, nie osoby. Poniżej: skąd biorą się wpisy, jak powstaje wynik i jak liczymy dane Kliniki.">
+    lead="Diagnoza dotyczy konkretnego komunikatu, nie osoby. Poniżej: skąd biorą się wpisy, jak powstaje wynik i jak liczymy dane Kliniki. Nowe pojęcia wyjaśnia słowniczek na końcu strony.">
 
     <section id="droga"><h2>W skrócie</h2>
       <ol className="sc-method-steps">{steps.map(([title, text], index) =>
@@ -62,9 +63,9 @@ export default function MethodologyPage() {
     </section>
 
     <section id="selekcja"><h2>Selekcja wpisów</h2>
-      <p>Czytamy wpisy z obserwowanych kont X polityków i partii z ostatnich 3 dni. Strażnik daje każdemu wstępny wynik — to nie jest siła spinu.</p>
+      <p>Czytamy wpisy z obserwowanych kont X polityków i partii z ostatnich 3 dni. <Term id="straznik">Strażnik</Term> daje każdemu wstępny wynik — to nie jest siła spinu. Wpis z wynikiem środkowym czeka na <Term id="do-decyzji">decyzję operatora</Term>.</p>
       <figure className="sc-method-gauge" aria-label="Progi wyniku selekcji">
-        <div className="sc-method-gauge__bar"><span style={{ flexBasis: "40%" }}>pomijany</span><span style={{ flexBasis: "35%" }}>do decyzji</span><span style={{ flexBasis: "25%" }}>kolejka automatyczna</span></div>
+        <div className="sc-method-gauge__bar"><span style={{ flexBasis: "40%" }}>pomijany</span><span style={{ flexBasis: "35%" }}>do decyzji operatora</span><span style={{ flexBasis: "25%" }}>kolejka automatyczna</span></div>
         <div className="sc-method-gauge__scale"><b>0</b><b style={{ left: "40%" }}>40</b><b style={{ left: "75%" }}>75</b><b>100</b></div>
       </figure>
       <p className="sc-method-note">To próba wybranych wypowiedzi, nie cała debata. Więcej diagnoz jednej strony nie znaczy, że ta strona częściej stosuje spin. Brak diagnozy nie oznacza „bez spinu”.</p>
@@ -91,7 +92,7 @@ export default function MethodologyPage() {
 
     <section id="zgodnosc"><h2>Zgodność modeli</h2>
       <div className="sc-method-agree">
-        <p className="sc-method-agree__num">2/3<small>ten sam werdykt</small></p>
+        <p className="sc-method-agree__num">2/3<small>odpowiadających modeli zgodnych z wynikiem</small></p>
         <p>Tyle modeli dało werdykt równy wynikowi diagnozy. „Nie da się ocenić” liczy się do mianownika, brak odpowiedzi — nie. Obok pokazujemy rozrzut ocen siły.</p>
       </div>
       <p className="sc-method-note">Modele mogą popełnić ten sam błąd, więc zgoda nie jest dowodem. Docelowo: co najmniej 4 odpowiedzi z 3 firm i model polski; przy limitach usług — 3 odpowiedzi z opisem braków. <Link href="/konsylium#sklad">Aktualny skład</Link></p>
@@ -139,6 +140,12 @@ export default function MethodologyPage() {
         <p><strong>Widzisz błąd?</strong> Wyślij link do diagnozy, opis i źródła na <a href="mailto:kontakt@spin.clinic">kontakt@spin.clinic</a>. Tą samą drogą autor wypowiedzi może przesłać odpowiedź.</p>
       </div>
       <p>Operator może wycofać całą diagnozę — zapisujemy datę i powód. Treści, werdyktu ani siły nie poprawia się ręcznie. Publiczny rejestr korekt i odpowiedzi jest planowany. <Link href="/konsylium/karta">Karta Konsylium</Link></p>
+    </section>
+
+    <section id="slowniczek"><h2>Słowniczek pojęć</h2>
+      <p>Krótko o słowach, których używamy w serwisie. W tekstach kropkowane podkreślenie prowadzi tutaj.</p>
+      <dl className="sc-glossary">{GLOSSARY.map(entry =>
+        <div key={entry.id} id={`pojecie-${entry.id}`}><dt>{entry.term}</dt><dd>{entry.definition}</dd></div>)}</dl>
     </section>
   </DocLayout>;
 }

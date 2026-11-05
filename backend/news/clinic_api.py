@@ -15,12 +15,12 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from news import clinic
 from news.accounts import AccountWriteThrottle, OpinionInput, OpinionReadThrottle
-from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
+from news.clinic_models import ClinicDailyMessage, CorrectionRequest, SourceSuggestion, SpinDiagnosis, SpinOpinion, XAccountSuggestion
 from news.political_models import PublicFigure
 from news.public_figures import verified_x_account_record
 from news.schema import json_view
@@ -100,7 +100,11 @@ def clinic_message_detail(request, day):
     rows = list(ClinicDailyMessage.objects.filter(day=selected_day, status='approved', camp__in=clinic.CAMPS))
     if not rows:
         raise Http404
-    result = {'day': selected_day, 'government': None, 'opposition': None}
+    published = ClinicDailyMessage.objects.filter(status='approved', camp__in=clinic.CAMPS)
+    # Sąsiednie dni z opublikowanym przekazem: przełącznik „wcześniejszy / następny dzień” na stronie dnia.
+    result = {'day': selected_day, 'government': None, 'opposition': None,
+              'previous_day': published.filter(day__lt=selected_day).order_by('-day').values_list('day', flat=True).first(),
+              'next_day': published.filter(day__gt=selected_day).order_by('day').values_list('day', flat=True).first()}
     for row in rows:
         result[row.camp] = clinic._message_data(row, with_posts=True, all_posts=True)
     return Response(result)
@@ -117,25 +121,22 @@ def clinic_page(request):
     return Response(clinic.clinic_page_data(window))
 
 
-@extend_schema(summary='Lista zatwierdzonych diagnoz jednej strony', tags=['klinika'], responses=OpenApiTypes.OBJECT)
-@api_view(['GET'])
-def clinic_spins(request):
-    camp = request.query_params.get('camp', '')
-    try:
-        page = max(1, int(request.query_params.get('page', '1')))
-    except ValueError:
-        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+def spin_rows(params):
+    """Opublikowane diagnozy po filtrach listy (camp, verdict, account, siła, daty, sort, technique, q, party).
+
+    Jedno źródło dla listy i eksportu danych. Zwraca (wiersze, None) albo (None, odpowiedź 400).
+    """
+    camp = params.get('camp', '')
     rows = clinic.published_diagnoses()
     if camp in clinic.CAMPS:
         rows = rows.filter(post__camp_at_collection=camp)
-    verdict = request.query_params.get('verdict', '')
+    verdict = params.get('verdict', '')
     if verdict in clinic.VERDICT_LABELS:
         rows = rows.filter(verdict=verdict)
-    params = request.query_params
     account = params.get('account', '')
     if account:
         if not re.fullmatch(r'[0-9]{1,19}', account) or not 0 < int(account) <= 9223372036854775807:
-            return Response({'detail': 'Nieprawidłowy identyfikator konta.'}, status=400)
+            return None, Response({'detail': 'Nieprawidłowy identyfikator konta.'}, status=400)
         rows = rows.filter(post__account_id=int(account))
     try:
         minimum = int(params.get('intensity_min', '0'))
@@ -150,11 +151,11 @@ def clinic_spins(request):
             rows = rows.filter(**({'post__published_at__gte': boundary} if key == 'date_from'
                                   else {'post__published_at__lt': boundary + timedelta(days=1)}))
     except (ValueError, OverflowError):
-        return Response({'detail': 'Nieprawidłowy zakres siły (0–100) lub dat (RRRR-MM-DD).'}, status=400)
+        return None, Response({'detail': 'Nieprawidłowy zakres siły (0–100) lub dat (RRRR-MM-DD).'}, status=400)
     sort = params.get('sort', 'new')
     technique = params.get('technique', '')
     if sort not in ('new', 'strong') or (technique and technique not in CANONICAL_TECHNIQUES):
-        return Response({'detail': 'Nieprawidłowe sortowanie lub kanoniczna technika.'}, status=400)
+        return None, Response({'detail': 'Nieprawidłowe sortowanie lub kanoniczna technika.'}, status=400)
     if 'intensity_min' in params or 'intensity_max' in params:
         rows = rows.filter(intensity__gte=minimum, intensity__lte=maximum)
     rows = rows.order_by(*(['-intensity'] if sort == 'strong' else []), '-post__published_at', '-pk')
@@ -175,6 +176,20 @@ def clinic_spins(request):
                 continue
             matched.append(row)
         rows = matched
+    return rows, None
+
+
+@extend_schema(summary='Lista zatwierdzonych diagnoz jednej strony', tags=['klinika'], responses=OpenApiTypes.OBJECT)
+@api_view(['GET'])
+def clinic_spins(request):
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+    except ValueError:
+        return Response({'detail': 'Nieprawidłowy numer strony.'}, status=400)
+    params = request.query_params
+    rows, error = spin_rows(params)
+    if error is not None:
+        return error
     try:
         size = int(params.get('page_size', '20'))
         if not 1 <= size <= 20:
@@ -366,6 +381,105 @@ def suggest_x_account(request, figure_id):
                   'submitted_by': request.user if request.user.is_authenticated else None})
     return Response({'status': 'received' if created else 'already_suggested', 'handle': suggestion.handle},
                     status=201 if created else 200)
+
+
+class SourceSuggestionAnonThrottle(AnonRateThrottle):
+    """Osobny licznik dla sugestii źródeł (nie dzieli limitu z sugestiami kont X); stawka: DEFAULT_THROTTLE_RATES."""
+    scope = 'source_suggestion'
+
+
+class SourceSuggestionUserThrottle(UserRateThrottle):
+    """AnonRateThrottle nie obejmuje zalogowanych - ten licznik limituje je osobno, po użytkowniku."""
+    scope = 'source_suggestion_user'
+
+
+class SourceSuggestionInput(serializers.Serializer):
+    url = serializers.CharField(max_length=300)
+    note = serializers.CharField(max_length=300, required=False, allow_blank=True, default='')
+
+    def validate_url(self, value):
+        from urllib.parse import urlsplit, urlunsplit
+        from scraper.utils import safe_url
+        value = safe_url(value)
+        parts = urlsplit(value) if value else None
+        host = (parts.hostname or '').lower() if parts else ''
+        # Adres przechowujemy jako tekst do przeglądu - bez fragmentu, bez adresów lokalnych i bez liter IP.
+        if not value or '.' not in host or host.endswith(('.local', '.internal')) or re.fullmatch(r'[\d.]+|[0-9a-f:]+', host):
+            raise serializers.ValidationError('Podaj pełny adres strony, np. https://www.przyklad.pl.')
+        return urlunsplit((parts.scheme, parts.netloc.lower(), parts.path, parts.query, ''))
+
+
+@extend_schema(summary='Zaproponuj źródło do katalogu (weryfikuje zespół, nic nie jest pobierane automatycznie)',
+               tags=['źródła'], request=SourceSuggestionInput, responses=OpenApiTypes.OBJECT)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([SourceSuggestionAnonThrottle, SourceSuggestionUserThrottle])
+def suggest_source(request):
+    serializer = SourceSuggestionInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    url = serializer.validated_data['url']
+    if len(url) > 300:
+        raise serializers.ValidationError({'url': 'Adres jest za długi (maks. 300 znaków).'})
+    from urllib.parse import urlsplit
+    suggestion, created = SourceSuggestion.objects.get_or_create(
+        url=url, defaults={'host': urlsplit(url).hostname[:255], 'note': serializer.validated_data['note'],
+                           'submitted_by': request.user if request.user.is_authenticated else None})
+    return Response({'status': 'received' if created else 'already_suggested', 'host': suggestion.host},
+                    status=201 if created else 200)
+
+
+class CorrectionAnonThrottle(AnonRateThrottle):
+    scope = 'correction'
+
+
+class CorrectionUserThrottle(UserRateThrottle):
+    scope = 'correction_user'
+
+
+class CorrectionInput(serializers.Serializer):
+    target_kind = serializers.ChoiceField(choices=[key for key, _ in CorrectionRequest.TARGETS])
+    target_id = serializers.IntegerField(min_value=1, max_value=2147483647)
+    request_type = serializers.ChoiceField(choices=[key for key, _ in CorrectionRequest.TYPES])
+    relation = serializers.ChoiceField(choices=[key for key, _ in CorrectionRequest.RELATIONS], default='other')
+    name = serializers.CharField(max_length=120, required=False, allow_blank=True, default='')
+    email = serializers.EmailField(max_length=254)
+    message = serializers.CharField(min_length=20, max_length=2000, trim_whitespace=True)
+    website = serializers.CharField(required=False, allow_blank=True, default='')  # pułapka na boty: człowiek tego pola nie widzi
+
+    def validate(self, data):
+        kind, target = data['target_kind'], data['target_id']
+        if kind == 'diagnosis':
+            found = clinic.published_diagnoses().filter(pk=target).exists()
+        elif kind == 'interview':
+            from news.clinic_interview import _published_interviews
+            found = _published_interviews().filter(pk=target).exists()
+        elif kind == 'message':
+            found = ClinicDailyMessage.objects.filter(pk=target, status='approved', camp__in=clinic.CAMPS).exists()
+        else:
+            found = PublicFigure.objects.filter(pk=target, archived=False).exists()
+        if not found:
+            raise serializers.ValidationError({'target_id': 'Nie znaleziono wskazanej publikacji.'})
+        if data['request_type'] == 'objection' and kind != 'figure':
+            raise serializers.ValidationError({'request_type': 'Sprzeciw dotyczy danych o osobie publicznej.'})
+        return data
+
+
+@extend_schema(summary='Sprostowanie, odpowiedź lub zgłoszenie błędu (zapis do przeglądu przez zespół; nic nie jest publikowane)',
+               tags=['klinika'], request=CorrectionInput, responses=OpenApiTypes.OBJECT)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([CorrectionAnonThrottle, CorrectionUserThrottle])
+def submit_correction(request):
+    if request.data.get('website'):
+        return Response({'status': 'received'}, status=201)  # bot: sukces przed walidacją (zły cel też), nic nie zapisujemy
+    serializer = CorrectionInput(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    row = CorrectionRequest.objects.create(
+        target_kind=data['target_kind'], target_id=data['target_id'], request_type=data['request_type'],
+        relation=data['relation'], name=data['name'].strip(), email=data['email'], message=data['message'],
+        submitted_by=request.user if request.user.is_authenticated else None)
+    return Response({'status': 'received', 'reference': f'ZG-{row.pk}'}, status=201)
 
 
 # --- kolejka zatwierdzania (tylko zespół) -----------------------------------------------------

@@ -161,7 +161,7 @@ html[data-theme="pastel"],
   /* контейнер */
   --sc-container: 1280px;
   --sc-gutter: max(16px, calc((100vw - var(--sc-container)) / 2));
-  --sc-measure: 65ch;
+  --sc-measure: 68ch;
   --sc-layout-wide: 72rem;
 
   /* свечение */
@@ -416,7 +416,7 @@ html.sc-theme-transition .sc-root {
 
 .sc-info-page__hero .sc-section-header { margin-bottom: 0; }
 
-.sc-info-page__body { display: grid; gap: 24px; margin-top: 24px; font-size: var(--sc-t-body-size); line-height: var(--sc-t-body-lh); }
+.sc-info-page__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; margin-top: 24px; font-size: var(--sc-t-body-size); line-height: var(--sc-t-body-lh); }
 
 .sc-info-page__body :where(section, [id]) { scroll-margin-top: 88px; }
 
@@ -516,16 +516,9 @@ html.sc-theme-transition .sc-root {
 .sc-public-directory__list li > div { display: grid; gap: var(--sc-s-2); min-width: 0; }
 .sc-public-directory__list p { margin: 0; }
 .sc-public-directory__name { color: var(--sc-text); font-size: var(--sc-t-title-s-size); line-height: var(--sc-t-title-s-lh); font-weight: var(--sc-w-title); text-decoration: none; }
-.sc-public-directory__name:hover, .sc-public-figure-preview__link:hover { color: var(--sc-accent); }
+.sc-public-directory__name:hover { color: var(--sc-accent); }
 .sc-public-figure-status { display: inline-flex; margin-right: var(--sc-s-2); padding: 2px 7px; border: 1px solid var(--sc-line); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); font-weight: var(--sc-w-caption); }
 .sc-public-figure-status[data-status="current"] { color: var(--sc-accent); border-color: var(--sc-accent); }
-.sc-public-figure-preview { display: grid; gap: var(--sc-s-4); }
-.sc-public-figure-preview h2, .sc-public-figure-preview p { margin: 0; }
-.sc-public-figure-preview__facts { display: grid; margin: 0; border-top: 1px solid var(--sc-line); }
-.sc-public-figure-preview__facts div { display: flex; justify-content: space-between; gap: var(--sc-s-3); padding: var(--sc-s-2) 0; border-bottom: 1px solid var(--sc-line); }
-.sc-public-figure-preview__facts dt { color: var(--sc-text-2); }
-.sc-public-figure-preview__facts dd { margin: 0; text-align: right; }
-.sc-public-figure-preview__link { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
 @media (max-width: 480px) { .sc-public-directory__list li { align-items: flex-start; flex-direction: column; } }
 
 /* === Stage 2: strona nitki === */
@@ -1681,6 +1674,8 @@ html[data-theme="pastel"],
 .sc-footer-dock { position: sticky; bottom: 0; z-index: 25; margin-top: auto; box-shadow: 0 -10px 24px rgba(0, 0, 0, .28); transition: transform .25s ease; }
 
 .sc-footer-dock[data-hidden="true"] { transform: translateY(110%); }
+.sc-footer-dock[data-idle="true"] { transform: translateY(110%); box-shadow: none; pointer-events: none; }
+.sc-footer-dock[data-idle="true"]:focus-within { pointer-events: auto; }
 
 .sc-footer-dock:focus-within { transform: none; }
 
@@ -1696,9 +1691,9 @@ html[data-theme="pastel"],
 
 .sc-footer__more > summary { display: flex; align-items: center; min-height: 44px; padding: 0 12px; cursor: pointer; border-radius: var(--sc-radius-control); font-size: 14px; font-weight: 600; }
 
-.sc-footer__more > summary::after { content: "⌃"; margin-left: 8px; }
+.sc-footer__more-chevron { flex: none; margin-left: 8px; transition: transform .2s ease; }
 
-.sc-footer__more[open] > summary::after { content: "⌄"; }
+.sc-footer__more[open] .sc-footer__more-chevron { transform: rotate(180deg); }
 
 .sc-footer__more > summary:hover { background: var(--sc-surface-3); }
 
@@ -2231,7 +2226,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-public-figure-status, .sc-public-figure-tag, .sc-public-figure-vote, .sc-public-figure-relation, .sc-public-figure-verified { display: inline-flex; align-items: center; min-height: 24px; padding: 0 var(--sc-s-2); border: 1px solid var(--sc-line); color: var(--sc-text-2); font-size: var(--sc-t-caption-size); line-height: var(--sc-t-caption-lh); font-weight: var(--sc-w-caption); }
 .sc-public-figure-status.is-current, .sc-public-figure-verified { border-color: var(--sc-accent); color: var(--sc-accent); }
 .sc-public-figure-x { padding: var(--sc-s-3); background: var(--sc-surface-2); }
-.sc-public-figure-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-block: 1px solid var(--sc-line); }
+.sc-public-figure-summary { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); border-block: 1px solid var(--sc-line); }
 .sc-public-figure-summary a, .sc-public-figure-summary button { display: grid; gap: var(--sc-s-1); padding: var(--sc-s-3); border: 0; background: transparent; color: var(--sc-text); text-align: left; text-decoration: none; }
 .sc-public-figure-summary a + a, .sc-public-figure-summary button + button { border-left: 1px solid var(--sc-line); }
 .sc-public-figure-summary a:hover, .sc-public-figure-summary button:hover { color: var(--sc-accent); }
@@ -3346,7 +3341,7 @@ html[data-theme="light"] .sc-home-person__mono { background: linear-gradient(135
 .sc-clinic-queue__item { padding: var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-line); display: grid; gap: var(--sc-s-3); }
 .sc-clinic-queue__actions { display: flex; gap: var(--sc-s-2); margin-top: var(--sc-s-2); }
 .sc-public-directory__x { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2); margin-top: var(--sc-s-1); }
-.sc-x-badge { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--sc-accent); color: var(--sc-accent); font: 600 10.5px/1 var(--sc-font-mono); }
+.sc-x-badge { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--sc-accent); color: var(--sc-accent); font: 600 11px/1 var(--sc-font-sans); font-variant-numeric: tabular-nums; }
 .sc-x-badge--none { box-shadow: inset 0 0 0 1px var(--sc-line); color: var(--sc-text-3); }
 .sc-x-suggest { display: grid; gap: var(--sc-s-1); width: 100%; font-size: var(--sc-t-caption-size); color: var(--sc-text-2); }
 .sc-x-suggest__row { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
@@ -4298,7 +4293,7 @@ a.sc-source-chip:hover { background: color-mix(in srgb, var(--sc-accent) 12%, tr
 .sc-newsletter__consent input { margin-top: 2px; flex: none; }
 .sc-newsletter__consent a { color: var(--sc-text-2); }
 .sc-newsletter__trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.sc-newsletter__error { margin: 0; color: var(--sc-danger, #ff6b6b); font-size: var(--sc-t-body-s-size); }
+.sc-newsletter__error { margin: 0; color: var(--sc-danger, var(--sc-negative)); font-size: var(--sc-t-body-s-size); }
 .sc-newsletter__done { margin: 0; color: var(--sc-text); font-weight: 600; }
 @media (max-width: 760px) { .sc-newsletter { grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-4); padding: var(--sc-s-5); } .sc-newsletter__row { flex-direction: column; } }
 
@@ -4586,15 +4581,6 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 }
 
 /* Pasek „ta sama miara”: obie strony obok siebie pod spinem dnia. */
-.sc-camp-counter { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-s-2) var(--sc-s-5); padding: var(--sc-s-3) var(--sc-s-5); border-radius: var(--sc-r-xl); background: var(--sc-surface); box-shadow: var(--sc-ring); }
-.sc-camp-counter__side { margin: 0; display: grid; gap: 2px; }
-.sc-camp-counter__side strong { color: var(--sc-text); font-size: var(--sc-t-body-s-size); }
-.sc-camp-counter__side span { color: var(--sc-text-2); font-size: var(--sc-t-caption-size); }
-.sc-camp-counter__side[data-camp="opposition"] { text-align: right; }
-.sc-camp-counter__note { grid-column: 1 / -1; margin: 0; padding-top: var(--sc-s-2); border-top: 1px solid var(--sc-hairline); text-align: center; color: var(--sc-text-3); font-size: var(--sc-t-caption-size); }
-.sc-camp-counter__note strong { color: var(--sc-text); }
-.sc-camp-counter__note a { color: var(--sc-accent); font-weight: 600; text-decoration: none; }
-@media (max-width: 560px) { .sc-camp-counter { padding: var(--sc-s-3); } .sc-camp-counter__side span { font-size: 11px; } }
 
 /* Spin dnia na telefonie: wpis przycięty do kilku linii, „Rozwiń wpis”. */
 .sc-clinic-sotd__more-post { display: none; }
@@ -4671,7 +4657,7 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 .sc-home-drspin__invite { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3) var(--sc-s-5); flex-wrap: wrap; margin-top: var(--sc-s-4); padding: var(--sc-s-3) var(--sc-s-4); border-radius: var(--sc-r-xl); background: var(--sc-surface-2); }
 .sc-home-drspin__invite p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); flex: 1 1 22rem; }
 .sc-home-drspin__invite strong { color: var(--sc-text); }
-.sc-home-drspin__invite span { color: var(--sc-text-3); }
+.sc-home-drspin__invite p > span { color: var(--sc-text-2); }
 
 /* ===== Audyt UX 28.09 ===== */
 /* Pas powitalny: dwa przyciski — „Zobacz analizę” i „Ustaw swoje wiadomości”. */
@@ -4684,9 +4670,6 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 /* Przyklejony dół chowa się przy przewijaniu w dół. */
 
 /* ===== Makiety 28.09: kafelki stron (telefon), numer diagnozy, kolor siły spinu, zbiórka w treści ===== */
-.sc-intensity[data-level="low"] .sc-intensity__track span { background: #3ecf8e; }
-.sc-intensity[data-level="mid"] .sc-intensity__track span { background: linear-gradient(90deg, #f5b041, #ff8a3d); }
-.sc-intensity[data-level="high"] .sc-intensity__track span { background: linear-gradient(90deg, #ff8a3d, #ff4b4b); }
 
 .sc-home-support { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; align-items: center; gap: var(--sc-s-4) var(--sc-s-6); padding: var(--sc-panel-pad); border-radius: var(--sc-r-2xl); background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
 .sc-home-support__text h2 { margin: 0 0 4px; }
@@ -4715,11 +4698,20 @@ a.sc-support-bar__progress:hover .sc-support-bar__amount strong { color: var(--s
 
 
 /* ---------- Wskaźniki Kliniki (/klinika/wskazniki, 29.09) ---------- */
-/* Dwie neutralne barwy o podobnej jasności dla stron — bez czerwieni i zieleni, żeby kolor nie oceniał strony. */
-:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-ind-gov: #55B4FF; --sc-ind-opp: #F5A54A; }
-html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-ind-gov: #006DB3; --sc-ind-opp: #A65300; }
-.sc-ind [data-camp="government"] { --camp: var(--sc-ind-gov); }
-.sc-ind [data-camp="opposition"] { --camp: var(--sc-ind-opp); }
+/* Kolory obozów — JEDNO miejsce definicji (Aspekt 3 / S0, S1). camp-a = rządzący (teal #22BDBD / #0A7A7A), camp-b = opozycja (fiolet #B58EF7 / #7A4FCB).
+   Czerwień (--sc-negative, --sc-live) jest zarezerwowana dla werdyktu, negatywu i live — nie dla obozu.
+   Ostateczną parę wybiera właściciel (faza 3b): zmiana to dwie linie poniżej. Aliasy --sc-ind-* zostają wstecznie. */
+/* J1 (iteracja 3a.1): para kategoryczna SPOZA osi znaczeń — teal (rządzący) i fiolet (opozycja); nie akcent, nie czerwień/bursztyn/zieleń werdyktu.
+   Rozróżnienie także bez koloru: kształt (koło = rządzący, kwadrat = opozycja) + etykieta; żaden obóz nie ma wzoru. */
+:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-camp-a: #22BDBD; --sc-camp-b: #B58EF7; }
+html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-camp-a: #0A7A7A; --sc-camp-b: #7A4FCB; }
+:root { --sc-ind-gov: var(--sc-camp-a); --sc-ind-opp: var(--sc-camp-b); }
+/* J2: pasek siły spinu pokazuje WARTOŚĆ, nie obóz ani markę — ten sam neutralny wypełniacz w obu kolumnach. */
+:root { --sc-meter-fill: var(--sc-text-2); }
+/* Rodziny technik (dane / przedstawienie / spór): bez koloru - kolor należy do obozów i werdyktu. Rodzinę niesie etykieta tekstowa, a znacznik ma kształt inny niż koło i kwadrat obozów (romb / trójkąt / sześciokąt), zawsze w neutralnym tekście. */
+:root { --sc-fam-mark: var(--sc-text-2); --sc-fam-shape-dane: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); --sc-fam-shape-przedstawienie: polygon(50% 0, 100% 100%, 0 100%); --sc-fam-shape-spor: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
+.sc-ind [data-camp="government"] { --camp: var(--sc-camp-a); }
+.sc-ind [data-camp="opposition"] { --camp: var(--sc-camp-b); }
 .sc-ind-links { display: flex; flex-wrap: wrap; gap: var(--sc-s-2) var(--sc-s-5); font-weight: 600; }
 .sc-ind-links a:last-child { color: var(--sc-text-3); font-weight: 500; }
 .sc-ind-card { display: grid; gap: var(--sc-s-4); align-content: start; padding: var(--sc-s-5); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg); background: var(--sc-surface); min-width: 0; }
@@ -4974,8 +4966,8 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-scan-t thead th { padding-top: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-3); }
 .sc-scan-t tbody tr:last-child th, .sc-scan-t tbody tr:last-child td { border-bottom: 0; }
 .sc-scan-t tbody th { width: 34%; font-weight: 600; white-space: nowrap; }
-.sc-scan-t tbody th i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 10px; background: var(--sc-scan-family); }
-.sc-scan-t tr[data-family="dane"] { --sc-scan-family: #55B4FF; } .sc-scan-t tr[data-family="przedstawienie"] { --sc-scan-family: #F5A54A; } .sc-scan-t tr[data-family="spor"] { --sc-scan-family: #b58ad8; }
+.sc-scan-t tbody th i { display: inline-block; width: 12px; height: 12px; margin-right: 10px; background: var(--sc-fam-mark); clip-path: var(--sc-fam-shape-dane); }
+.sc-scan-t tr[data-family="przedstawienie"] th i { clip-path: var(--sc-fam-shape-przedstawienie); } .sc-scan-t tr[data-family="spor"] th i { clip-path: var(--sc-fam-shape-spor); }
 .sc-scan-t-n { width: 44px; text-align: right !important; padding-right: 0 !important; font-variant-numeric: tabular-nums; font-weight: 700; }
 .sc-scan-t-none { color: var(--sc-text-3); }
 .sc-scan-t-item { display: grid; gap: 6px; }
@@ -5091,7 +5083,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-scan-m-num small { font-size: 13px; font-weight: 600; color: var(--sc-text-3); letter-spacing: 0; }
 .sc-scan-g { align-self: end; display: grid; height: 80px; align-content: end; }
 .sc-scan-g-track { display: block; height: 8px; border-radius: 99px; background: var(--sc-surface-3); overflow: hidden; }
-.sc-scan-g-track i { display: block; height: 100%; border-radius: 99px; background: var(--sc-accent); }
+.sc-scan-g-track i { display: block; height: 100%; border-radius: 99px; background: var(--sc-meter-fill); }
 .sc-scan-g-thin { height: 6px; }
 .sc-scan-g-scale { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
 .sc-scan-g-scale b { font-weight: 500; }
@@ -5101,7 +5093,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-scan-g-row u { width: 8px; height: 8px; border-radius: 50%; background: var(--sc-text-3); }
 .sc-scan-g-row u[data-verdict="spin"] { background: var(--sc-negative); } .sc-scan-g-row u[data-verdict="partial"] { background: var(--sc-warning); } .sc-scan-g-row u[data-verdict="no_spin"] { background: var(--sc-positive); }
 .sc-scan-g-fam { grid-template-columns: 56px minmax(40px, 1fr) 22px; }
-.sc-scan-g-fam[data-family="dane"] i { background: #55B4FF; } .sc-scan-g-fam[data-family="przedstawienie"] i { background: #F5A54A; } .sc-scan-g-fam[data-family="spor"] i { background: #b58ad8; }
 .sc-scan-g-squares { display: flex; flex-wrap: wrap; gap: 6px; }
 .sc-scan-g-squares i { width: 16px; height: 16px; border-radius: 4px; }
 .sc-scan-g-squares i[data-gap] { margin-left: 6px; }
@@ -5129,9 +5120,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-scan-details-col h4 { font-size: 12px !important; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-3); }
 .sc-scan-fam { display: grid; gap: 10px; padding: 14px 16px; border-radius: 14px; background: var(--sc-surface); }
 .sc-scan-fam-head { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 14px !important; font-weight: 700; color: var(--sc-text) !important; }
-.sc-scan-fam-head i { width: 8px; height: 8px; border-radius: 2px; background: var(--fam, var(--sc-text-3)); }
+.sc-scan-fam-head i { flex: none; width: 12px; height: 12px; background: var(--sc-fam-mark); clip-path: var(--sc-fam-shape-dane); }
 .sc-scan-fam-head b { margin-left: auto; font-variant-numeric: tabular-nums; }
-.sc-scan-fam[data-family="dane"] { --fam: #55B4FF; } .sc-scan-fam[data-family="przedstawienie"] { --fam: #F5A54A; } .sc-scan-fam[data-family="spor"] { --fam: #b58ad8; }
+.sc-scan-fam[data-family="przedstawienie"] .sc-scan-fam-head i { clip-path: var(--sc-fam-shape-przedstawienie); } .sc-scan-fam[data-family="spor"] .sc-scan-fam-head i { clip-path: var(--sc-fam-shape-spor); }
 .sc-scan-fam .sc-scan-t-none { margin: 0; color: var(--sc-text-3); }
 .sc-scan-details > button { justify-self: start; }
 @media (max-width: 760px) { .sc-scan-details-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
@@ -5160,8 +5151,8 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-interview-scan .sc-scan-g-fam { grid-template-columns: 52px minmax(0, 1fr) 18px; }
 
 /* === Zlecenie 024: wspólny fundament publicznych stron === */
-.sc-scale__row[data-camp="government"] { --camp: var(--sc-ind-gov); }
-.sc-scale__row[data-camp="opposition"] { --camp: var(--sc-ind-opp); }
+.sc-scale__row[data-camp="government"] { --camp: var(--sc-camp-a); }
+.sc-scale__row[data-camp="opposition"] { --camp: var(--sc-camp-b); }
 .sc-scale__row .sc-scale__track > span { background: var(--camp); }
 :root {
   --sc-layout-wide: 1152px;
@@ -5282,9 +5273,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-council__head { display: grid; gap: 2px; }
 .sc-council__model { font-size: 16px; font-weight: 700; color: var(--sc-text); overflow-wrap: anywhere; }
 .sc-council__company, .sc-council__provider { font-size: 13px; color: var(--sc-text-2); }
-.sc-council__roles { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-accent); }
+.sc-council__roles { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: none; color: var(--sc-accent); }
 .sc-council__statement { margin: 0; padding-left: 12px; border-left: 3px solid var(--sc-positive); font-size: 14px; line-height: 20px; color: var(--sc-text); }
-.sc-council__statement[data-accepts="false"] { border-color: var(--sc-negative); }
+.sc-council__statement[data-accepts="false"] { border-color: var(--sc-text-3); } /* nie werdykt: neutralna ramka (czerwień tylko dla werdyktu) */
 .sc-council__statement footer { margin-top: 6px; font-size: 12px; color: var(--sc-text-3); }
 .sc-council__pending, .sc-council__status, .sc-council__empty { font-size: 13px; color: var(--sc-text-3); }
 .sc-council__note { margin: 0; font-size: 13px; color: var(--sc-text-3); }
@@ -5293,7 +5284,8 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-clinic-nav > button { display: none; }
 .sc-clinic-nav > div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .sc-clinic-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px; color: var(--sc-text-2); border-radius: var(--sc-radius-control); }
-.sc-clinic-nav a[aria-current="page"] { color: var(--sc-accent); background: var(--sc-surface-2); box-shadow: inset 0 -2px var(--sc-accent); }
+/* Aspekt 1 / R6: jeden wskaźnik aktywnej zakładki (podkreślenie), bez tła i bez zaokrąglonych końców */
+.sc-clinic-nav a[aria-current="page"] { color: var(--sc-text); font-weight: 600; background: none; border-radius: 0; box-shadow: inset 0 -2px var(--sc-accent); }
 .sc-ai-tag { flex-shrink: 0; white-space: nowrap; }
 .sc-clinic-archives__card, .sc-clinic-archives__detail { padding: 20px; border-radius: var(--sc-radius-panel); }
 .sc-archive-search-label { margin: 0 0 8px; }
@@ -5350,8 +5342,6 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-chart-data caption { text-align: left; padding-block: 8px; }
 .sc-ind-legend [data-camp="government"] i { border-radius: 50%; }
 .sc-ind-legend [data-camp="opposition"] i { border-radius: 0; }
-.sc-ind [data-camp="opposition"] :is(.sc-ind-hist__bar, .sc-ind-tech__track i, .sc-ind-accounts__bar i), .sc-ind-legend [data-camp="opposition"] i { background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--sc-surface) 3px 5px); }
-.sc-ind-bar[data-camp="opposition"] { stroke: var(--sc-surface); stroke-width: 2; paint-order: stroke fill; }
 .sc-report__counts section { padding: 20px; border-radius: var(--sc-radius-panel); background: var(--sc-surface); }
 .sc-report__counts h2 { font-size: 20px; line-height: 28px; }
 .sc-report__counts strong { font-size: 36px; line-height: 40px; }
@@ -5388,7 +5378,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-spin-summary { container: spin-summary / inline-size; }
 .sc-spin-summary .sc-scan-dg-id { display: inline; }
 .sc-spin-summary .sc-scan-dg-head .sc-scan-dg-report { order: initial; }
-.sc-spin-summary .sc-intensity[data-level] .sc-intensity__track span { background: var(--sc-accent); }
+.sc-spin-summary .sc-intensity[data-level] .sc-intensity__track span { background: var(--sc-meter-fill); }
 .sc-scan-m-lbl { font-size: 12px; white-space: normal; overflow: visible; }
 .sc-scan-g-scale { font-size: 12px; }
 .sc-scan-council .sc-scan-g-row { grid-template-columns: minmax(0, 1fr) minmax(12px, 1fr) auto 8px; gap: 4px; }
@@ -5571,8 +5561,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   #dr-spin > .sc-scan-s-tabs { grid-column: 2; grid-row: 1; }
   #dr-spin .sc-scan-s-tabs button { min-height: 44px; padding: 4px 6px; font-size: 13px; }
   #dr-spin > :is(.sc-home-doctor__scale, .sc-home-spin__messages, .sc-home-doctor__work, [role="status"]) { grid-column: 1 / -1; }
-  #scan-camp-panel { grid-column: 1 / -1; grid-row: 2; display: flex; flex-direction: column; gap: 8px; }
-  #scan-camp-panel > .sc-scan-s-rule { order: 1; margin: 0; font-size: 14px; line-height: 21px; }
+  #dr-spin .sc-scan-camps { grid-column: 1 / -1; grid-row: 2; }
+  #dr-spin .sc-scan-camp { gap: 8px; }
+  #dr-spin .sc-scan-camp > .sc-scan-s-rule { order: 1; margin: 0; font-size: 14px; line-height: 21px; }
   #dr-spin .sc-post-scan { padding: 10px; gap: 8px; }
   #dr-spin .sc-scan-mobile-author { grid-row: 2; }
   #dr-spin .sc-post-scan > .sc-scan-dg { grid-row: 1; }
@@ -5591,7 +5582,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
   #dr-spin .sc-post-scan:not([data-expanded]) .sc-scan-g { display: none; }
 }
 /* Siła spinu zawsze niebieska — także w wierszach listy i archiwach (kolor oceny tylko w etykiecie werdyktu). */
-.sc-intensity .sc-intensity__track span, .sc-intensity[data-level] .sc-intensity__track span { background: var(--sc-accent); }
+.sc-intensity .sc-intensity__track span, .sc-intensity[data-level] .sc-intensity__track span { background: var(--sc-meter-fill); }
 .sc-clinic-nav > button > svg { flex: none; }
 
 /* Odbiór: listy w dokumentach mają widoczne znaczniki (wcięcie ma sens), numery zasad Karty */
@@ -5636,16 +5627,11 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-ind-show__day { font-family: inherit; font-variant-numeric: tabular-nums; }
 .sc-chart-data > summary { font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); font-weight: 600; }
 
-/* Kolory obozów (decyzja właściciela 29.09.2026): niebieski / czerwony; opozycja dodatkowo kreskowana. */
-:root, html[data-theme="dark"], [data-sc-theme="dark"] { --sc-ind-gov: #5B9BFF; --sc-ind-opp: #FF6B6B; }
-html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { --sc-ind-gov: #1D5FCC; --sc-ind-opp: #C42B2B; }
-.sc-ind [data-camp="opposition"] :is(.sc-ind-hist__bar, .sc-ind-tech__track i, .sc-ind-accounts__bar i), .sc-ind-legend [data-camp="opposition"] i { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgb(0 0 0 / .22) 4px 6px); }
-.sc-ind-bar[data-camp="opposition"] { stroke: none; }
 
 /* Podtytuły obozów: kropka w kolorze obozu, ta sama waga co nagłówki paneli */
 .sc-camp-heading { display: flex; align-items: center; gap: 8px; margin: 0; padding-bottom: 10px; border-bottom: 1px solid var(--sc-line); font-size: var(--sc-t-title-s-size, 18px); line-height: 1.3; font-weight: 700; color: var(--sc-text); }
-.sc-camp-heading::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-ind-gov); }
-.sc-camp-heading[data-camp="opposition"]::before { border-radius: 2px; background: var(--sc-ind-opp); }
+.sc-camp-heading::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-camp-a); }
+.sc-camp-heading[data-camp="opposition"]::before { border-radius: 2px; background: var(--sc-camp-b); }
 
 /* Wynik wywiadu w układzie panelu skanera */
 .sc-interview-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-radius: 16px; background: var(--sc-surface-2); overflow: hidden; }
@@ -5655,7 +5641,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-interview-results__who span { font-weight: 400; color: var(--sc-text-2); }
 .sc-interview-results__score { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sc-interview-results__none { margin: 0; font-size: 14px; color: var(--sc-text-3); }
-.sc-interview-results > section + section .sc-scan-g-track i { background: var(--sc-text-2); }
+.sc-interview-results > section + section .sc-scan-g-track i { background: var(--sc-meter-fill); }
 @media (max-width: 640px) { .sc-interview-results { grid-template-columns: 1fr; } .sc-interview-results > section + section { border-left: 0; border-top: 1px solid var(--sc-line); } }
 /* Nazwy modeli w panelu w jednej linii (np. „Nemotron”), pasek bierze resztę */
 .sc-scan-council .sc-scan-g-row { grid-template-columns: max-content minmax(24px, 1fr) auto 8px; gap: 6px; }
@@ -5668,12 +5654,12 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-method-steps strong { font-size: 15px; }
 .sc-info-page__body .sc-method-steps p { margin: 0; font-size: 13.5px; line-height: 20px; color: var(--sc-text-2); }
 .sc-method-gauge { margin: 16px 0; }
-.sc-method-gauge__bar { display: flex; height: 34px; border-radius: 10px; overflow: hidden; font-size: 12.5px; font-weight: 600; }
-.sc-method-gauge__bar span { display: grid; place-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-method-gauge__bar span:nth-child(1) { background: var(--sc-surface-3); color: var(--sc-text-3); }
+.sc-method-gauge__bar { display: flex; min-height: 34px; border-radius: 10px; overflow: hidden; font-size: 12.5px; font-weight: 600; }
+.sc-method-gauge__bar span { display: grid; place-items: center; padding: 4px 8px; text-align: center; line-height: 15px; overflow-wrap: anywhere; }
+.sc-method-gauge__bar span:nth-child(1) { background: var(--sc-surface-3); color: var(--sc-text); }
 .sc-method-gauge__bar span:nth-child(2) { background: color-mix(in srgb, var(--sc-accent) 30%, var(--sc-surface)); color: var(--sc-text); }
-.sc-method-gauge__bar span:nth-child(3) { background: var(--sc-accent); color: #fff; }
-.sc-method-gauge__scale { position: relative; height: 18px; margin-top: 4px; font-size: 11.5px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
+.sc-method-gauge__bar span:nth-child(3) { background: var(--sc-accent); color: var(--sc-on-accent); }
+.sc-method-gauge__scale { position: relative; height: 18px; margin-top: 4px; font-size: 11.5px; color: var(--sc-text-2); font-variant-numeric: tabular-nums; }
 .sc-method-gauge__scale b { position: absolute; font-weight: 500; transform: translateX(-50%); }
 .sc-method-gauge__scale b:first-child { left: 0; transform: none; }
 .sc-method-gauge__scale b:last-child { right: 0; transform: none; }
@@ -5705,11 +5691,10 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-method-claims i[data-k="mid"] { background: var(--sc-warning); }
 .sc-method-claims span { font-size: 14px; color: var(--sc-text-2); }
 .sc-method-families { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
-.sc-method-family { --fam: #55B4FF; padding: 14px; border-radius: 14px; background: var(--sc-surface); box-shadow: var(--sc-panel-ring); border-top: 3px solid var(--fam); }
-.sc-method-family[data-family="przedstawienie"] { --fam: #F5A54A; }
-.sc-method-family[data-family="spor"] { --fam: #b58ad8; }
+.sc-method-family { padding: 14px; border-radius: 14px; background: var(--sc-surface); box-shadow: var(--sc-panel-ring); }
 .sc-info-page__body .sc-method-family h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 15px; line-height: 20px; }
-.sc-method-family h3 i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--fam); }
+.sc-method-family h3 i { flex: none; width: 12px; height: 12px; background: var(--sc-fam-mark); clip-path: var(--sc-fam-shape-dane); }
+.sc-method-family[data-family="przedstawienie"] h3 i { clip-path: var(--sc-fam-shape-przedstawienie); } .sc-method-family[data-family="spor"] h3 i { clip-path: var(--sc-fam-shape-spor); }
 .sc-method-family h3 span { margin-left: auto; font-size: 13px; color: var(--sc-text-3); font-variant-numeric: tabular-nums; }
 .sc-info-page__body .sc-method-family ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .sc-info-page__body .sc-method-family li { margin: 0; font-size: 13.5px; line-height: 19px; color: var(--sc-text-2); }
@@ -5733,8 +5718,8 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-method-family h3 span { flex: none; white-space: nowrap; align-self: flex-start; }
 @media (max-width: 640px) { .sc-method-strength, .sc-method-agree { grid-template-columns: 1fr; gap: 10px; } .sc-method-table tbody th { width: 40%; } }
 /* Podtytuły obozów: wersaliki, większe, w kolorze obozu — od razu widać, która kolumna jest czyja */
-.sc-camp-heading { font-size: 20px; line-height: 26px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-ind-gov); padding-bottom: 12px; border-bottom: 2px solid color-mix(in srgb, var(--sc-ind-gov) 45%, transparent); }
-.sc-camp-heading[data-camp="opposition"] { color: var(--sc-ind-opp); border-bottom-color: color-mix(in srgb, var(--sc-ind-opp) 45%, transparent); }
+.sc-camp-heading { font-size: 20px; line-height: 26px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-camp-a); padding-bottom: 12px; border-bottom: 2px solid color-mix(in srgb, var(--sc-camp-a) 45%, transparent); }
+.sc-camp-heading[data-camp="opposition"] { color: var(--sc-camp-b); border-bottom-color: color-mix(in srgb, var(--sc-camp-b) 45%, transparent); }
 .sc-camp-heading::before { width: 12px; height: 12px; }
 
 /* Konsylium AI: droga wpisu, role, przykład łączenia głosów, reguły składu, narzędzia, zasady */
@@ -5748,7 +5733,7 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 .sc-info-page__body .sc-kons-roles li:first-child { grid-column: 1 / -1; border-left: 3px solid var(--sc-accent); }
 .sc-info-page__body .sc-kons-roles h3 { margin: 0; font-size: 16px; line-height: 22px; }
 .sc-info-page__body .sc-kons-roles p { margin: 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
-.sc-info-page__body .sc-kons-roles .sc-kons-roles__who { font-size: 12px; line-height: 18px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sc-accent); }
+.sc-info-page__body .sc-kons-roles .sc-kons-roles__who { font-size: 12px; line-height: 18px; font-weight: 700; letter-spacing: .02em; text-transform: none; color: var(--sc-accent); }
 .sc-kons-example { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); margin-top: 12px; border-radius: 16px; background: var(--sc-surface); box-shadow: var(--sc-panel-ring); overflow: hidden; }
 .sc-info-page__body .sc-kons-example__votes { list-style: none; margin: 0; padding: 16px; display: grid; gap: 10px; }
 .sc-info-page__body .sc-kons-example__votes li { margin: 0; display: grid; grid-template-columns: 64px 118px minmax(40px, 1fr) 28px; align-items: center; gap: 10px; font-size: 13.5px; }
@@ -5916,12 +5901,12 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 
 /* === Poprawki z audytu 046 (30.09.2026) === */
 /* Przekaz dnia: etykieta w kolorze obozu (rządzący niebieski, opozycja czerwona) */
-.sc-clinic-message[data-camp="government"] > .sc-clinic-kicker { color: var(--sc-ind-gov); }
-.sc-clinic-message[data-camp="opposition"] > .sc-clinic-kicker { color: var(--sc-ind-opp); }
+.sc-clinic-message[data-camp="government"] > .sc-clinic-kicker { color: var(--sc-camp-a); }
+.sc-clinic-message[data-camp="opposition"] > .sc-clinic-kicker { color: var(--sc-camp-b); }
 /* Telefon: przekazy obu obozów jeden pod drugim zamiast dwóch wąskich kolumn */
 @media (max-width: 760px) { .sc-clinic-overview .sc-clinic-split { grid-template-columns: minmax(0, 1fr) !important; } }
 /* Wywiady: siła spinu prowadzącego tym samym niebieskim co pozostałe miary siły */
-.sc-interview-results > section + section .sc-scan-g-track i { background: var(--sc-accent) !important; }
+.sc-interview-results > section + section .sc-scan-g-track i { background: var(--sc-meter-fill) !important; }
 /* Źródła: klikalne znaczki X/YouTube z celem dotyku 44 px */
 a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items: center; justify-content: center; }
 .sc-social-list li:last-child:nth-child(odd) { grid-column: 1 / -1; }
@@ -5938,8 +5923,8 @@ a.sc-source-chip { min-height: 44px; min-width: 44px; height: auto; align-items:
 
 /* Źródła i osoby (zlecenie 047) */
 .sc-directory-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-3); }
-.sc-source-directory-filter { display: grid; gap: var(--sc-s-2); }
-.sc-source-directory-filter select { min-height: 44px; max-width: 100%; padding: var(--sc-s-2); color: var(--sc-text); background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-sm); }
+.sc-source-directory-filter { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-2); }
+.sc-source-directory-filter select { min-height: 44px; width: 100%; max-width: 100%; min-width: 0; padding: var(--sc-s-2); color: var(--sc-text); background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-r-sm); }
 .sc-source-page__grid li { flex-wrap: wrap; align-items: center; }
 .sc-source-page__grid li > span { flex: 1 1 100%; }
 .sc-source-page__grid li > small { max-width: 100%; white-space: normal; }
@@ -6326,8 +6311,6 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 @media (max-width: 639px) {
   .sc-dialog-backdrop:has(.sc-howto-panel) { padding: 0; align-items: end; }
   .sc-howto-panel { width: 100%; max-height: 90dvh; border-radius: var(--sc-r-lg) var(--sc-r-lg) 0 0; padding-bottom: env(safe-area-inset-bottom); }
-  .sc-footer__bar:has(.sc-howto-trigger) { flex-wrap: wrap; }
-  .sc-footer__bar > .sc-howto-trigger { order: 4; width: 100%; text-align: center; }
   .sc-participant-result { padding: 16px; }
   .sc-spin-card__links:has(.sc-share-cta) { width: 100%; flex-direction: column; align-items: stretch; }
 }
@@ -6360,3 +6343,438 @@ body:has(.sc-command-panel) .sc-app-main { padding-top: max(16px, env(safe-area-
 /* Nazwy członków Konsylium w karcie diagnozy nigdy nie wychodzą poza kolumnę */
 .sc-scan-g-row { min-width: 0; }
 .sc-scan-g-row > em, .sc-scan-vote-missing { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* === Aspekt 1 / R9: dwa tokeny układu ===
+   Kontener = --sc-layout-wide (nagłówek, treść i stopka mają wspólną lewą krawędź);
+   miara prozy = --sc-measure (68ch). Strony węższe od kontenera nie są wyśrodkowywane (przesuwały lewą krawędź). */
+.sc-info-page__hero, .sc-info-page__body { max-width: min(100%, var(--sc-measure)); }
+.sc-public-figure, .sc-public-figure-page, .sc-account, .sc-account-profile-page { margin-inline: 0; }
+.sc-home-doctor__scale, .sc-public-figure-disclaimer, .sc-source-page__note { max-width: var(--sc-measure); }
+
+/* === Aspekt 1 / R7: cały wiersz rejestru osób jest klikalny (stretched link: jedna prawdziwa kotwica) === */
+.sc-public-directory__list li { position: relative; }
+.sc-public-directory__name::after { content: ""; position: absolute; inset: 0; }
+.sc-public-directory__name:focus-visible { outline: none; }
+.sc-public-directory__name:focus-visible::after { outline: 2px solid var(--sc-focus); outline-offset: -2px; border-radius: var(--sc-r-sm); }
+.sc-public-directory__list li:hover .sc-public-directory__name, .sc-public-directory__list li:hover .sc-public-directory__go { color: var(--sc-accent); }
+.sc-public-directory__go { flex-shrink: 0; color: var(--sc-text-2); font-weight: 600; white-space: nowrap; }
+.sc-public-directory__x :is(a, button, input, form) { position: relative; z-index: 1; }
+
+/* === Aspekt 1 / R8: okruszki; na telefonie tylko rodzic („‹ Diagnozy”) === */
+.sc-breadcrumbs { margin-bottom: var(--sc-s-3); }
+.sc-breadcrumbs__list { display: flex; flex-wrap: wrap; align-items: center; margin: 0 0 0 -4px; padding: 0; list-style: none; font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); color: var(--sc-text-2); }
+.sc-breadcrumbs__item { display: inline-flex; align-items: center; min-width: 0; }
+.sc-breadcrumbs__item + .sc-breadcrumbs__item::before { content: "›"; padding-inline: var(--sc-s-2); color: var(--sc-text-3); }
+.sc-breadcrumbs__link { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 4px; color: var(--sc-text-2); text-decoration: none; }
+.sc-breadcrumbs__link:hover { color: var(--sc-accent); }
+.sc-breadcrumbs__text { display: inline-block; max-width: 60ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sc-text); }
+@media (max-width: 639px) {
+  .sc-breadcrumbs__item:not([data-parent]) { display: none; }
+  .sc-breadcrumbs__item + .sc-breadcrumbs__item::before { content: none; }
+  .sc-breadcrumbs__item[data-parent] .sc-breadcrumbs__link::before, .sc-breadcrumbs__item[data-parent] .sc-breadcrumbs__text::before { content: "‹"; padding-right: var(--sc-s-2); }
+}
+
+/* === Aspekt 1 / R8: „Zobacz też” pod diagnozą === */
+.sc-see-also { display: grid; gap: var(--sc-s-3); padding-top: var(--sc-s-5); border-top: 1px solid var(--sc-line); }
+.sc-see-also h2 { margin: 0; }
+.sc-see-also__list { display: grid; gap: var(--sc-s-2); margin: 0; padding: 0; list-style: none; }
+.sc-see-also__list li { display: grid; gap: 2px; }
+.sc-see-also__list a { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--sc-s-2); min-height: 44px; color: var(--sc-text); font-weight: 600; text-decoration: none; }
+.sc-see-also__list a:hover { color: var(--sc-accent); }
+.sc-see-also__prefix { color: var(--sc-text-2); font-size: var(--sc-t-caption-size); font-weight: 600; text-transform: uppercase; letter-spacing: var(--sc-track-caption); }
+.sc-see-also__meta { color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+
+/* === Aspekt 1 / R11: proweniencja przekazu widoczna, metadane techniczne zwinięte pod „Jak powstał ten przekaz” === */
+.sc-message-detail__provenance { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); line-height: var(--sc-t-body-s-lh); }
+.sc-message-detail__how > summary { display: flex; align-items: center; min-height: 44px; color: var(--sc-text-2); font-weight: 600; cursor: pointer; }
+.sc-message-detail__how[open] > summary { color: var(--sc-text); }
+.sc-message-detail__how > .sc-message-detail__meta { padding-bottom: var(--sc-s-3); }
+
+/* === Aspekt 1 / R5: stałe linki do dowodów zaufania w pasku u dołu (komputer); telefon i tablet: menu ===
+   R3: pasek ma safe-area-inset-bottom (iPhone w PWA), jeden wiersz ≤56px. */
+.sc-footer__quick { display: none; }
+@media (min-width: 1200px) {
+  .sc-footer__quick { display: flex; align-items: center; gap: 4px; }
+  .sc-footer__quick-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 10px; border-radius: var(--sc-radius-control); color: var(--sc-text-2); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .sc-footer__quick-link:hover { color: var(--sc-text); background: var(--sc-surface-3); }
+  .sc-footer__quick-link[aria-current="page"] { color: var(--sc-text); box-shadow: inset 0 -2px var(--sc-accent); border-radius: 0; }
+}
+.sc-footer[data-sticky] { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Aspekt 1 / I2-3: „Jak powstał ten przekaz” wygląda na rozwijane (chevron, kursor, obrót); „Zatwierdzono” zostaje widoczne */
+.sc-message-detail__how > summary { list-style: none; gap: var(--sc-s-2); }
+.sc-message-detail__how > summary::-webkit-details-marker { display: none; }
+.sc-message-detail__how > summary::after { content: ""; width: 8px; height: 8px; margin-left: var(--sc-s-1); border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .15s ease; }
+.sc-message-detail__how[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+.sc-message-detail__how > summary:hover { color: var(--sc-text); }
+@media (prefers-reduced-motion: reduce) { .sc-message-detail__how > summary::after { transition: none; } }
+
+/* === Aspekt 1 / I2-4: „Zobacz też” w lewej kolumnie diagnozy (nad reakcjami); na telefonie po treści diagnozy === */
+.sc-see-also { padding: 20px; border: 0; border-radius: var(--sc-r-lg); background: var(--sc-surface); box-shadow: 0 0 0 1px var(--sc-line); }
+.sc-see-also h2 { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sc-text-3); }
+.sc-see-also__lead { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+.sc-see-also__more { display: flex; flex-wrap: wrap; gap: 0 var(--sc-s-4); margin: 0; }
+.sc-see-also__more a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-accent); font-weight: 600; text-decoration: none; }
+@media (max-width: 1000px) { .sc-dg-layout .sc-see-also { order: 6; } }
+
+/* === Aspekt 1 / I2-6: kotwice sekcji diagnozy jako zakładki-pigułki, jedna linia (na telefonie przewijane poziomo) === */
+.sc-spin-detail__anchors { flex-wrap: nowrap; gap: var(--sc-s-2); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.sc-spin-detail__anchors::-webkit-scrollbar { display: none; }
+.sc-spin-detail__anchors a { flex: none; padding: 0 16px; border: 1px solid var(--sc-control-line); border-radius: var(--sc-r-pill); color: var(--sc-text); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.sc-spin-detail__anchors a:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
+
+/* === Aspekt 1 / I2-8: sekcje rozwijane na /konsylium === */
+.sc-kons-fold { border-top: 1px solid var(--sc-line); scroll-margin-top: 88px; }
+.sc-kons-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s-3); min-height: 56px; cursor: pointer; list-style: none; }
+.sc-kons-fold > summary::-webkit-details-marker { display: none; }
+.sc-kons-fold > summary h2 { margin: 0; }
+.sc-kons-fold > summary::after { content: ""; flex: none; width: 10px; height: 10px; border-right: 2px solid var(--sc-text-2); border-bottom: 2px solid var(--sc-text-2); transform: translateY(-2px) rotate(45deg); transition: transform .15s ease; }
+.sc-kons-fold[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+.sc-kons-fold > summary:hover h2 { color: var(--sc-accent); }
+.sc-kons-fold__body { display: grid; gap: var(--sc-s-4); padding-bottom: var(--sc-s-6); }
+@media (prefers-reduced-motion: reduce) { .sc-kons-fold > summary::after { transition: none; } }
+
+/* === Aspekt 1 / I2-9: wspólny nagłówek grupy modułów na stronie głównej === */
+.sc-home-group { display: grid; gap: var(--sc-s-2); padding-top: var(--sc-s-6); border-top: 1px solid var(--sc-line); }
+.sc-home-group__kicker, .sc-home-group__title, .sc-home-group__lead { margin: 0; }
+.sc-home-group__kicker { color: var(--sc-text-3); font-size: var(--sc-t-caption-size); font-weight: 700; letter-spacing: var(--sc-track-caption); }
+.sc-home-group__lead { max-width: var(--sc-measure); }
+.sc-home-group__links { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); margin-top: var(--sc-s-2); }
+.sc-home-group__links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--sc-control-line); border-radius: var(--sc-r-pill); color: var(--sc-text); font-weight: 600; text-decoration: none; }
+.sc-home-group__links a:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
+.sc-home-news, .sc-home-baza, .sc-home-threads { scroll-margin-top: 88px; }
+
+/* === Aspekt 2 / F1: szybkie filtry bazy diagnoz (strona + werdykt) widoczne bez okna „Filtry” === */
+.sc-clinic-db__quick { display: flex; flex-wrap: wrap; gap: 12px 24px; min-width: 0; }
+.sc-clinic-db__quick .sc-clinic-db__camp > div { flex-wrap: wrap; }
+.sc-clinic-db__quick-label { padding: 0; margin-bottom: 4px; color: var(--sc-text-2); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.sc-clinic-db__dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.sc-clinic-db__dates label { display: grid; gap: 4px; min-width: 0; color: var(--sc-text-2); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.sc-clinic-db__dates input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--sc-control-line); border-radius: var(--sc-radius-control); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; font-size: 16px; }
+@media (min-width: 761px) { .sc-clinic-db__dates { grid-column: 1 / -1; } }
+
+/* === Aspekt 2 / F2: wyszukiwarka — pełne tytuły kart, opis przełącznika „na żywo” === */
+.sc-search-day .sc-card[data-size] .sc-card__link { -webkit-line-clamp: unset; }
+.sc-search-page__live { display: grid; gap: var(--sc-s-1); max-width: 22rem; }
+.sc-search-page__live p { margin: 0; }
+.sc-search-page__head p a { color: var(--sc-accent); text-decoration: underline; text-underline-offset: 3px; }
+
+/* === Aspekt 2 / F3: „Cytuj” i „Udostępnij” === */
+.sc-cite-share { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2); }
+.sc-cite-share__status { min-height: 1.4em; }
+.sc-scan-dg-actions { margin: var(--sc-s-3) 0; }
+.sc-surface__actions { flex-wrap: wrap; }
+.sc-surface__actions .sc-cite-share__status:empty { display: none; }
+.sc-cite-share__dialog { display: grid; gap: var(--sc-s-3); min-width: 0; }
+.sc-cite-share__title { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.sc-cite-share__link { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--sc-control-line); border-radius: var(--sc-radius-control); background: var(--sc-surface-2); color: var(--sc-text); font: inherit; font-size: 16px; }
+.sc-cite-share__actions { display: flex; flex-wrap: wrap; gap: var(--sc-s-2); }
+
+/* === Aspekt 2 / F6: przełącznik dni przekazów === */
+.sc-day-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sc-s-2) var(--sc-s-4); min-width: 0; }
+.sc-day-nav a, .sc-day-nav [aria-disabled="true"] { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--sc-s-3); border: 1px solid var(--sc-control-line); border-radius: var(--sc-r-pill); font-size: 14px; font-weight: 600; text-decoration: none; color: var(--sc-text); }
+.sc-day-nav a:hover { border-color: var(--sc-accent); color: var(--sc-accent); }
+.sc-day-nav [aria-disabled="true"] { color: var(--sc-text-3); border-style: dashed; }
+.sc-day-nav .sc-day-nav__all { border: 0; color: var(--sc-accent); }
+
+/* === Aspekt 2 / F8: pasek liczników profilu osoby (5 spójnych liczb) === */
+.sc-public-figure-summary small { color: var(--sc-text-3); font-size: 12px; line-height: 16px; }
+@media (max-width: 760px) and (min-width: 481px) { .sc-public-figure-summary button { padding: var(--sc-s-2); } .sc-public-figure-summary span { font-size: 12px; } }
+
+/* === Aspekt 2 / R1.5: profil osoby — „Cytuj/Udostępnij” w nagłówku, lista potwierdzonych materiałów === */
+.sc-public-figure-cite { margin: var(--sc-s-2) 0; }
+.sc-public-figure-confirmed { display: grid; gap: var(--sc-s-3); margin: 0; padding: 0; list-style: none; }
+.sc-public-figure-confirmed li { display: grid; gap: var(--sc-s-1); padding-top: var(--sc-s-3); border-top: 1px solid var(--sc-line); min-width: 0; }
+.sc-public-figure-confirmed a { color: var(--sc-text); font-weight: 600; overflow-wrap: anywhere; }
+.sc-public-figure-confirmed a:hover { color: var(--sc-accent); }
+.sc-public-figure-confirmed small { color: var(--sc-text-2); }
+.sc-public-figure-confirmed p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-t-body-s-size); }
+
+/* === Aspekt 2 / R1.5: „Wyczyść wszystko” przy aktywnych filtrach bazy diagnoz === */
+.sc-clinic-db__active button.sc-clinic-db__clear-all { border-color: transparent; background: transparent; color: var(--sc-text-2); text-decoration: underline; text-underline-offset: 4px; }
+.sc-clinic-db__active button.sc-clinic-db__clear-all:hover { color: var(--sc-accent); }
+
+/* === Aspekt 3 / S2: oceny modeli — liczba nie łamie się („48”, nie „4/8”), „Brak odpowiedzi” widoczne raz i nieucięte === */
+.sc-scan-council .sc-scan-g-row { grid-template-columns: max-content minmax(24px, 1fr) minmax(2.5ch, max-content) 12px; }
+/* J4: wspólna kolumna etykiet modeli - paski zaczynają się w jednej pionowej linii we wszystkich wierszach (subgrid; bez wsparcia zostaje układ per wiersz). */
+@supports (grid-template-columns: subgrid) {
+  .sc-scan-council.sc-scan-g { grid-template-columns: fit-content(46%) minmax(24px, 1fr) minmax(2.5ch, max-content) 12px; column-gap: 6px; }
+  .sc-scan-council .sc-scan-g-row { grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: 6px; }
+  .sc-scan-council .sc-scan-g-row > em { max-width: 100%; }
+}
+.sc-scan-g-row b { white-space: nowrap; overflow: visible; }
+.sc-scan-g-row > .sc-scan-vote-missing { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+
+/* === Aspekt 3 / S3: znaczek werdyktu modelu — neutralny token + KSZTAŁT (bez czerwieni werdyktu); legenda przy tabeli ===
+   spin = pełne koło, częściowy = połowa, bez spinu = pusty okrąg, nie do oceny = kreska. */
+:root { --sc-vote-mark: var(--sc-text-2); }
+.sc-scan-g-row u, .sc-scan-vote-legend u { display: inline-block; flex: none; box-sizing: border-box; width: 12px; height: 12px; border: 2px solid var(--sc-vote-mark); border-radius: 50%; background: transparent; vertical-align: middle; }
+.sc-scan-g-row u[data-verdict="spin"], .sc-scan-vote-legend u[data-verdict="spin"] { background: var(--sc-vote-mark); }
+.sc-scan-g-row u[data-verdict="partial"], .sc-scan-vote-legend u[data-verdict="partial"] { background: linear-gradient(90deg, var(--sc-vote-mark) 50%, transparent 50%); }
+.sc-scan-g-row u[data-verdict="no_spin"], .sc-scan-vote-legend u[data-verdict="no_spin"] { background: transparent; }
+.sc-scan-g-row u:not([data-verdict]), .sc-scan-g-row u[data-verdict="unclear"], .sc-scan-vote-legend u:not([data-verdict]), .sc-scan-vote-legend u[data-verdict="unclear"] { height: 2px; border-radius: 1px; border-width: 1px 0 0; background: var(--sc-vote-mark); }
+.sc-scan-vote-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 0 0; color: var(--sc-text-2); font-size: 12px; line-height: 18px; }
+.sc-scan-vote-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* === Aspekt 3 / S4: spójność kitu — zaokrąglone panele, badge i chip w kroju Montserrat, jeden przełącznik obozów === */
+.sc-search-filters, .sc-source-coverage, .sc-source-page__progress, .sc-source-page__suggestion, .sc-thread-opinion-column, .sc-public-figure-x, .sc-kons-example__result { border-radius: var(--sc-radius-panel); }
+.sc-public-figure-status { border-radius: var(--sc-radius-pill); font-variant-numeric: tabular-nums; }
+
+/* CampSwitch: ten sam wygląd na stronie głównej, w przekazach i wszędzie, gdzie wybiera się stronę */
+.sc-camp-switch { display: flex; gap: var(--sc-s-1); width: fit-content; max-width: 100%; margin-block: var(--sc-s-4); padding: 4px; border-radius: var(--sc-r-lg); background: var(--sc-surface-2); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.sc-camp-switch.sc-camp-switch button, #dr-spin .sc-camp-switch button { flex: 1 1 8rem; min-width: 44px; min-height: 44px; height: auto; padding: 8px 20px; border: 0; border-radius: var(--sc-r-md); background: transparent; box-shadow: none; color: var(--sc-text-2); font: 600 15px/20px var(--sc-font-sans); text-align: center; cursor: pointer; }
+.sc-camp-switch.sc-camp-switch button:hover, #dr-spin .sc-camp-switch button:hover { color: var(--sc-text); }
+.sc-camp-switch.sc-camp-switch button:is([aria-pressed="true"], [aria-selected="true"]), #dr-spin .sc-camp-switch button:is([aria-pressed="true"], [aria-selected="true"]) { background: var(--sc-surface); color: var(--sc-text); box-shadow: 0 0 0 1px var(--sc-line-strong), inset 0 -2px var(--sc-accent); }
+.sc-camp-switch button:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+@media (max-width: 639px) { .sc-camp-switch { width: 100%; } }
+.sc-camp-switch.sc-camp-switch button, #dr-spin .sc-camp-switch button { white-space: nowrap; flex-basis: max-content; }
+
+/* === Aspekt 3 / J5: Dr. Spin na stronie głównej - oba obozy obok siebie na szerokim ekranie; na wąskim jeden wybór przez CampSwitch === */
+.sc-scan-camps { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sc-s-5); min-width: 0; }
+.sc-scan-camp { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sc-scan-camp:not([data-active]) { display: none; }
+.sc-scan-camp__title { display: none; margin: 0; font-size: 18px; line-height: 24px; font-weight: 700; }
+@media (min-width: 1100px) {
+  .sc-scan-camps { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .sc-scan-camp > .sc-scan-card { flex: 1 1 auto; align-content: start; }
+  .sc-scan-camp:not([data-active]) { display: flex; }
+  .sc-scan-camp__title { display: block; }
+  #dr-spin .sc-scan-s-top > .sc-scan-s-tabs { display: none; }
+  /* połowa szerokości: diagnoza nad wpisem, żeby kolumna Konsylium nie ucinała nazw modeli */
+  .sc-scan-camp .sc-scan-card:not([data-expanded]) { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 16px; }
+  .sc-scan-camp .sc-scan-card > .sc-scan-dg { grid-column: 1; grid-row: 1; }
+  .sc-scan-camp .sc-scan-card > .sc-scan-p { grid-column: 1; grid-row: 2; }
+  .sc-scan-camp .sc-scan-card .sc-scan-p-inner { max-height: 260px; height: auto; }
+  .sc-scan-camp .sc-scan-card .sc-scan-m { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.sc-ind-legend__note { flex-basis: 100%; font-size: inherit; color: var(--sc-text-3); }
+
+/* Aspekt 4 / T2: pojęcia ze słowniczkiem — kropkowane podkreślenie, link do definicji. */
+.sc-term { color: inherit; text-decoration: underline dotted; text-decoration-color: var(--sc-text-3); text-underline-offset: 3px; text-decoration-thickness: 1.5px; cursor: help; }
+.sc-term:hover, .sc-term:focus-visible { text-decoration-style: solid; text-decoration-color: var(--sc-accent); }
+.sc-glossary { margin: var(--sc-s-4, 16px) 0 0; display: grid; gap: 0; }
+.sc-glossary > div { padding: 12px 0; border-top: 1px solid var(--sc-line); scroll-margin-top: 96px; }
+.sc-glossary > div:target { background: color-mix(in srgb, var(--sc-accent) 8%, transparent); }
+.sc-glossary dt { margin: 0 0 4px; font-weight: 700; color: var(--sc-text); }
+.sc-glossary dd { margin: 0; color: var(--sc-text-2); overflow-wrap: anywhere; }
+
+/* T4: słowny stopień i zdanie „co się zgadza / co naciągane” nad liczbą siły spinu. */
+.sc-scan-plain { margin: 12px 0 8px; font-size: 15px; line-height: 22px; color: var(--sc-text-2); overflow-wrap: anywhere; }
+.sc-scan-plain strong { color: var(--sc-text); }
+
+/* T3: „Od czego zacząć” — trzy kroki pod hero. */
+.sc-home-start { display: grid; gap: var(--sc-s-3); }
+.sc-home-start h2 { margin: 0; }
+.sc-home-start__steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sc-s-3); }
+.sc-home-start__steps li { display: grid; grid-template-rows: auto auto 1fr auto; gap: 6px; padding: var(--sc-s-4); border: 1px solid var(--sc-line); border-radius: var(--sc-r-lg, 16px); background: var(--sc-surface); min-width: 0; }
+.sc-home-start__n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sc-accent-soft); color: var(--sc-accent); font-size: 13px; font-weight: 700; }
+.sc-home-start__steps strong { font-size: 16px; line-height: 22px; color: var(--sc-text); }
+.sc-home-start__steps p { margin: 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
+.sc-home-start__steps a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--sc-accent); text-decoration: none; }
+.sc-home-start__steps a:hover { text-decoration: underline; }
+@media (max-width: 760px) { .sc-home-start__steps { grid-template-columns: minmax(0, 1fr); } }
+
+/* Aspekt 5 / 2026-11-05: przejrzystość AI, formularz sprostowania, kryteria doboru, nota redakcyjna. */
+.sc-ai-notice { display: grid; gap: 4px; margin: 0 0 var(--sc-s-4, 16px); padding: 12px 16px; border-radius: var(--sc-radius-control, 12px); border-left: 4px solid var(--sc-accent); background: var(--sc-surface-2); font-size: 14px; line-height: 21px; color: var(--sc-text-2); overflow-wrap: anywhere; }
+.sc-ai-notice strong { color: var(--sc-text); }
+.sc-ai-notice a { color: var(--sc-accent); font-weight: 600; }
+.sc-editorial-note { margin: var(--sc-s-4, 16px) 0 0; padding-top: 12px; border-top: 1px solid var(--sc-line); font-size: 13px; line-height: 20px; color: var(--sc-text-3); overflow-wrap: anywhere; }
+.sc-editorial-note a { color: var(--sc-accent); }
+.sc-origin-label { margin: 0 0 6px; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--sc-text-3); overflow-wrap: anywhere; }
+.sc-dg-actionbar, .sc-scan-dg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s-2, 8px); }
+.sc-council__caveat { margin: 0; font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
+.sc-scan-plain__note { display: block; margin-top: 4px; font-size: 13px; line-height: 19px; color: var(--sc-text-3); }
+
+.sc-correction { display: grid; gap: 12px; min-width: 0; }
+.sc-correction p { margin: 0; overflow-wrap: anywhere; }
+.sc-correction label { display: grid; gap: 4px; font-size: 14px; font-weight: 600; color: var(--sc-text); }
+.sc-correction input:not([type="radio"]), .sc-correction select, .sc-correction textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--sc-control-line, var(--sc-line-strong)); border-radius: var(--sc-radius-control, 12px); background: var(--sc-surface); color: var(--sc-text); font: inherit; font-size: 16px; font-weight: 400; box-sizing: border-box; }
+.sc-correction textarea { resize: vertical; min-height: 140px; }
+.sc-correction input:focus-visible, .sc-correction select:focus-visible, .sc-correction textarea:focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+.sc-correction__relation { display: grid; gap: 4px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.sc-correction__relation legend { padding: 0; margin-bottom: 4px; font-size: 14px; font-weight: 600; color: var(--sc-text); }
+.sc-correction__relation label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 400; }
+.sc-correction__trap { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.sc-correction__error { color: var(--sc-negative); font-weight: 600; }
+.sc-correction__actions { display: flex; flex-wrap: wrap; gap: var(--sc-s-2, 8px); }
+
+.sc-criteria { margin: 0 0 var(--sc-s-4, 16px); padding: 12px 16px; border: 1px solid var(--sc-line); border-radius: var(--sc-radius-control, 12px); background: var(--sc-surface); font-size: 15px; line-height: 22px; color: var(--sc-text-2); }
+.sc-criteria summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; color: var(--sc-text); }
+.sc-criteria ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.sc-criteria li { overflow-wrap: anywhere; }
+.sc-criteria[open] summary { margin-bottom: 4px; }
+.sc-table-scroll { max-width: 100%; overflow-x: auto; }
+.sc-table-scroll table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; }
+.sc-table-scroll th, .sc-table-scroll td { padding: 8px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sc-line); }
+.sc-table-scroll thead th { color: var(--sc-text-3); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Aspekt 5.1 / 2026-11-05: odznaka sposobu publikacji, wyjaśnienie modelu publikacji, tabela dostawców bez łamania słów. */
+.sc-ai-notice__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.sc-ai-notice__explain { font-size: 14px; line-height: 21px; color: var(--sc-text-2); }
+.sc-pub-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border-radius: var(--sc-radius-pill, 999px); border: 1px solid var(--sc-line-strong); background: var(--sc-surface); color: var(--sc-text); font-size: 13px; line-height: 18px; font-weight: 600; }
+.sc-pub-badge[data-mode="manual"] { border-color: var(--sc-accent); }
+.sc-interview-results__caption { margin: 2px 0 8px; font-size: 14px; line-height: 20px; color: var(--sc-text-3); }
+.sc-info-page .sc-table-scroll, .sc-table-scroll { display: block; width: 100%; max-width: 100%; overflow-x: auto; }
+.sc-table-scroll table { width: 100%; min-width: 600px; table-layout: auto; }
+.sc-table-scroll th, .sc-table-scroll td { overflow-wrap: normal; word-break: normal; hyphens: none; }
+.sc-table-scroll tbody th { white-space: nowrap; font-weight: 700; color: var(--sc-text); }
+
+/* =====================================================================
+   === A6 Dostępność + mobile (WCAG 2.1 AA) — blok końcowy, odwracalny ===
+   Zasady: zdania i treść >= 14px; etykiety/metadane >= 12px; kontrast tekstu >= 4.5:1, grafiki >= 3:1;
+   cele dotykowe >= 44px; jeden spójny pierścień fokusu (--sc-focus); ruch znika przy prefers-reduced-motion.
+   ===================================================================== */
+
+/* D1: metadane (daty, podpisy) 13px zamiast 12px; caption (wersaliki z rozstrzelonymi literami) zostaje 12px. */
+:root { --sc-t-meta-size: 13px; }
+
+/* D1: zdania i opisy, które miały 12-13.5px */
+.sc-film__caption, .sc-home-doctor__scale, .sc-council__note, .sc-report__note, .sc-editorial-note,
+.sc-home-drspin__disclaimer, .sc-support-bar__text, .sc-ind-legend__note, .sc-ind-scroll-hint, .sc-origin-label,
+.sc-home-baza__more, .sc-kons-example__agree, .sc-kons-example__cap, .sc-kons-roles__who, .sc-scan-plain__note,
+.sc-ind-note, .sc-home-drspin__why, .sc-council__roles, .sc-scan-agreement-caption, .sc-source-page__note,
+.sc-deleted__search, .sc-spin-card__source, .sc-council__provider, p.sc-t-meta, p.sc-t-caption.sc-text-2 {
+  font-size: 14px;
+}
+p.sc-t-caption.sc-text-2 { text-transform: none; letter-spacing: 0; }
+.sc-info-page__body .sc-method-steps p, .sc-info-page__body .sc-kons-example__votes li, .sc-kons-rulebar span { font-size: 14px; }
+.sc-ind-period, p.sc-ind-note.sc-ind-period { font-size: 14px; line-height: 1.45; }
+
+/* D1: chipy, znaczki i etykiety, które miały 9-11.5px: minimum 12px */
+.sc-ai-tag { height: 20px; font-size: 12px; }
+.sc-beta { height: 20px; font-size: 12px; }
+.sc-scan-m-lbl, .sc-clinic-db__quick-label, .sc-source-chip, .sc-x-badge, .sc-thread-el__tag, .sc-verdict,
+.sc-kons-example__lbl, .sc-kons-state, .sc-material-waterfall__source-empty, .sc-method-gauge__scale,
+.sc-card__eyebrow { font-size: 12px; }
+.sc-info-page__body th, .sc-kons-tools th, .sc-ind th, .sc-chart-data th { font-size: 12px; }
+.sc-verdict, .sc-kons-state { height: auto; min-height: 24px; }
+.sc-method-gauge__scale { height: 20px; }
+/* chip „AI" na telefonie: bez monospace (czytelniejsze w małym rozmiarze) */
+@media (max-width: 760px) { .sc-ai-tag { font-family: var(--sc-font-sans); font-weight: 700; letter-spacing: .08em; } }
+
+/* D1: kontrast tekstu */
+.sc-spin-row__badge, .sc-ctx__badge, .sc-invite__steps li > span, .sc-flow__num, .sc-drspin__part-label span, .sc-kons-flow__n { color: var(--sc-on-accent); }
+/* ▶ na miniaturze: ciemne tło pod symbolem, niezależnie od zdjęcia (grafika >= 3:1) */
+.sc-interview__thumb span, .sc-interview-scan-media span { color: #fff; background: radial-gradient(circle, rgba(0, 0, 0, .62) 0 24px, transparent 25px); }
+
+/* D2: cele dotykowe >= 44px (kontrolki samodzielne; linki wewnątrz zdań są wyłączone z wymogu) */
+a.sc-wordmark { display: inline-flex; align-items: center; min-height: 44px; }
+a.sc-support-bar__progress { min-height: 44px; align-content: center; }
+.sc-card__link, .sc-iv-card__cta, .sc-hero__link, .sc-spin-card__source, .sc-report__share, .sc-home-linkbtn,
+.sc-spin-detail__back, .sc-surface__source-link, .sc-deleted__search, .sc-pf-axis__source, .sc-pf-axis__link,
+.sc-scan-dg-report, .sc-scan-s-links a, .sc-footer__link {
+  display: inline-flex; align-items: center; min-height: 44px;
+}
+.sc-pf-axis__title.sc-pf-axis__link { display: flex; }
+.sc-root details > summary, .sc-chart-data > summary, .top-sources summary { display: flex; align-items: center; min-height: 44px; }
+.sc-btn[data-size="sm"]::after { inset: -8px; }
+.sc-segmented__item { min-height: 44px; }
+.sc-newsletter__consent { align-items: center; min-height: 44px; }
+.sc-newsletter__consent input { width: 22px; height: 22px; margin-top: 0; }
+.sc-root input.sc-search__input.sc-input[type="search"] { min-height: 44px; }
+
+/* D3: jeden pierścień fokusu także poza .sc-root (okna, portale) — barwa z tokenu */
+:focus-visible { outline: 2px solid var(--sc-focus, var(--color-primary)); outline-offset: 3px; }
+
+/* D4: ruch znika, poświata zostaje — mikroruchy ikon nic nie przesuwają */
+@media (prefers-reduced-motion: reduce) {
+  .sc-icon--close:hover, .sc-icon--chevron-left:hover, .sc-icon--chevron-right:hover, .sc-icon--arrow:hover,
+  .sc-icon--share:hover, .sc-icon--play:hover, .sc-icon--trash:hover .sc-icon__lid { transform: none; }
+  .sc-icon-heart[data-pop="run"] svg { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* D6: kafle statystyk na wąskim ekranie: rząd przestaje się ciąć, jedna kolumna z liczbą po lewej */
+@media (max-width: 480px) {
+  .sc-hero__stats ul { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .sc-hero__stats li { grid-template-columns: minmax(64px, auto) minmax(0, 1fr); align-items: center; column-gap: 14px; padding: 8px 0; }
+  .sc-hero__stats li + li { padding-left: 0; border-left: 0; border-top: 1px solid var(--sc-line); }
+  .sc-hero__stats span { font-size: 14px; line-height: 19px; }
+  .sc-source-page__stats { grid-template-columns: minmax(0, 1fr); }
+  .sc-source-page__stats div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 8px; }
+  .sc-source-page__stats div + div { border-left: 0; border-top: 1px solid var(--sc-line); }
+  .sc-source-page__stats dt { min-height: 0; font-size: 12px; }
+  .sc-source-page__stats dd { margin: 0; }
+  .sc-info-page__body .sc-kons-rulebar { grid-template-columns: minmax(0, 1fr); }
+  .sc-info-page__body .sc-kons-rulebar li { grid-template-columns: 64px minmax(0, 1fr); align-items: center; column-gap: 12px; }
+}
+/* znacznik kształtu przy nagłówku obozu (● rządzący, ■ opozycja), spójnie z /klinika/wskazniki */
+.sc-camp-mark { display: inline-block; font-size: 14px; line-height: 1; margin-right: 2px; vertical-align: 1px; }
+.sc-scan-camp[data-camp="government"] .sc-camp-mark { color: var(--sc-camp-a); }
+.sc-scan-camp[data-camp="opposition"] .sc-camp-mark { color: var(--sc-camp-b); }
+
+/* D7: wykresy skumulowane: deseń, nie tylko barwa. Opozycja = ukośne kreski, rządzący = pełne wypełnienie. */
+.sc-ind-legend i { width: 14px; height: 14px; }
+.sc-ind-legend [data-camp="opposition"] i { background: repeating-linear-gradient(45deg, var(--sc-camp-b) 0 3px, var(--sc-bg) 3px 5px); box-shadow: inset 0 0 0 1px var(--sc-camp-b); }
+.sc-ind [data-camp="opposition"] .sc-ind-hist__bar { background: repeating-linear-gradient(45deg, var(--sc-camp-b) 0 4px, color-mix(in srgb, var(--sc-camp-b) 45%, var(--sc-bg)) 4px 7px); }
+/* pasek werdyktów: spin = pełny, częściowy = kreski, bez spinu = kropki, nie do oceny = jasny; kształty w legendzie >= 12px */
+.sc-ind-stack { height: 14px; }
+.sc-ind-stack i[data-verdict="partial"] { background: repeating-linear-gradient(45deg, var(--verdict) 0 3px, color-mix(in srgb, var(--verdict) 35%, var(--sc-bg)) 3px 6px); }
+.sc-ind-stack i[data-verdict="no_spin"] { background: radial-gradient(circle, var(--sc-bg) 0 1.2px, transparent 1.6px) 0 0 / 6px 6px, var(--verdict); }
+.sc-ind-stack i[data-verdict="unclear"] { background: color-mix(in srgb, var(--verdict) 45%, var(--sc-bg)); }
+.sc-ind-verdicts i { width: 12px; height: 12px; box-sizing: border-box; border: 2px solid var(--verdict); background: transparent; }
+.sc-ind-verdicts li[data-verdict="spin"] i { background: var(--verdict); }
+.sc-ind-verdicts li[data-verdict="partial"] i { background: linear-gradient(90deg, var(--verdict) 50%, transparent 50%); }
+.sc-ind-verdicts li[data-verdict="no_spin"] i { background: transparent; }
+.sc-ind-verdicts li[data-verdict="unclear"] i { height: 2px; border-width: 1px 0 0; border-radius: 1px; }
+
+/* A6 domknięcie D1: selektory o wyższej specyficzności i reszta etykiet poniżej 12px */
+p.sc-ind-scroll-hint { font-size: 14px; }
+.sc-info-page__body .sc-kons-example__agree, .sc-info-page__body .sc-kons-example__cap,
+.sc-info-page__body .sc-kons-roles .sc-kons-roles__who, .sc-kons-links span { font-size: 14px; }
+.sc-deleted__archive a.sc-deleted__search { font-size: 14px; }
+.sc-x-badge.sc-x-badge--none { font-size: 14px; height: auto; min-height: 24px; padding-block: 2px; white-space: normal; }
+.sc-scan-p-meta, .sc-scan-p-meta a { font-size: 14px; line-height: 20px; }
+.sc-source-page small { font-size: 13px; }
+.sc-info-page__body .sc-kons-example__lbl, .sc-interview-results > section > .sc-scan-m-lbl, .sc-method-table thead th,
+.sc-onas-tag, .sc-onas-parts__status, .sc-account-status, .sc-account-tag, .sc-xrow__avatar small, .sc-scan-g-scale,
+.sc-interview-scan-host-label, .sc-interview-scan .sc-scan-g-legend, .sc-scan-g-legend, .sc-spin-row__badge,
+.sc-clinic-db__chip-copy > span:first-child, .sc-clinic-db__caption, .sc-clinic-db__count > span,
+.sc-command-eyebrow, .sc-command-toolbar p, .sc-command-trend, .sc-source-chip, .sc-thread-el__tag { font-size: 12px; }
+.sc-onas-flow__tech { font-size: 12px; }
+.sc-thread-el__tag, .sc-onas-tag, .sc-source-chip, .sc-x-badge, .sc-account-status { min-height: 22px; height: auto; }
+@media (max-width: 640px) { .sc-method-gauge__bar span { font-size: 12px; } }
+@media (max-width: 760px) { .sc-interview-results > section > .sc-scan-m-lbl { font-size: 12px; } }
+/* A6 domknięcie D2: linki-akcje w stopkach kart, lista źródeł, edycja pasków */
+.sc-home-doctor__work a, .sc-scan-cl-src a, .sc-home-personal__actions button { display: inline-flex; align-items: center; min-height: 44px; }
+.sc-footer__link { min-width: 44px; }
+.sc-scan-cl-src a, .sc-home-personal__actions button { min-width: 44px; justify-content: center; }
+.sc-ind-accounts li > a { display: block; padding-block: 12px; min-height: 44px; box-sizing: border-box; }
+.sc-spin-detail__sources a { display: inline-flex; align-items: center; min-height: 44px; }
+.sc-section-header__kicker a { position: relative; }
+.sc-section-header__kicker a::after { content: ""; position: absolute; inset: -14px -8px; }
+.sc-ind [data-camp="opposition"] .sc-ind-accounts__bar i { background: repeating-linear-gradient(45deg, var(--sc-camp-b) 0 4px, color-mix(in srgb, var(--sc-camp-b) 45%, var(--sc-bg)) 4px 7px); }
+
+/* A6 weryfikacja D2: pole wyszukiwania w nagłówku leży poza .sc-root (reguła z .sc-root go nie łapała) — wejście 44 px, ramka kontenera bez zmiany wysokości */
+.sc-search input.sc-search__input.sc-input { min-height: 44px; margin-block: -1px; }
+/* linki blokowe (nie w zdaniu) i podsumowania <details> poza .sc-root: cel >= 44 px */
+.sc-interview-scan-meta a, .sc-report > a, .sc-public-figure-links a, .sc-community__head .sc-clinic-kicker a,
+.sc-film__caption a { display: inline-flex; align-items: center; min-height: 44px; }
+.sc-report__panel details > summary, .sc-source-coverage > summary { padding-block: 10px; box-sizing: border-box; min-height: 44px; display: list-item; }
+.sc-interview-scan-meta { align-items: center; }
+.sc-ind-show__actions a, .sc-deleted__who a, .sc-deleted__top a, .sc-thread-el__links a, .sc-report__archive a,
+.sc-public-figure-x a, .sc-community-card__foot a { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* A6.1 P1: podpis „modeli zgodnych z wynikiem" zawija się w swojej kolumnie i nie nachodzi na etykiety modeli (także przy zoomie 200%) */
+.sc-dg-score .sc-scan-m-num .sc-scan-agreement-caption, .sc-scan-m-num .sc-scan-agreement-caption { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+.sc-scan-m-col { min-width: 0; }
+.sc-scan-m-col > .sc-scan-m-num { min-width: 0; }
+
+/* A6.1 P2: odznaka publikacji zawija się naturalnie (bez dziury w środku), data nie łamie się w środku */
+.sc-pub-badge { display: inline-block; padding-block: 4px; border-radius: 16px; }
+.sc-pub-badge time { white-space: nowrap; }
+.sc-ind-scroll-hint[hidden] { display: none; }
+
+/* Aspekt 2 / Runda 2 (2026-11-05): eksport danych i rejestr osób. */
+.sc-data-export { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 0; font-size: 14px; line-height: 20px; color: var(--sc-text-2); }
+.sc-data-export a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--sc-accent); }
+.sc-public-directory__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0 0; font-size: 14px; line-height: 20px; color: var(--sc-text-2); }
+.sc-public-directory__party { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: var(--sc-radius-pill, 999px); border: 1px solid var(--sc-line-strong); color: var(--sc-text); font-weight: 600; }
+
+/* Finalny pass 2026-11-05: podsumowanie składu Konsylium nad wykresem ocen modeli. */
+.sc-scan-council__tally { display: block; margin-bottom: 6px; font-size: 13px; line-height: 18px; color: var(--sc-text-2); }
+/* Finalny pass 2026-11-05: zgoda newslettera czytelna (kontrast tekstu i pola wyboru). */
+.sc-newsletter__consent { color: var(--sc-text-2); }
+.sc-newsletter__consent input { accent-color: var(--sc-accent); outline: 1px solid var(--sc-line-strong); outline-offset: 1px; }
+.sc-newsletter__consent a { color: var(--sc-accent); }

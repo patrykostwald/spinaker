@@ -22,7 +22,18 @@ export type PublicFigureSummary = {
   source_checked_at: string | null;
   /** Tylko na liście: czy osoba ma konto X potwierdzone oficjalnym dowodem. */
   has_x_account?: boolean;
+  /** Tylko na liście: klub albo partia, izba (z oficjalnego rejestru mandatów) i liczba opublikowanych diagnoz. */
+  party?: { code: string; short: string; name: string } | null;
+  chamber?: PublicFigureChamber | null;
+  diagnoses_count?: number;
 };
+
+export type PublicFigureChamber = 'sejm' | 'senat' | 'ep';
+export type PublicFigureFacets = {
+  parties: Array<{ code: string; short: string; name: string; count: number }>;
+  chambers: Array<{ code: PublicFigureChamber; label: string; count: number }>;
+};
+export type PublicFigureListParams = { q?: string; role_category?: string; party?: string; chamber?: string; sort?: string; page?: number };
 
 export type OrganisationSector = 'state' | 'municipal' | 'public' | 'private' | 'ngo' | 'unknown';
 export type OrganisationVerification = 'editor' | 'krs_register' | 'public_sources';
@@ -108,6 +119,10 @@ export type PublicFigureDetail = PublicFigureSummary & {
   x_account?: VerifiedXAccount | null;
   /** Wpisy wyłącznie z potwierdzonego konta X tej osoby, bez dopasowania po nazwisku. */
   x_posts?: { available: boolean; results: PublicFigureXPost[] };
+  /** Prawdziwe sumy do paska profilu (null = brak powiązanego konta lub mandatu, nie zero). */
+  /** Materiały z ręcznie potwierdzonymi odniesieniami do tej osoby (bez dopasowania po nazwisku). */
+  materials?: { available: boolean; count: number; results: Array<{ id: number; title: string; url: string; source: string; published_date: string | null; category: string; reference_kind: string; evidence_note: string }> };
+  stats?: { x_posts: number | null; diagnoses: number | null; votes: number | null; organisations: number; confirmed_materials: number };
 };
 
 export const ROLE_CATEGORY_LABELS: Record<PublicFigureRoleCategory, string> = {
@@ -157,20 +172,21 @@ export function verifiedXAccount(figure: Pick<PublicFigureDetail, 'x_account'>):
   return account;
 }
 
-export function getPublicFigures(query = '', roleCategory = '', page = 1) {
+export function getPublicFigures(query = '', roleCategory = '', page = 1, extra: Pick<PublicFigureListParams, 'party' | 'chamber' | 'sort'> = {}) {
   const params = new URLSearchParams({ page: String(page), page_size: '30' });
   if (query) params.set('q', query);
   if (roleCategory) params.set('role_category', roleCategory);
+  (['party', 'chamber', 'sort'] as const).forEach(key => { if (extra[key]) params.set(key, extra[key] as string); });
   const suffix = params.toString() ? `?${params}` : '';
-  return apiFetch<{ count: number; page: number; page_size: number; results: PublicFigureSummary[] }>(`/api/public-figures/${suffix}`);
+  return apiFetch<{ count: number; page: number; page_size: number; results: PublicFigureSummary[]; facets?: PublicFigureFacets }>(`/api/public-figures/${suffix}`);
 }
 
 export function getPublicFigure(id: number) {
   return apiFetch<PublicFigureDetail>(`/api/public-figures/${id}/`);
 }
 
-export function usePublicFigures(query: string, roleCategory: string, page = 1) {
-  return useQuery({ queryKey: ['public-figures', query, roleCategory, page], queryFn: () => getPublicFigures(query, roleCategory, page), retry: false, staleTime: 60_000 });
+export function usePublicFigures(query: string, roleCategory: string, page = 1, extra: Pick<PublicFigureListParams, 'party' | 'chamber' | 'sort'> = {}) {
+  return useQuery({ queryKey: ['public-figures', query, roleCategory, page, extra.party ?? '', extra.chamber ?? '', extra.sort ?? ''], queryFn: () => getPublicFigures(query, roleCategory, page, extra), retry: false, staleTime: 60_000 });
 }
 
 export function usePublicFigure(id: number | null) {

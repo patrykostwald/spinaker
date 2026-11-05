@@ -10,6 +10,10 @@ import type { Interview, InterviewQuote, InterviewParticipant } from "../../lib/
 import { diagnosisPresentation } from "../../lib/diagnosisPresentation";
 import { formatDatePl } from "../../lib/utils";
 import { FitStickyAside, VerdictTag } from "./SpinParts";
+import { CorrectionForm } from "../CorrectionForm";
+import { EditorialNote } from "./AiNotice";
+import { STRENGTH_BANDS, strengthWord } from "../../lib/diagnosisPresentation";
+import { modelFullName } from "../../lib/models";
 
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/s)?.[0] ?? text;
 function domain(url: string) {
@@ -44,15 +48,16 @@ export function InterviewResults({ interview }: { interview: Interview }) {
   const { guest, host } = interview;
   return <div className="sc-interview-results">
     <section>
-      <p className="sc-scan-m-lbl">Gość · siła spinu</p>
+      <p className="sc-scan-m-lbl">Wypowiedzi gościa · siła spinu</p>
       <p className="sc-interview-results__who">{interview.guest_name}{interview.guest_role ? <span>, {interview.guest_role}</span> : null}</p>
       {/* Najstarsze analizy mogły podać siłę w skali 0–10: werdykt „spin” przy sile ≤ 10 jest sprzeczny — nie pokazujemy mylącej liczby (audyt 046) */}
       {suspectScale(guest) ? <div className="sc-interview-results__score"><p className="sc-interview-results__none">Siła: skala tej analizy wymaga wyjaśnienia</p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div> : <>
       <div className="sc-interview-results__score"><p className="sc-scan-m-num sc-scan-strength">{guest.intensity}<small>/100</small></p><VerdictTag verdict={guest.verdict} label={guest.verdict_label} /></div>
+      <p className="sc-interview-results__caption">ocena sposobu wypowiedzi, nie osoby</p>
       <ResultBar value={guest.intensity} /></>}
     </section>
     <section>
-      <p className="sc-scan-m-lbl">Prowadzący · siła spinu w pytaniach</p>
+      <p className="sc-scan-m-lbl">Pytania prowadzącego · siła spinu</p>
       <p className="sc-interview-results__who">{interview.host_name || "Prowadzący"}</p>
       <div className="sc-interview-results__score">{host.intensity == null ? <p className="sc-interview-results__none">Brak wyniku liczbowego</p> : <p className="sc-scan-m-num">{host.intensity}<small>/100</small></p>}
         {host.verdict ? <VerdictTag verdict={host.verdict} label={host.verdict_label ?? ""} /> : null}</div>
@@ -206,8 +211,9 @@ function FullInterview({ interview }: { interview: Interview }) {
       </div>
       {participants.map(person => <div key={person.id} id={`${prefix}-${person.id}`} role="tabpanel" aria-labelledby={`${prefix}-tab-${person.id}`} tabIndex={0} hidden={speaker !== person.id}>
         <section className="sc-participant-result">
-          <p className="sc-scan-m-lbl">{person.label} · {person.role === "host" ? "siła spinu w pytaniach" : "siła spinu"}</p>
+          <p className="sc-scan-m-lbl">{person.role === "host" ? "Pytania prowadzącego" : "Wypowiedzi gościa"}{person.intensity != null && !suspectScale({ verdict: person.verdict ?? "", intensity: person.intensity }) ? <>: siła spinu {strengthWord(person.intensity)}</> : " · siła spinu"}</p>
           <h2>{person.name || person.label}{person.function ? <span>, {person.function}</span> : null}</h2>
+          {person.intensity != null && !suspectScale({ verdict: person.verdict ?? "", intensity: person.intensity }) ? <p className="sc-scan-plain"><strong>Siła spinu: {strengthWord(person.intensity)}.</strong> To ocena sposobu {person.role === "host" ? "zadawania pytań" : "wypowiedzi"}, nie osoby. <small className="sc-scan-plain__note">Werdykt opisuje rodzaj przekazu, a siła spinu mówi, jak mocny jest spin: {STRENGTH_BANDS}.</small></p> : null}
           <div className="sc-participant-result__score">
             <p className={person.intensity == null || suspectScale({ verdict: person.verdict ?? "", intensity: person.intensity }) ? "sc-participant-result__none" : "sc-scan-m-num"}>{person.intensity == null ? "Brak wyniku liczbowego" : suspectScale({ verdict: person.verdict ?? "", intensity: person.intensity }) ? "Siła: skala tej analizy wymaga wyjaśnienia" : <>{person.intensity}<small>/100</small></>}</p>
             {person.verdict ? <VerdictTag verdict={person.verdict} label={person.verdict_label ?? ""} /> : null}
@@ -230,8 +236,8 @@ function FullInterview({ interview }: { interview: Interview }) {
         {person.limitations ? <section><h2>Ograniczenia · {person.label}</h2><p>{person.limitations}</p></section> : null}
       </div>)}
       <section id={`${prefix}-limits`}><h2>Ograniczenia analizy</h2><p>{interview.limitations || "Nie zapisano dodatkowych ograniczeń tej analizy."}</p></section>
-      <p className="sc-interview-full__meta">Ocena konsylium AI · {interview.model} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "—"}</p>
-      <a href={`mailto:kontakt@spin.clinic?subject=${encodeURIComponent(`Zgłoszenie błędu w diagnozie WYWIAD-${interview.id}`)}`}>Zgłoś błąd</a>
+      <p className="sc-interview-full__meta">Analiza AI · szczegóły techniczne: {modelFullName(interview.model)} · diagnoza {interview.diagnosed_at ? formatDatePl(interview.diagnosed_at) : "—"}</p>
+      <EditorialNote />
       <details className="sc-interview-full__share"><summary className="sc-share-cta"><ShareXCardContent interview /></summary><label htmlFor={`${prefix}-share`}>Tekst z linkiem</label><textarea id={`${prefix}-share`} value={shareText} readOnly rows={5} /><button type="button" onClick={() => void copy()}>Kopiuj</button><p role="status">{copyStatus}</p></details>
     </article>
   </div>;

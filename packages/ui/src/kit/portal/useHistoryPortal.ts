@@ -92,12 +92,16 @@ export function useHistoryPortal({ mode, active, onOpen, onClose, resolveArticle
     };
 
     const initialId = readIdFromLocation(mode);
-    if (initialId !== null) void openFromLocation(initialId);
+    // Bezpośrednie wejście na /material/<id>: sama strona jest już pełnym widokiem materiału. Overlay na wierzchu
+    // dublowałby ten sam box (dwa przyciski „Otwórz źródło”, zakryty nagłówek) i po zamknięciu zostawiał adres „/”
+    // nad stroną materiału. Overlay otwiera się dopiero z kliknięcia powiązanego materiału lub z historii.
+    const pageRouteId = mode === "path" && /^\/material\/-?\d+\/?$/.test(window.location.pathname) ? initialId : null;
+    if (initialId !== null && pageRouteId === null) void openFromLocation(initialId);
 
     function onPopState() {
       owned.current = false;
       const id = readIdFromLocation(mode);
-      if (id !== null) {
+      if (id !== null && id !== pageRouteId) {
         void openFromLocation(id).then((opened) => {
           if (!opened && !disposed) {
             suppressReflect.current = true;

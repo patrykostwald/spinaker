@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { MessageDetail, formatDatePl, type MessageDay } from '@spin-clinic/ui';
+import { RSS_ALTERNATE_TYPES } from '../../../feeds';
 
 const API = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const loadMessage = cache(async (day: string): Promise<MessageDay> => {
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: { params: { day: string } }):
   const data = await loadMessage(params.day);
   const title = `Przekazy dnia: ${formatDatePl(data.day)} — Klinika spinu`;
   const description = 'Przekaz rządzących i opozycji: syntezy, zakres analizowanego materiału i wpisy źródłowe.';
-  return { title, description, alternates: { canonical: `/klinika/przekazy/${data.day}` },
+  return { title, description, alternates: { canonical: `/klinika/przekazy/${data.day}`, types: RSS_ALTERNATE_TYPES },
     openGraph: { title, description, type: 'article', siteName: 'spin.clinic' } };
 }
 

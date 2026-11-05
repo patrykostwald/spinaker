@@ -229,6 +229,58 @@ class XAccountSuggestion(models.Model):
         return f'@{self.handle} → {self.public_figure}'
 
 
+class SourceSuggestion(models.Model):
+    """Sugestia czytelnika: adres strony, którą warto dodać do katalogu źródeł. Nic nie jest pobierane ani publikowane
+    automatycznie - zespół weryfikuje kanał i zasady wykorzystania przed uruchomieniem."""
+    url = models.URLField(max_length=300, unique=True)
+    host = models.CharField(max_length=255, db_index=True)
+    note = models.CharField(max_length=300, blank=True)
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
+    status = models.CharField(max_length=10, default='new', db_index=True,
+                              choices=[('new', 'Nowa'), ('accepted', 'Przyjęta'), ('rejected', 'Odrzucona')])
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'sugestia źródła'
+        verbose_name_plural = 'sugestie źródeł'
+
+    def __str__(self):
+        return f'{self.host} ({self.get_status_display()})'
+
+
+class CorrectionRequest(models.Model):
+    """Sprostowanie, odpowiedź, zgłoszenie błędu lub sprzeciw wobec danych: zapis do przeglądu przez zespół.
+
+    Nic z tego formularza nie jest publikowane ani wysyłane automatycznie; adres e-mail służy tylko do odpowiedzi.
+    """
+    TARGETS = [('diagnosis', 'Diagnoza'), ('interview', 'Wywiad'), ('figure', 'Osoba publiczna'), ('message', 'Przekaz dnia')]
+    TYPES = [('correction', 'Sprostowanie / odpowiedź'), ('error', 'Zgłoszenie błędu'), ('objection', 'Sprzeciw wobec danych')]
+    RELATIONS = [('subject', 'Autor wypowiedzi lub osoba, której dotyczy'), ('other', 'Inna osoba')]
+    target_kind = models.CharField(max_length=12, choices=TARGETS)
+    target_id = models.PositiveIntegerField()
+    request_type = models.CharField(max_length=12, choices=TYPES)
+    relation = models.CharField(max_length=8, choices=RELATIONS, default='other')
+    name = models.CharField(max_length=120, blank=True)
+    email = models.EmailField(max_length=254)
+    message = models.TextField(max_length=2000)
+    status = models.CharField(max_length=10, default='new', db_index=True,
+                              choices=[('new', 'Nowe'), ('handled', 'Załatwione'), ('rejected', 'Odrzucone')])
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['target_kind', 'target_id'])]
+        verbose_name = 'sprostowanie / zgłoszenie'
+        verbose_name_plural = 'sprostowania i zgłoszenia'
+
+    def __str__(self):
+        return f'{self.get_request_type_display()}: {self.target_kind} #{self.target_id}'
+
+
 class ClinicInterview(models.Model):
     repair_attempts = models.PositiveSmallIntegerField(default=0)
     """Wywiad dnia: publiczny film z YouTube z politykiem — transkrypcja (Gemini) i diagnoza Dr. Spina (Claude).

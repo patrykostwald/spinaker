@@ -2,7 +2,7 @@
 from django.contrib import admin, messages
 
 from news import clinic
-from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, XAccountSuggestion
+from news.clinic_models import ClinicDailyMessage, SpinDiagnosis, SpinOpinion, SourceSuggestion, XAccountSuggestion, CorrectionRequest
 from news.clinic_models import InquisitorReview
 from django.utils.html import format_html
 
@@ -99,3 +99,27 @@ class XAccountSuggestionAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     search_fields = ('handle', 'public_figure__canonical_name')
     raw_id_fields = ('public_figure', 'submitted_by')
+
+
+@admin.register(SourceSuggestion)
+class SourceSuggestionAdmin(admin.ModelAdmin):
+    list_display = ('host', 'url', 'status', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('host', 'url', 'note')
+    raw_id_fields = ('submitted_by',)
+
+
+@admin.register(CorrectionRequest)
+class CorrectionRequestAdmin(admin.ModelAdmin):
+    list_display = ('request_type', 'target_kind', 'target_id', 'relation', 'email', 'status', 'created_at')
+    list_filter = ('status', 'request_type', 'target_kind', 'relation')
+    search_fields = ('email', 'name', 'message')
+    raw_id_fields = ('submitted_by',)
+    # Zespół zmienia tylko status obsługi: treści, adresu zgłaszającego i celu zgłoszenia nie wolno edytować ani kasować.
+    readonly_fields = ('target_kind', 'target_id', 'request_type', 'relation', 'name', 'email', 'message', 'submitted_by', 'created_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

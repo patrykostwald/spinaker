@@ -1,5 +1,5 @@
 """Public, evidence-only profile API for the future politician view."""
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
@@ -96,7 +96,29 @@ def figure_data(figure, include_detail=False):
     data['x_posts'] = verified_x_posts_data(figure)
     data['youtube_channels'] = confirmed_youtube_channels_data(figure)
     data['materials'] = materials_data(figure)
+    data['stats'] = stats_data(figure, data)
     return data
+
+
+def stats_data(figure, data):
+    """Liczniki paska profilu z jednego miejsca: prawdziwe sumy, nie długość przyciętej listy.
+
+    Każda liczba ma jasny zakres: wpisy X i diagnozy dotyczą wyłącznie potwierdzonego konta,
+    głosowania - połączonego mandatu w bieżącej kadencji, podmioty - potwierdzonych relacji z KRS.
+    """
+    from news.clinic import published_diagnoses
+    account = (verified_x_account_record(figure) or (None,))[0]
+    entry = figure.parliamentary_roster_entry
+    votes_total = None
+    if data['votes']['available'] and entry:
+        votes_total = Ballot.objects.filter(mp_id=int(entry.external_id), voting__term=entry.term).count()
+    return {
+        'x_posts': data['x_account']['posts_collected'] if data['x_account'] else None,
+        'diagnoses': published_diagnoses().filter(post__account_id=account.pk).count() if account else None,
+        'votes': votes_total,
+        'organisations': len(data['organisations']),
+        'confirmed_materials': data['materials']['count'],
+    }
 
 
 def confirmed_youtube_channels_data(figure):
@@ -393,25 +415,40 @@ def verified_x_account_record(figure):
 
 def figures_with_verified_x(figures):
     """Zbiór id osób z potwierdzonym kontem X — ta sama reguła co verified_x_account_record, hurtowo."""
+    return set(verified_x_account_ids(figures))
+
+
+def verified_x_account_ids(figures):
+    """{id osoby: id potwierdzonego konta X} — ta sama reguła co verified_x_account_record, hurtowo."""
     figures = list(figures)
     if not figures:
-        return set()
+        return {}
     figure_type = ContentType.objects.get_for_model(PublicFigure)
     by_roster = {figure.parliamentary_roster_entry_id: figure.pk for figure in figures if figure.parliamentary_roster_entry_id}
     evidence = SocialHandleEvidence.objects.filter(
         Q(subject_content_type=figure_type, subject_object_id__in=[figure.pk for figure in figures])
         | Q(roster_entry_id__in=by_roster.keys()),
         platform='x', status='candidate_created', candidate__resolved_account__isnull=False,
-    ).select_related('candidate__resolved_account__confirmed_by')
-    result = set()
+    ).select_related('candidate__resolved_account__confirmed_by').order_by('-reviewed_at', '-pk')
+    result = {}
     for row in evidence:
         if not row.candidate.resolved_account.is_confirmed():
             continue
+        account_id = row.candidate.resolved_account_id
         if row.subject_content_type_id == figure_type.id and row.subject_object_id:
-            result.add(row.subject_object_id)
+            result.setdefault(row.subject_object_id, account_id)
         if row.roster_entry_id in by_roster:
-            result.add(by_roster[row.roster_entry_id])
+            result.setdefault(by_roster[row.roster_entry_id], account_id)
     return result
+
+
+def diagnosis_counts(figures):
+    """{id osoby: liczba opublikowanych diagnoz z jej potwierdzonego konta X} — hurtowo (0, gdy brak konta)."""
+    from news.clinic import published_diagnoses
+    accounts = verified_x_account_ids(figures)
+    per_account = {row['post__account_id']: row['n'] for row in published_diagnoses().filter(
+        post__account_id__in=set(accounts.values())).order_by().values('post__account_id').annotate(n=Count('pk'))}
+    return {figure.pk: per_account.get(accounts.get(figure.pk), 0) for figure in figures}
 
 
 def verified_x_account_data(figure):
@@ -464,18 +501,35 @@ def votes_data(figure):
     } for ballot in ballots]}
 
 
-@extend_schema(summary="Rejestr osób publicznych", tags=["osoby publiczne"], operation_id="public_figures_list", parameters=PUBLIC_FIGURE_LIST_PARAMETERS, responses=PublicFigureListResponse)
-@api_view(['GET'])
-def public_figure_list(request):
-    query = request.query_params.get('q', '').strip()
-    role_category = request.query_params.get('role_category', '').strip()
-    status = request.query_params.get('status', '').strip()
-    try:
-        page = max(1, int(request.query_params.get('page', '1')))
-        page_size = min(100, max(1, int(request.query_params.get('page_size', '50'))))
-    except ValueError:
-        return Response({'detail': 'Parametry page i page_size muszą być liczbami całkowitymi.'}, status=400)
-    rows = PublicFigure.objects.filter(archived=False).prefetch_related('public_roles')
+_PL_ALPHABET = 'aąbcćdeęfghijklłmnńoóprsśtuvwxyzźż'
+_PL_RANK = {letter: index + 1 for index, letter in enumerate(_PL_ALPHABET)}
+
+
+def polish_name_key(name: str):
+    """Klucz sortowania po nazwisku (ostatni człon), potem po imionach, z polskim alfabetem (Ł po L, nie na końcu)."""
+    parts = (name or '').split()
+    surname, given = (parts[-1], ' '.join(parts[:-1])) if parts else ('', '')
+    word = lambda text: [_PL_RANK.get(char, 0 if not char.isalpha() else 100 + ord(char)) for char in text.casefold()]
+    return word(surname), word(given)
+
+
+CHAMBERS = {'sejm': 'Sejm', 'senat': 'Senat', 'ep': 'Parlament Europejski'}
+
+
+def figure_rows(params):
+    """Osoby wg filtrów rejestru (q, role_category, status, party, chamber, sort) — jedno źródło dla listy i eksportu.
+
+    Zwraca (wiersze, facety); wiersz to słownik: figure, party, chamber, diagnoses. ValueError przy złym `sort`.
+    """
+    query = params.get('q', '').strip()
+    role_category = params.get('role_category', '').strip()
+    status = params.get('status', '').strip()
+    party_code = params.get('party', '').strip()
+    chamber = params.get('chamber', '').strip()
+    sort = params.get('sort', 'name').strip() or 'name'
+    if sort not in ('name', 'diagnoses'):
+        raise ValueError('Parametr sort: name albo diagnoses.')
+    rows = PublicFigure.objects.filter(archived=False).select_related('parliamentary_roster_entry').prefetch_related('public_roles')
     current_role = Q(public_roles__archived=False, public_roles__status='current')
     if query:
         rows = rows.filter(Q(canonical_name__icontains=query) | Q(role_title__icontains=query) |
@@ -485,16 +539,62 @@ def public_figure_list(request):
         rows = rows.filter(Q(role_category=role_category) | (current_role & Q(public_roles__role_category=role_category))).distinct()
     if status:
         rows = rows.filter(status=status)
-    rows = rows.order_by('canonical_name', 'pk')
-    count = rows.count()
+    from news.clinic import party_data
+    base = []
+    for figure in rows:
+        entry = figure.parliamentary_roster_entry if figure.parliamentary_roster_entry_id else None
+        base.append({'figure': figure, 'party': party_data(figure), 'chamber': entry.source if entry and entry.source in CHAMBERS else None})
+
+    def facet_parties(items):
+        counts = {}
+        for item in items:
+            if item['party']:
+                code = item['party']['code']
+                counts.setdefault(code, {**item['party'], 'count': 0})['count'] += 1
+        return sorted(counts.values(), key=lambda row: (-row['count'], polish_name_key(row['short'])))
+
+    def facet_chambers(items):
+        counts = {}
+        for item in items:
+            if item['chamber']:
+                counts[item['chamber']] = counts.get(item['chamber'], 0) + 1
+        return [{'code': code, 'label': CHAMBERS[code], 'count': counts[code]} for code in CHAMBERS if code in counts]
+
+    by_chamber = [item for item in base if not chamber or item['chamber'] == chamber]
+    by_party = [item for item in base if not party_code or (item['party'] and item['party']['code'] == party_code)]
+    facets = {'parties': facet_parties(by_chamber), 'chambers': facet_chambers(by_party)}
+    selected = [item for item in by_chamber if not party_code or (item['party'] and item['party']['code'] == party_code)]
+    counts = diagnosis_counts([item['figure'] for item in selected])
+    for item in selected:
+        item['diagnoses'] = counts.get(item['figure'].pk, 0)
+    # Sortowanie po nazwisku z polską kolejnością liter robimy w Pythonie (kolacja bazy bywa binarna).
+    name_key = lambda item: (polish_name_key(item['figure'].canonical_name), item['figure'].pk)
+    selected.sort(key=name_key if sort == 'name' else lambda item: (-item['diagnoses'], *name_key(item)))
+    return selected, facets
+
+
+@extend_schema(summary="Rejestr osób publicznych", tags=["osoby publiczne"], operation_id="public_figures_list", parameters=PUBLIC_FIGURE_LIST_PARAMETERS, responses=PublicFigureListResponse)
+@api_view(['GET'])
+def public_figure_list(request):
+    try:
+        page = max(1, int(request.query_params.get('page', '1')))
+        page_size = min(100, max(1, int(request.query_params.get('page_size', '50'))))
+    except ValueError:
+        return Response({'detail': 'Parametry page i page_size muszą być liczbami całkowitymi.'}, status=400)
+    try:
+        ordered, facets = figure_rows(request.query_params)
+    except ValueError as error:
+        return Response({'detail': str(error)}, status=400)
     start = (page - 1) * page_size
-    page_rows = list(rows[start:start + page_size])
-    with_x = figures_with_verified_x(page_rows)
+    page_items = ordered[start:start + page_size]
+    with_x = figures_with_verified_x([item['figure'] for item in page_items])
     return Response({
-        'count': count,
+        'count': len(ordered),
         'page': page,
         'page_size': page_size,
-        'results': [{**figure_data(row), 'has_x_account': row.pk in with_x} for row in page_rows],
+        'facets': facets,
+        'results': [{**figure_data(item['figure']), 'has_x_account': item['figure'].pk in with_x, 'party': item['party'],
+                     'chamber': item['chamber'], 'diagnoses_count': item['diagnoses']} for item in page_items],
     })
 
 

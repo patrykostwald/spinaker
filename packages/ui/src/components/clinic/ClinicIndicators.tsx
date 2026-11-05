@@ -10,11 +10,12 @@
 import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { ClinicNav } from "./ClinicNav";
 import { Button } from "../../kit/Button";
+import { DataExport } from "../DataExport";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../../lib/api";
-import { CAMPS, CAMP_LABELS, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
+import { CAMPS, CAMP_LABELS, CAMP_NOTE, type Camp, type Party, type DataPeriod } from "../../lib/clinic";
 import { clinicPeriodLabel } from "../../lib/clinicPeriod";
 import { formatDatePl } from "../../lib/utils";
 import { AiTag } from "./SpinParts";
@@ -55,8 +56,26 @@ function PeriodNote({ stats, allTime = false, from, to }: { stats: IndicatorStat
   return <p className="sc-ind-note sc-ind-period">{range ? <>Zakres: {range} · </> : null}{clinicPeriodLabel(stats, updatedAt)}</p>;
 }
 
+/** A6.1: podpowiedź o przewijaniu tabeli pokazuje się tylko, gdy następny element realnie ma przepełnienie poziome. */
+function ScrollHint() {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [needed, setNeeded] = useState(false);
+  useEffect(() => {
+    const target = ref.current?.nextElementSibling as HTMLElement | null;
+    if (!target) return;
+    const check = () => setNeeded(target.scrollWidth > target.clientWidth + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(target);
+    const table = target.querySelector("table");
+    if (table) observer.observe(table);
+    return () => observer.disconnect();
+  }, []);
+  return <p ref={ref} className="sc-ind-scroll-hint" hidden={!needed}>Przewijaj tabelę w poziomie, aby zobaczyć wszystkie kolumny.</p>;
+}
+
 function DataTable({ title, headers, rows }: { title: string; headers: string[]; rows: Array<Array<string | number>> }) {
-  return <details className="sc-chart-data"><summary>Tabela danych — {title}</summary><p className="sc-ind-scroll-hint">Przewijaj tabelę w poziomie, aby zobaczyć wszystkie kolumny.</p><div className="sc-ind-table-wrap" role="region" aria-label={`${title} — tabela przewijana poziomo`} tabIndex={0}><table className="sc-ind-table"><caption>{title}</caption>
+  return <details className="sc-chart-data"><summary>Tabela danych — {title}</summary><ScrollHint /><div className="sc-ind-table-wrap" role="region" aria-label={`${title} — tabela przewijana poziomo`} tabIndex={0}><table className="sc-ind-table"><caption>{title}</caption>
     <thead><tr>{headers.map(header => <th scope="col" key={header}>{header}</th>)}</tr></thead>
     <tbody>{rows.map((row, index) => <tr key={index}>{row.map((cell, column) => column === 0 ? <th scope="row" key={column}>{cell}</th> : <td key={column}>{cell}</td>)}</tr>)}</tbody>
   </table></div></details>;
@@ -104,14 +123,15 @@ function Legend() {
   return (
     <p className="sc-ind-legend">
       {CAMPS.map((camp) => <span key={camp} data-camp={camp}><i aria-hidden="true" />{CAMP_LABELS[camp]}</span>)}
+      <small className="sc-ind-legend__note">{CAMP_NOTE}</small>
     </p>
   );
 }
 
 /** Słupki dzienne z podziałem na strony (skumulowane), jedna skala dla obu. */
 function DailyChart({ stats, metric, title, note }: { stats: IndicatorStats; metric: "read" | "diagnosed"; title: string; note: string }) {
-  const patternId = useId();
   const svgRef = useRef<SVGSVGElement>(null);
+  const hatchId = `${useId().replace(/:/g, "")}-hatch`;
   const [width, setWidth] = useState(360);
   useEffect(() => {
     const svg = svgRef.current;
@@ -141,7 +161,13 @@ function DailyChart({ stats, metric, title, note }: { stats: IndicatorStats; met
       <Legend />
       <PeriodNote stats={stats} from={days[0]?.date} to={days.at(-1)?.date} />
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: ${format(sum)} w ${days.length} dniach`}>
-        <defs><pattern id={patternId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--sc-ind-opp)" /><line x1="0" y1="0" x2="0" y2="6" stroke="var(--sc-surface)" strokeWidth="2" /></pattern></defs>
+        {/* A6/D7: opozycja ma deseń (ukośne kreski), rządzący pełną barwę — odróżnialne bez koloru. */}
+        <defs>
+          <pattern id={hatchId} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="6" height="6" style={{ fill: "var(--sc-camp-b)" }} />
+            <rect width="2.4" height="6" style={{ fill: "var(--sc-bg)" }} />
+          </pattern>
+        </defs>
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={L} x2={W - R} y1={y(tick)} y2={y(tick)} className="sc-ind-grid" />
@@ -157,7 +183,7 @@ function DailyChart({ stats, metric, title, note }: { stats: IndicatorStats; met
               {CAMPS.map((camp) => {
                 const value = day.by_camp[camp][metric];
                 const height = (value / top) * plotH;
-                const rect = <rect key={camp} x={x} width={slot * 0.7} y={y(base + value)} height={height} className="sc-ind-bar" data-camp={camp} style={{ fill: camp === "opposition" ? `url(#${patternId})` : "var(--sc-ind-gov)" }} />;
+                const rect = <rect key={camp} x={x} width={slot * 0.7} y={y(base + value)} height={height} className="sc-ind-bar" data-camp={camp} style={{ fill: camp === "opposition" ? `url(#${hatchId})` : "var(--sc-camp-a)" }} />;
                 base += value;
                 return value ? rect : null;
               })}
@@ -260,7 +286,7 @@ function Parties({ stats }: { stats: IndicatorStats }) {
         <p>Partia krajowa z rejestru osób publicznych. Europosłów liczymy przy ich partii, nie frakcji w Parlamencie Europejskim. „Nieustalona afiliacja” oznacza brak danych o partii w rejestrze, a nie osobną partię ani deklarację bezpartyjności.</p>
       </header>
       <PeriodNote stats={stats} />
-      <p className="sc-ind-scroll-hint">Przewijaj tabelę w poziomie, aby zobaczyć wszystkie kolumny.</p>
+      <ScrollHint />
       <div className="sc-ind-table-wrap" role="region" aria-label="Według partii — tabela przewijana poziomo" tabIndex={0}>
         <table className="sc-ind-table">
           <thead><tr><th scope="col">Partia</th><th scope="col">Strona</th><th scope="col">Diagnozy</th><th scope="col">Spin / częściowy</th><th scope="col">Średnia siła spinu</th></tr></thead>
@@ -382,6 +408,7 @@ export function ClinicIndicators() {
         action={<Button href="/klinika/diagnozy" variant="primary">Baza wszystkich diagnoz →</Button>}
         link={<Link href="/metodologia">Jak wybieramy i liczymy?</Link>} />
 
+      <DataExport dataset="wskazniki" />
       {query.isError ? <p role="alert" className="sc-clinic-empty">Nie udało się pobrać wskaźników. <Button type="button" variant="quiet" onClick={() => query.refetch()}>Spróbuj ponownie</Button></p> : null}
       {query.isLoading ? <p className="sc-clinic-empty">Ładowanie wskaźników…</p> : null}
 
@@ -411,7 +438,7 @@ export function ClinicIndicators() {
         <aside className="sc-ind-method" aria-label="Jak czytać te dane">
           <h2>Jak czytać te dane</h2>
           <ul>
-            <li>Diagnozy obejmują wpisy, które izba przyjęć uznała za warte zbadania. To nie jest próba całej polityki, więc liczba diagnoz jednej strony nie mówi, która strona spinuje więcej.</li>
+            <li>Diagnozy obejmują wpisy, które Strażnik (automatyczny filtr) uznał za warte zbadania. To nie jest próba całej polityki, więc liczba diagnoz jednej strony nie mówi, która strona spinuje więcej.</li>
             <li>Siła spinu (0–100) mówi, jak mocno wpis opiera się na technikach perswazji. Nie jest oceną prawdziwości ani osoby.</li>
             <li>Diagnozy stawia AI (konsylium kilku modeli). Każda ma numer, pełne uzasadnienie i przycisk „Zgłoś błąd”.</li>
             <li>Okres: {stats.window.date_from} – {stats.window.date_to}. Dane odświeżamy co 10 minut.</li>

@@ -8,6 +8,7 @@
  * potem pierwsza strona `/api/articles/<id>/context/` (dopasowanie po słowach kluczowych).
  */
 
+import { FORMS, plural } from "../lib/plural";
 import { useQuery } from "@tanstack/react-query";
 import { NewsCard, Strip } from "../kit";
 import { apiFetch } from "../lib/api";
@@ -61,10 +62,10 @@ export function MaterialTimeline({ article, onSelect }: { article: Article; onSe
       <header className="sc-material-timeline__head">
         <div>
           <p className="sc-t-caption sc-text-3">Oś czasu</p>
-          <h3 className="sc-t-title-s">Najważniejsze powiązane doniesienia</h3>
+          <h2 className="sc-t-title-s">Najważniejsze powiązane doniesienia</h2>
         </div>
         <p className="sc-t-meta sc-text-2">
-          {loading ? "Szukam powiązanych materiałów…" : items.length > 1 ? `${items.length} materiałów · od najnowszego do najstarszego · ten box: ${position + 1}.` : "Nie znaleźliśmy jeszcze powiązanych materiałów."}
+          {loading ? "Szukam powiązanych materiałów…" : items.length > 1 ? `${items.length} ${plural(items.length, FORMS.material)} · od najnowszego do najstarszego · ten box: ${position + 1}.` : "Nie znaleźliśmy jeszcze powiązanych materiałów."}
         </p>
       </header>
       {items.length > 1 || loading ? (

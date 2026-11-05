@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId, useState } from "react";
+import { HowToRead } from "./SpinParts";
 import { clinicNavigation, isClinicNavigationCurrent } from "../../lib/siteNavigation";
 
 export function ClinicNav() {
@@ -16,6 +17,8 @@ export function ClinicNav() {
       aria-current={isClinicNavigationCurrent(pathname, href) ? "page" : undefined}
       onClick={() => setOpen(false)}>{label}</Link>)}
       {/* Na prawym końcu paska: zasady analizy — widoczne na każdej stronie Kliniki */}
-      <Link className="sc-clinic-nav__aside" href="/metodologia" aria-current={pathname === "/metodologia" ? "page" : undefined} onClick={() => setOpen(false)}>Jak działa analiza</Link></div>
+      <Link className="sc-clinic-nav__aside" href="/metodologia" aria-current={pathname === "/metodologia" ? "page" : undefined} onClick={() => setOpen(false)}>Jak działa analiza</Link>
+      {/* A6.1: „Jak czytać wynik?” w treści, nie w przyklejonym pasku (jeden wiersz paska na telefonie) */}
+      <HowToRead interview={Boolean(pathname?.startsWith("/klinika/wywiady"))} /></div>
   </nav>;
 }

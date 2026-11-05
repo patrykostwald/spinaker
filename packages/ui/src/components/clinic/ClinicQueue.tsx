@@ -1,5 +1,6 @@
 "use client";
 
+import { FORMS, plural } from "../../lib/plural";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -85,7 +86,7 @@ export function ClinicQueue() {
       )}
       {data?.messages.map(message => (
         <article key={`m-${message.id}`} className="sc-clinic-queue__item">
-          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} wpisów</p>
+          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} {plural(message.posts_count, FORMS.entry)}</p>
           <p className="sc-clinic-message__text">{message.message}</p>
           <p>{message.themes.join(" · ")}</p>
           {buttons("message", message.id)}

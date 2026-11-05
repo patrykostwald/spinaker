@@ -9,9 +9,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "../Button";
+import { Term } from "../Term";
 import { useQuery } from "@tanstack/react-query";
 import { getClinicPage } from "../../lib/clinic";
 import { clinicPeriodLabel } from "../../lib/clinicPeriod";
+import { plural } from "../../lib/plural";
 
 type DayPeriod = "morning" | "afternoon" | "evening";
 type ThemeName = "dark" | "light";
@@ -45,7 +47,11 @@ export function HomeHero() {
     return () => observer.disconnect();
   }, []);
 
-  const tiles = stats ? ([["przeczytanych wpisów polityków", stats.read.total], ["wstępnie ocenionych", stats.screened.total], ["opublikowanych diagnoz", stats.diagnosed.total]] as const) : null;
+  const tiles = stats ? ([
+    [plural(stats.read.total, ["przeczytany wpis polityków", "przeczytane wpisy polityków", "przeczytanych wpisów polityków"]), stats.read.total],
+    [plural(stats.screened.total, ["wstępnie oceniony wpis", "wstępnie ocenione wpisy", "wstępnie ocenionych wpisów"]), stats.screened.total],
+    [plural(stats.diagnosed.total, ["opublikowana diagnoza", "opublikowane diagnozy", "opublikowanych diagnoz"]), stats.diagnosed.total],
+  ] as const) : null;
   return (
     <section className="sc-home-intro" data-v="2" aria-label="Czym jest spin.clinic">
       {/* eslint-disable-next-line @next/next/no-img-element -- ilustracja z /public, bez optymalizacji (images.unoptimized) */}
@@ -53,7 +59,7 @@ export function HomeHero() {
       <div className="sc-hero">
         <div className="sc-hero__copy">
           <h1 className="sc-hero__title">Konsylium AI bada przekaz polityków.</h1>
-          <p className="sc-hero__lead">Konsylium AI to kilka modeli różnych firm, które osobno analizują ten sam wpis według wspólnych zasad, takich samych dla rządu i opozycji.</p>
+          <p className="sc-hero__lead">Czytamy wpisy polityków rządu i opozycji i sprawdzamy, czy stosują <Term id="spin">spin</Term>, a ich twierdzenia zestawiamy ze źródłami. To dla każdego, kto chce rozumieć przekaz, a nie tylko go czytać. <Term id="konsylium">Konsylium AI</Term>, czyli kilka modeli różnych firm, ocenia każdy wpis osobno, według zasad takich samych dla obu stron.</p>
           <div className="sc-hero__actions">
             <Button href="/klinika/diagnozy" variant="primary">Przeglądaj diagnozy</Button>
             <Button href="/konsylium#film" variant="secondary">▶ Jak to działa (70 s)</Button>

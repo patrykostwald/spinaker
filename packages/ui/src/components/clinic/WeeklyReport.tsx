@@ -1,5 +1,6 @@
 "use client";
 
+import { FORMS, plural } from "../../lib/plural";
 import { SectionHeader } from "../../kit/SectionHeader";
 import Link from "next/link";
 import { useState } from "react";
@@ -104,7 +105,7 @@ export function WeeklyReport({ weekEnd, initialData }: { weekEnd?: string; initi
       <div className="sc-report__cols sc-report__counts">{CAMPS.map(camp => <section key={camp} data-camp={camp}><h2>{CAMP_LABELS[camp]}</h2><p><strong>{report.diagnoses[camp]}</strong> opublikowanych diagnoz</p></section>)}</div>
       <p className="sc-report__note">To wybrane materiały, nie reprezentatywna próba całej polityki. Liczba diagnoz i udział spinu dotyczą tylko ocenionych wpisów; nie służą do oceniania osób ani całych obozów.</p>
       <section className="sc-report__panel" aria-labelledby="report-observations"><h2 id="report-observations" className="sc-report__title">Trzy obserwacje</h2><ol className="sc-report__observations">
-        <li>Opublikowano {report.diagnoses.government + report.diagnoses.opposition} diagnoz: {report.diagnoses.government} wpisów rządzących i {report.diagnoses.opposition} opozycji.</li>
+        <li>Opublikowano {report.diagnoses.government + report.diagnoses.opposition} {plural(report.diagnoses.government + report.diagnoses.opposition, ["diagnozę", "diagnozy", "diagnoz"])}: {report.diagnoses.government} {plural(report.diagnoses.government, FORMS.entry)} rządzących i {report.diagnoses.opposition} {plural(report.diagnoses.opposition, FORMS.entry)} opozycji.</li>
         <li>{CAMPS.map(camp => `${CAMP_LABELS[camp]} — najczęstsza technika: ${[...report.techniques[camp]].sort((a, b) => b.count - a.count)[0]?.name ?? "brak danych"}`).join(". ")}.</li>
         <li>Odnotowano {report.deleted.government + report.deleted.opposition} niedostępnych wpisów; niedostępność nie potwierdza usunięcia przez autora.</li>
       </ol>{report.summary ? <details><summary>Pełne podsumowanie tygodnia</summary><p>{report.summary}</p></details> : null}</section>

@@ -9,6 +9,7 @@
  */
 
 import { Button } from "../Button";
+import { Term } from "../Term";
 import { NewsCard } from "../NewsCard";
 import type { ThreadDetail } from "../../types";
 import { EmptySlot, Strip } from "./Strip";
@@ -45,12 +46,12 @@ export function HomeDrSpin({ thread }: { thread: ThreadDetail | null }) {
             {/* Tytuł według autora: nitka Dr. Spina (AI) albo wyróżniona nitka dziennikarza — nigdy nie mylimy autorstwa. */}
             {byDrSpin ? (
               <>
-                <p className="sc-t-caption sc-text-3 sc-home-kicker">Nitka kontekstowa · przygotowana automatycznie przez AI</p>
+                <p className="sc-t-meta sc-text-3 sc-home-kicker"><Term id="nitka">Nitka kontekstowa</Term> · przygotowana automatycznie przez AI</p>
                 <h2 className="sc-t-title-l sc-home-section__title">Nitka Dr. Spina</h2>
               </>
             ) : (
               <>
-                <p className="sc-t-caption sc-text-3 sc-home-kicker">Nitka kontekstowa · autor: {published?.author_name}</p>
+                <p className="sc-t-meta sc-text-3 sc-home-kicker">Nitka kontekstowa · autor: {published?.author_name}</p>
                 <h2 className="sc-t-title-l sc-home-section__title">Nitka kontekstowa</h2>
               </>
             )}

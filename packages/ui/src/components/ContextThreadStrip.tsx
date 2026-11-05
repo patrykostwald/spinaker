@@ -1,4 +1,5 @@
 "use client";
+import { FORMS, plural } from "../lib/plural";
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { getCommunityThreads } from '../lib/community';
@@ -36,7 +37,7 @@ function RelatedThreads({ articleId, figureId, url }: ContextTarget) {
     {figureId && <p>Nitki zawierające materiały z potwierdzonym powiązaniem z tą osobą.</p>}
     <AccountDataState query={query} empty="Nitki będą dostępne wkrótce." />
     {query.isSuccess && !rows.length && <p>{query.data.context_filtered ? 'Nie ma jeszcze publicznych nitek z tym materiałem lub powiązaniem.' : 'Powiązane nitki będą dostępne wkrótce.'}</p>}
-    {rows.length > 0 && <ul>{rows.slice(0, 3).map(thread => <li key={thread.id}><p className="sc-f2-muted">@{thread.author} · {thread.items_count} materiałów</p><Link href={`/nitki/${thread.id}`}>{thread.title}</Link></li>)}</ul>}
+    {rows.length > 0 && <ul>{rows.slice(0, 3).map(thread => <li key={thread.id}><p className="sc-f2-muted">@{thread.author} · {thread.items_count} {plural(thread.items_count, FORMS.material)}</p><Link href={`/nitki/${thread.id}`}>{thread.title}</Link></li>)}</ul>}
     {rows.length > 3 && <Link href={`/nitki?${new URLSearchParams(articleId ? { article_id: String(articleId) } : figureId ? { figure_id: String(figureId) } : { url: url! })}`}>Wszystkie powiązane nitki</Link>}
   </section>;
 }

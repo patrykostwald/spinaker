@@ -445,6 +445,7 @@ def interview_data(interview: ClinicInterview | None) -> dict | None:
                  'verdict_label': dict(VERDICTS).get((interview.host_analysis or {}).get('verdict'), '')},
         'limitations': interview.limitations,
         'model': interview.model_name, 'diagnosed_at': interview.diagnosed_at,
+        'auto_published': interview.status == 'approved',
     }
 
 

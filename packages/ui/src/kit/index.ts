@@ -71,6 +71,8 @@ export { useModalA11y, type ModalA11y } from "./portal/useModalA11y";
 export { useDragDismiss, type DragDismiss, type DragDismissOptions } from "./portal/useDragDismiss";
 
 // Волна 2 — R6 навигация и футер
+export { CampSwitch, type CampSwitchProps } from "./CampSwitch";
+export { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
 export { NavMenu, NavCategories, type NavItem, type NavMenuProps, type NavCategory, type NavCategoriesProps } from "./NavMenu";
 export { SiteFooter, type SiteFooterProps, type SiteFooterColumn, type SiteFooterCta } from "./SiteFooter";
 export { ThemeToggle, type ThemeToggleProps, type ThemeToggleMode } from "./ThemeToggle";
@@ -97,3 +99,4 @@ export { ThreadView, type ThreadViewProps, type ThreadLayout } from "./ThreadVie
 export { useDemoMode } from "./home/data";
 
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
+export { Term } from "./Term";

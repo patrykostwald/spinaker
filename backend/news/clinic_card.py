@@ -246,8 +246,8 @@ def _draw_panel(draw, data, box):
             # Pięć kategorii musi zmieścić się z czytelną legendą (minimum 18 px).
             y = bottom - 158 * scale
             entries = [(key, label, color) for key, label, color in [
-                ('supported', 'potw.', '#4ed18a'), ('misleading', 'mylące', '#f2b441'),
-                ('contradicted', 'sprzeczne', '#ff6b6b'), ('unverified', 'niespr.', MUTED),
+                ('supported', 'potw.', '#4ed18a'), ('misleading', 'wprowadza w błąd', '#f2b441'),
+                ('contradicted', 'sprzeczne ze źródłami', '#ff6b6b'), ('unverified', 'niespr.', MUTED),
                 ('opinions', plural_pl(claims.get('opinions', 0), 'opinia', 'opinie', 'opinii'), '#8c8c8c')]
                 if claims.get(key, 0)]
             units = sum(claims[key] for key, _, _ in entries)

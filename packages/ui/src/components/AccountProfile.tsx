@@ -19,7 +19,7 @@ type ThemePreference = 'auto' | 'dark' | 'light' | 'pastel';
 type AccountProfileData = { username: string; public_activity: boolean; theme_preference: ThemePreference };
 type Section = 'saved' | 'activity' | 'privacy' | 'settings';
 const sections: { id: Section; label: string; description: string }[] = [
-  { id: 'saved', label: 'Zapisane', description: 'Ulubione nitki i własne paski' },
+  { id: 'saved', label: 'Zapisane', description: 'Ulubione nitki i własne wiadomości' },
   { id: 'activity', label: 'Aktywność', description: 'Twoje reakcje i komentarze' },
   { id: 'privacy', label: 'Prywatność', description: 'Widoczność Twojej historii' },
   { id: 'settings', label: 'Ustawienia', description: 'Konto i dostępne możliwości' },
@@ -71,7 +71,7 @@ export function AccountProfile() {
     finally { setPending(false); }
   }
   if (account.isPending) return <p role="status" className="sc-account-profile-empty">Ładuję konto…</p>;
-  if (!ownerId) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">TWOJE MIEJSCE W SPIN.CLINIC</p><h1>Wracaj do tego, co ważne.</h1><p>Zapisuj nitki, układaj własne paski tematów i przeglądaj swoją aktywność. Ulubione i tematy pozostają prywatne.</p><Button variant="primary" onClick={() => setOpen(true)}>Zaloguj się</Button><Button href="/" variant="quiet">Przeglądaj wiadomości ↗</Button><AccountDialog open={open} onClose={() => setOpen(false)} /></section>;
+  if (!ownerId) return <section className="sc-account-profile-page sc-account-profile-signed-out"><p className="sc-account-profile-kicker">TWOJE MIEJSCE W SPIN.CLINIC</p><h1>Wracaj do tego, co ważne.</h1><p>Zapisuj nitki, układaj własne tematy i przeglądaj swoją aktywność. Ulubione i tematy pozostają prywatne.</p><Button variant="primary" onClick={() => setOpen(true)}>Zaloguj się</Button><Button href="/" variant="quiet">Przeglądaj wiadomości ↗</Button><AccountDialog open={open} onClose={() => setOpen(false)} /></section>;
   const user = account.data!.user!;
   const role = user.is_staff ? 'Zespół spin.clinic' : user.is_journalist ? 'Dziennikarz' : 'Czytelnik';
   const current = sections.find(item => item.id === section)!;

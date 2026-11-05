@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CouncilRecruitmentLog, CouncilRoster, HowItWorksFilm } from "@spin-clinic/ui";
-import { DocLayout } from "@spin-clinic/ui/kit";
+import { DocLayout, Term } from "@spin-clinic/ui/kit";
+import { KonsFold } from "./KonsFold";
 
 export const metadata = {
   title: "Konsylium AI — spin.clinic",
@@ -9,11 +10,12 @@ export const metadata = {
 };
 
 const sections = [
+  { id: "role", label: "Kto co robi" },
   { id: "film", label: "Film" },
   { id: "droga", label: "Droga wpisu" },
-  { id: "role", label: "Kto co robi" },
   { id: "glosy", label: "Jak łączymy głosy" },
   { id: "sklad", label: "Aktualny skład" },
+  { id: "rekrutacja", label: "Rekrutacja" },
   { id: "narzedzia", label: "Narzędzia" },
   { id: "granice", label: "Granice analizy" },
   { id: "zasady", label: "Zasady i błędy" },
@@ -21,7 +23,7 @@ const sections = [
 
 /** Kolejność jak w kodzie: clinic_council.diagnose (głosy → łączenie → fakty → laboratorium → uzasadnienie → recenzja → język). */
 const FLOW = [
-  ["Selekcja", "Strażnik czyta nowe wpisy polityków i wybiera te, w których jest teza do sprawdzenia."],
+  ["Selekcja", <><Term id="straznik">Strażnik</Term> czyta nowe wpisy polityków i wybiera te, w których jest teza do sprawdzenia.</>],
   ["Niezależne głosy", "Kilka modeli różnych firm ocenia wpis osobno. Żaden nie widzi odpowiedzi innych."],
   ["Łączenie", "Stałe reguły łączą głosy w jeden werdykt, siłę spinu i listę technik."],
   ["Źródła i badania", "Twierdzenia trafiają do wyszukiwarki, a laboratorium dodaje badania pomocnicze. Źródło musi pochodzić z wyników."],
@@ -72,17 +74,17 @@ export default function CouncilPage() {
   return <DocLayout eyebrow="KONSYLIUM AI" title="Kilka modeli AI, jedna diagnoza" version="1.1" updatedAt="2026-09-29" sections={sections}
     lead="Wybrane wpisy polityków osobno ocenia kilka modeli AI różnych firm. Porównujemy ich głosy, szukamy źródeł i przygotowujemy wspólną diagnozę — z jawnym składem i ograniczeniami. Modele mogą się mylić.">
 
-    <section aria-label="Film: jak działa spin.clinic"><HowItWorksFilm /></section>
-
-    <section id="droga"><h2>Droga wpisu do diagnozy</h2>
-      <ol className="sc-kons-flow">{FLOW.map(([title, text], index) =>
-        <li key={title}><span className="sc-kons-flow__n">{index + 1}</span><strong>{title}</strong><p>{text}</p></li>)}</ol>
-    </section>
-
     <section id="role"><h2>Kto co robi</h2>
       <p>Konsylium działa jak rada lekarska: kilku niezależnych specjalistów, osobne badania i jeden opis wyniku. Poniżej domyślna obsada ról — gdy model nie odpowie, zastępuje go kolejny. Rzeczywistych wykonawców pokazujemy przy każdej diagnozie.</p>
       <ul className="sc-kons-roles">{ROLES.map(item =>
         <li key={item.role}><h3>{item.role}</h3><p className="sc-kons-roles__who">{item.who}</p><p>{item.text}</p></li>)}</ul>
+    </section>
+
+    <section aria-label="Film: jak działa spin.clinic"><HowItWorksFilm /></section>
+
+    <section id="droga"><h2>Droga wpisu do diagnozy</h2>
+      <ol className="sc-kons-flow">{FLOW.map(([title, text], index) =>
+        <li key={index}><span className="sc-kons-flow__n">{index + 1}</span><strong>{title}</strong><p>{text}</p></li>)}</ol>
     </section>
 
     <section id="glosy"><h2>Jak łączymy głosy</h2>
@@ -94,7 +96,7 @@ export default function CouncilPage() {
           <p className="sc-kons-example__lbl">Wynik</p>
           <span className="sc-verdict" data-verdict="partial">Częściowy spin</span>
           <p className="sc-kons-example__num">50<small>/100</small></p>
-          <p className="sc-kons-example__agree"><strong>3/4</strong> ten sam werdykt · rozrzut 30–80</p>
+          <p className="sc-kons-example__agree"><strong>3/4</strong> odpowiadających modeli zgodnych z wynikiem · rozrzut 30–80</p>
         </div>
       </div>
       <p className="sc-kons-example__cap">Przykład obliczenia, nie rzeczywista diagnoza.</p>
@@ -115,20 +117,20 @@ export default function CouncilPage() {
       <CouncilRoster />
     </section>
 
-    <section id="rekrutacja"><h2>Rekrutacja do Konsylium</h2>
-      <p>Skład nie jest zamknięty. Co noc Rekruter Konsylium przegląda katalogi darmowych modeli i wybiera najwyżej jednego kandydata — pierwszeństwo ma model polski i firma, której jeszcze nie ma w składzie. Kandydat zdaje egzamin: ocenia te same wpisy polityków co Konsylium. Liczy się zgodność werdyktu i siły spinu z diagnozą końcową, cytowanie technik i polszczyzna. Obecni członkowie głosują, a przyjęty model musi przyjąć Kartę; role dostaje tylko wtedy, gdy wynik egzaminu je uzasadnia.</p>
+    <KonsFold id="rekrutacja" title="Rekrutacja do Konsylium">
+      <p>Skład nie jest zamknięty. Co noc <Term id="rekruter">Rekruter</Term> Konsylium przegląda katalogi darmowych modeli i wybiera najwyżej jednego kandydata — pierwszeństwo ma model polski i firma, której jeszcze nie ma w składzie. Kandydat zdaje egzamin: ocenia te same wpisy polityków co Konsylium. Liczy się zgodność werdyktu i siły spinu z diagnozą końcową, cytowanie technik i polszczyzna. Obecni członkowie głosują, a przyjęty model musi przyjąć Kartę; role dostaje tylko wtedy, gdy wynik egzaminu je uzasadnia.</p>
       <p>Członek, który od trzech dni nie odpowiada (np. zniknął u dostawcy), zostaje zawieszony i wraca sam, gdy znów zacznie działać. Wszystkie decyzje zapisujemy poniżej. Do 7 października Rekruter działa w trybie próbnym: przyjęcia są rekomendacjami.</p>
       <CouncilRecruitmentLog />
-    </section>
+    </KonsFold>
 
-    <section id="narzedzia"><h2>Narzędzia</h2>
+    <KonsFold id="narzedzia" title="Narzędzia">
       <table className="sc-method-table sc-kons-tools"><thead><tr><th>Narzędzie</th><th>Do czego</th><th>W systemie</th></tr></thead>
         <tbody>{TOOLS.map(([name, use, state]) =>
           <tr key={name}><th scope="row">{name}</th><td>{use}</td><td><span className="sc-kons-state" data-state={state}>{state}</span></td></tr>)}</tbody></table>
       <p className="sc-method-note">Narzędzie obsługiwane przez system działa, gdy ma dostęp i wolny limit. Czy użyto go przy konkretnej diagnozie, widać w jej wynikach.</p>
-    </section>
+    </KonsFold>
 
-    <section id="granice"><h2>Granice analizy</h2>
+    <KonsFold id="granice" title="Granice analizy">
       <ul className="sc-kons-limits">
         <li>Diagnoza wymaga co najmniej 3 odpowiedzi; skład bywa ograniczony, a część badań pominięta.</li>
         <li>Brak źródła oznacza brak weryfikacji, nie fałsz.</li>
@@ -136,7 +138,7 @@ export default function CouncilPage() {
         <li>Film dołączony do wpisu nie jest analizowany; wywiady mają osobny proces.</li>
         <li>Zgoda modeli nie jest dowodem prawdy — mogą popełnić ten sam błąd.</li>
       </ul>
-    </section>
+    </KonsFold>
 
     <section id="zasady"><h2>Zasady i błędy</h2>
       <ul className="sc-kons-links">

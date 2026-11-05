@@ -21,7 +21,8 @@ from news.portal import feed, portal_config, article_context, context_counts
 from news.daily_topic import topic_of_day
 from news.community import resolve_link, community_threads, community_thread_detail, CommunityOpinionsView, report_thread
 from news.clinic_api import (clinic_page, clinic_interviews, clinic_interview_detail, clinic_messages, clinic_message_detail, clinic_statistics, clinic_spins, clinic_spin_detail, clinic_spin_card, clinic_accounts, clinic_deleted, clinic_report, SpinOpinionsView,
-                             suggest_x_account, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
+                             suggest_x_account, suggest_source, submit_correction, clinic_queue, staff_interviews, review_diagnosis, review_message, hide_diagnosis, decide_flag)
+from news.exports import export_dataset, rss_feed
 from news.public_figures import public_figure_list, public_figure_detail, public_figure_context, public_figure_dossier, public_office_list
 
 from news.views import ArticleViewSet, SearchViewSet, ThreadViewSet
@@ -44,9 +45,15 @@ urlpatterns = [
     path('portal/config/', portal_config),
     path('portal/topic-of-day/', topic_of_day),
     path('public-figures/', public_figure_list),
+    path('export/<slug:dataset>.<slug:ext>', export_dataset),
+    path('export/<slug:dataset>.<slug:ext>/', export_dataset),  # front dopisuje ukośnik w rewrite /api/*
+    path('feeds/<slug:name>.xml', rss_feed),
+    path('feeds/<slug:name>.xml/', rss_feed),
     path('public-offices/', public_office_list),
     path('public-figures/<int:figure_id>/', public_figure_detail),
     path('public-figures/<int:figure_id>/x-suggestions/', suggest_x_account),
+    path('source-suggestions/', suggest_source),
+    path('corrections/', submit_correction),
     path('community/links/', resolve_link),
     path('community/threads/', community_threads),
     path('community/threads/<int:thread_id>/', community_thread_detail),

@@ -166,7 +166,12 @@ export function MaterialSurface({
         </div>
 
         <div className="sc-surface__body">
-          <h2 className="sc-t-title-l sc-surface__title">{article.title}</h2>
+          {/* A6/D8: na stronie /material tytuł to jedyny <h1>; w oknie nad stroną głównej — <h2> (h1 ma strona pod spodem). */}
+          {isOverlay ? (
+            <h2 className="sc-t-title-l sc-surface__title">{article.title}</h2>
+          ) : (
+            <h1 className="sc-t-title-l sc-surface__title">{article.title}</h1>
+          )}
 
           <p className="sc-t-meta sc-text-2 sc-surface__source">
             <a href={article.url} target="_blank" rel="noopener noreferrer" className="sc-surface__source-link">
@@ -202,7 +207,11 @@ export function MaterialSurface({
 
           {related.length > 0 ? (
             <div className="sc-surface__related">
-              <h3 className="sc-t-title-s sc-surface__related-title">Powiązane materiały</h3>
+              {isOverlay ? (
+                <h3 className="sc-t-title-s sc-surface__related-title">Powiązane materiały</h3>
+              ) : (
+                <h2 className="sc-t-title-s sc-surface__related-title">Powiązane materiały</h2>
+              )}
               <div className="sc-surface__related-track">
                 {related
                   .filter((item) => item.id !== article.id)

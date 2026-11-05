@@ -212,7 +212,10 @@ CACHES = {"default": {
     "LOCATION": env("REDIS_URL", default="redis://localhost:6379/1"),
 }}
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = ["rest_framework.throttling.AnonRateThrottle", "rest_framework.throttling.UserRateThrottle"]
-REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"anon": "100/min", "user": "100/min"}
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"anon": "100/min", "user": "100/min",
+    "source_suggestion": "10/hour", "source_suggestion_user": "10/hour",
+    "correction": "5/hour", "correction_user": "5/hour",
+    "export": "30/hour", "export_user": "60/hour"}
 REST_FRAMEWORK["NUM_PROXIES"] = env.int("TRUSTED_PROXY_COUNT", default=0)
 NEWSAPI_TIER = env("NEWSAPI_TIER", default="free")
 RESEARCH_METADATA_NETWORK_ENABLED = env.bool("RESEARCH_METADATA_NETWORK_ENABLED", default=False)

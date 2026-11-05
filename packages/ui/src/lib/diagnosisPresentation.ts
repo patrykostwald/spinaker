@@ -1,3 +1,4 @@
+import { countPl, type PluralForms } from "./plural";
 import { FAMILY_OF, TECHNIQUE_FAMILIES } from "./techniqueFamilies";
 
 type Technique = { name: string; category?: string; family?: string; quote?: string; explanation?: string };
@@ -12,8 +13,8 @@ type DiagnosisInput<T extends Technique> = {
 
 export const CLAIM_ASSESSMENTS = [
   ["supported", "ok", "potwierdzone"],
-  ["misleading", "mid", "mylące"],
-  ["contradicted", "bad", "sprzeczne"],
+  ["misleading", "mid", "wprowadza w błąd"],
+  ["contradicted", "bad", "sprzeczne ze źródłami"],
   ["unverified", "unverified", "niezweryfikowane"],
   ["opinion", "op", "opinia"],
 ] as const;
@@ -71,4 +72,25 @@ export function diagnosisPresentation<T extends Technique>(input: DiagnosisInput
       agreement: responses.length ? `${sameVerdict}/${responses.length}` : null,
     },
   };
+}
+
+/** Progi słownego stopnia siły (te same, których używa `strengthWord`). */
+export const STRENGTH_BANDS = "niska 0–33, umiarkowana 34–66, wysoka 67–100";
+
+/** Słowny stopień siły spinu (0-100): tylko warstwa językowa, kolory i skala werdyktu bez zmian. */
+export function strengthWord(intensity: number): "niska" | "umiarkowana" | "wysoka" {
+  return intensity < 34 ? "niska" : intensity < 67 ? "umiarkowana" : "wysoka";
+}
+
+const TW_OK: PluralForms = ["twierdzenie potwierdzone źródłami", "twierdzenia potwierdzone źródłami", "twierdzeń potwierdzonych źródłami"];
+const TW_BAD: PluralForms = ["twierdzenie", "twierdzenia", "twierdzeń"];
+
+/** Jedno zdanie „co się zgadza, co wprowadza w błąd” z zapisanych ocen twierdzeń (bez nowych danych). */
+export function plainClaimsSentence(claims: Array<{ key: string; count: number }>): string {
+  const count = (key: string) => claims.find(item => item.key === key)?.count ?? 0;
+  const ok = count("supported");
+  const bad = count("contradicted") + count("misleading");
+  if (ok + bad === 0) return "Nie sprawdzaliśmy twierdzeń ze źródłami: ocena dotyczy sposobu przekazu, nie prawdziwości faktów.";
+  const part = (n: number, forms: PluralForms, none: string) => n ? countPl(n, forms) : none;
+  return `Co się zgadza: ${part(ok, TW_OK, "żadne twierdzenie nie zostało potwierdzone źródłami")}. Co wprowadza w błąd (także sprzeczne ze źródłami): ${part(bad, TW_BAD, "brak takich twierdzeń")}.`;
 }

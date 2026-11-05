@@ -89,7 +89,7 @@ def test_card_long_text_stays_in_boxes_and_does_not_overlap(card_format):
         finally:
             boxes.pop()
     def record(self, xy, text, *args, **kwargs):
-        if text in {'2 potw.', '2 mylące', '2 sprzeczne', '2 niespr.', '2 opinie'}:
+        if text in {'2 potw.', '2 wprowadza w błąd', '2 sprzeczne ze źródłami', '2 niespr.', '2 opinie'}:
             assert kwargs['font'].size >= 18
         bound = self.textbbox(xy, text, font=kwargs['font'], anchor=kwargs['anchor'])
         x, y, right, bottom = boxes[-1]

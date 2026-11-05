@@ -168,8 +168,8 @@ export function HowToRead({ interview = false }: { interview?: boolean }) {
     <Dialog open={open} onClose={() => setOpen(false)} title="Jak czytać wynik?" className="sc-howto-panel">
     <dl>
       <div><dt>Siła spinu 0–100</dt><dd>Jak mocno {interview ? "wypowiedź opiera" : "komunikat opiera"} się na technikach perswazji. To nie procent kłamstwa i nie ocena osoby.</dd></div>
-      <div><dt>Konsylium AI</dt><dd>Ile modeli wydało ten sam werdykt co diagnoza końcowa, np. 3/4.</dd></div>
-      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne albo wprowadzające w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
+      <div><dt>Konsylium AI</dt><dd>Ile spośród modeli, które odpowiedziały, było zgodnych z wynikiem końcowym, np. 3 z 4; modele bez odpowiedzi nie głosują. To nie jest niezależne potwierdzenie: modele mogą się mylić tak samo. Siła spinu: niska 0–33, umiarkowana 34–66, wysoka 67–100.</dd></div>
+      <div><dt>Twierdzenia</dt><dd>Sprawdzone ze źródłami: potwierdzone, sprzeczne ze źródłami albo wprowadza w błąd. „Niezweryfikowane” znaczy: bez źródła — nie że to fałsz.</dd></div>
       <div><dt>Techniki</dt><dd>Ile różnych technik wskazano, z dosłownym cytatem, w trzech rodzinach: dane, emocje, spór.</dd></div>
     </dl>
     <Link className="sc-howto-methodology" href="/metodologia">Pełna metodologia →</Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import { FORMS, plural } from "../lib/plural";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -523,8 +524,8 @@ function Editor({ ownerId, threadId }: { ownerId: number; threadId?: number }) {
         </div>
       </details>
 
-      {step === 4 && <section className="sc-f2-preview" aria-label="Podgląd oczami czytelnika"><h2>{draft.title}</h2><p>{draft.description}</p><p>Autor: @{account.data?.user?.username} · {draft.items.length} materiałów</p><ol className="sc-thread-els">{preview.map((element, index) => <ElementRow key={`${element.kind}-${element.id}`} element={element} index={index} />)}</ol></section>}
-      {step === 5 && <section className="sc-f2-publish"><h2>{draft.isPublic ? 'Zatwierdź zmiany publicznej nitki' : 'Gotowa do publikacji?'}</h2><p>„{draft.title}” · {draft.items.length} materiałów. Po publikacji tytuł, pytanie i notatki będą widoczne dla wszystkich pod Twoją nazwą użytkownika.</p>
+      {step === 4 && <section className="sc-f2-preview" aria-label="Podgląd oczami czytelnika"><h2>{draft.title}</h2><p>{draft.description}</p><p>Autor: @{account.data?.user?.username} · {draft.items.length} {plural(draft.items.length, FORMS.material)}</p><ol className="sc-thread-els">{preview.map((element, index) => <ElementRow key={`${element.kind}-${element.id}`} element={element} index={index} />)}</ol></section>}
+      {step === 5 && <section className="sc-f2-publish"><h2>{draft.isPublic ? 'Zatwierdź zmiany publicznej nitki' : 'Gotowa do publikacji?'}</h2><p>„{draft.title}” · {draft.items.length} {plural(draft.items.length, FORMS.material)}. Po publikacji tytuł, pytanie i notatki będą widoczne dla wszystkich pod Twoją nazwą użytkownika.</p>
         <VerifyEmailNotice />
         <label className="sc-f2-check"><input type="checkbox" checked={terms} onChange={event => setTerms(event.target.checked)} /><span>Potwierdzam <Link href="/zasady-korzystania" target="_blank">Zasady korzystania</Link> (wersja {TERMS_VERSION}). Nie publikuję danych prywatnych ani treści naruszających prawa innych.</span></label>
         {draft.items.length < MIN_PUBLIC_ITEMS && <p>Do publikacji dodaj co najmniej dwa materiały.</p>}

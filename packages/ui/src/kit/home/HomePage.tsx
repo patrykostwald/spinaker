@@ -24,6 +24,7 @@ import { HomeCategoryBar } from "./HomeCategoryBar";
 import { HomeSpinTeaser } from "./HomeSpinTeaser";
 import { HomeDrSpin } from "./HomeDrSpin";
 import { HomeHero } from "./HomeHero";
+import { HomeStart } from "./HomeStart";
 import { HomeReveal } from "./HomeReveal";
 import { HomeThreads } from "./HomeThreads";
 import { NewsletterSignup } from "../../components/NewsletterSignup";
@@ -99,13 +100,25 @@ export function HomePage() {
   return (
     <>
       <div className="sc-home">
-        <h1 className="sc-sr-only">Wiadomości i ich kontekst</h1>
+        {/* A6/D8: jedyny <h1> strony głównej to tytuł w HomeHero (wcześniej był drugi, ukryty). */}
         <DemoBanner />
         <HomeHero />
+        <HomeStart />
         {/* 1. Dr. Spin — po co tu jesteś. 2. Wiadomości — agregat z naszej Bazy do przeglądania i własnych pasków.
             3. Dla dziennikarzy. 4. Baza. 5. Newsletter (decyzja właściciela 28.09). */}
         <HomeSpinTeaser />
-        <section className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
+        {/* Aspekt 1 / I2-9: wspólny nagłówek grupy — relacja trzech modułów do Dr. Spina i skróty do nich. */}
+        <header className="sc-home-group">
+          <p className="sc-home-group__kicker">KONTEKST I MATERIAŁY</p>
+          <h2 className="sc-t-title-l sc-home-group__title">Wiadomości, które towarzyszą diagnozom</h2>
+          <p className="sc-t-body sc-text-2 sc-home-group__lead">Dr. Spin analizuje wpisy polityków w Klinice. Tutaj są wiadomości z monitorowanych mediów i instytucji: wybrane na dziś, Twoje wiadomości oraz cała Baza do przeszukania.</p>
+          <nav className="sc-home-group__links" aria-label="Moduły wiadomości">
+            <a href="#wiadomosci">Wiadomości dnia</a>
+            <a href="#nitki">Twoje wiadomości</a>
+            <a href="#baza">Baza</a>
+          </nav>
+        </header>
+        <section id="wiadomosci" className="sc-home-section sc-home-news" aria-labelledby="home-news-title">
           <header className="sc-home-news__head">
             <div>
               <h2 id="home-news-title" className="sc-t-title-l sc-home-section__title">Wiadomości</h2>
