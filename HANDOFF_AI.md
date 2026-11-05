@@ -73,4 +73,6 @@ OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. M
 - Plan przeszlosc.today (OSINT): `docs/PLAN_PRZESZLOSC_OSINT.md`; katalog źródeł z priorytetami: `docs/PRZESZLOSC_ZRODLA_DANYCH.md`; wdrożenie 23.10: `docs/zadania-chmura/WDROZENIE_2310.md`.
 - Starsze opisy przeszlosc.today jako „alternatywnego brandu" w `PLAN_AKTUALNY.md`, `project.md`, `roadmap.md`, `docs/CONTEXT_ARCHIVE_PRODUCT.md` są w tym zakresie przestarzałe.
 
-**Następny krok:** po zielonych testach przejść do OSINT-01 z planu (weryfikacja „Stanu danych" i faktycznego stanu źródeł). Wdrożenie na VPS robi właściciel: komendy w `docs/zadania-chmura/WDROZENIE_2310.md`, kopia bazy przed migracjami (`sh deploy/backup.sh`); nowa migracja 0172 jest pusta, ale musi zostać zastosowana.
+**OSINT-01 (5.11):** kod Stanu danych sprawdzony (pokrywa wszystkie 22 zbieracze, BZP, NIW, OPP i 7 zbiorów); produkcja zwraca 404 dla `/przeszlosc/dane` i `/api/przeszlosc/stan-danych/`, więc wdrożona wersja jest sprzed 23.10. Szczegóły w `docs/PLAN_PRZESZLOSC_OSINT.md`. Teksty „do potwierdzenia" nie były zmieniane (brak danych produkcyjnych, część do decyzji prawnika).
+
+**Następny krok:** wdrożenie tej gałęzi przez właściciela, potem uzupełnienie „do potwierdzenia" z danych ze Stanu danych na produkcji. Wdrożenie na VPS robi właściciel: komendy w `docs/zadania-chmura/WDROZENIE_2310.md`, kopia bazy przed migracjami (`sh deploy/backup.sh`); nowa migracja 0172 jest pusta, ale musi zostać zastosowana.

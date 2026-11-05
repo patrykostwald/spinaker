@@ -87,10 +87,28 @@ czy pokrywa wszystkie źródła.
 **Formalne:** klauzula RODO (art. 14) to wersja robocza do akceptacji prawnika; procedura sprzeciwu i terminy odpowiedzi „do potwierdzenia";
 zapowiedziane dla zespołów: wspólne teczki tematów, eksport z przypisami, API (niewdrożone).
 
+## OSINT-01: wynik weryfikacji Stanu danych (5.11.2026)
+
+**Sprawdzone w kodzie (`backend/news/przeszlosc_stan.py`, `frontend-spin/app/przeszlosc/dane/`):**
+- Stan danych pokrywa **wszystkie 22 zbieracze** z `scraper/public_records.py` (m.in. lobbing MSWiA i Sejmu, PKW, Parlament Europejski: HowTheyVote i Integrity Watch, Wikidata, kilometrówki, rejestr UE, reklamy Meta, TED, FTS, Kohesio), **BZP**, NIW, wykaz OPP oraz 7 zbiorów (głosowania, druki, oświadczenia, RCL, wpisy X, podmioty KRS, wzmianki w mediach) i pokrycie KRS.
+- Dla każdego źródła pokazuje: włączone / wyłączone, liczbę rekordów, datę ostatniego udanego pobrania, ostatni błąd, znane braki; zaległość po 48 h (zbiory mają własne progi). To dokładnie ta informacja, której strona „Jak to działa" nie ma („faktyczny harmonogram na produkcji: brak w naszych danych").
+- Strona jest podlinkowana w stopce (`ui.tsx`). Testy backendu tego modułu przechodzą w pełnym przebiegu (5.11).
+
+**Sprawdzone na żywej produkcji (5.11.2026):**
+- `https://przeszlosc.today/przeszlosc/dane` zwraca 404, `https://przeszlosc.today/api/przeszlosc/stan-danych/` zwraca 404.
+- Wniosek: **wdrożona wersja nie zawiera Stanu danych**, czyli jest sprzed integracji z 23.10 (zgodne z tym, że `codex/mvp-public-frontend` też go nie ma). Strona Next.js zwraca 404, więc nie jest to efekt flagi `PRZESZLOSC_ENABLED` po stronie API.
+
+**Czego nie da się ustalić bez produkcji (nie zgadywać):** faktyczne daty ostatnich pobrań i włączenie źródeł (BZP, lobbing, X, media, kilometrówki, spin.clinic) oraz zakresy oznaczone w `jak-to-dziala/tresc.ts` jako „do potwierdzenia" (pole `tbc`, lista do prawnika). Wypełnienie ich wymaga danych ze Stanu danych na produkcji i, tam gdzie dotyczy prawa (Regulamin X, prawo cytatu), decyzji prawnika.
+
+**Wniosek i krok właściciela:** największą wartością dla OSINT-01 jest **wdrożenie** tej gałęzi na VPS (komendy i zmienne środowiskowe w `docs/zadania-chmura/WDROZENIE_2310.md`, przed tym kopia bazy `sh deploy/backup.sh`; migracje 0171 i 0172 muszą zostać zastosowane). Dopiero po wdrożeniu `/przeszlosc/dane` pokaże prawdziwy stan, a wtedy można:
+1. uzupełnić „do potwierdzenia" w `tresc.ts` faktycznymi danymi (zakres, odświeżanie),
+2. dopisać w „Jak to działa" odnośnik do Stanu danych jako źródła prawdy o aktualności,
+3. rozstrzygnąć, które źródła są wyłączone na produkcji (BZP: `BZP_API_ENABLED`, domyślnie wyłączony).
+
 ## Następne kroki
 
 1. **OSINT-00 (w toku):** testy backendu i build frontendu na scalonej gałęzi; wynik w `HANDOFF_AI.md`.
-2. **OSINT-01:** zweryfikować, czy „Stan danych" pokazuje faktyczny stan każdego źródła na produkcji (włączone / harmonogram / ostatni udany import) i uzupełnić braki; sprawdzić, który kod działa na VPS.
+2. **OSINT-01 (kod sprawdzony, czeka na wdrożenie):** Stan danych pokrywa wszystkie źródła, ale produkcja go nie ma (404). Krok właściciela: wdrożenie; potem uzupełnienie „do potwierdzenia" z danych produkcyjnych.
 3. **OSINT-02:** pokazać dane już zbierane, a niewidoczne (PKW, reklamy Meta).
 4. **OSINT-03:** włączyć BZP po uzyskaniu instrukcji UZP; domknąć status „do potwierdzenia" (lobbing, PE, kilometrówki).
 5. **OSINT-04:** źródła P1 z katalogu: BIR, Biała lista, SUDOP; potem RCN i ULDK.
