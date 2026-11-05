@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CouncilRecruitmentLog, CouncilRoster, HowItWorksFilm } from "@spin-clinic/ui";
+import { CouncilRecruitmentLog, CouncilRoster } from "@spin-clinic/ui";
 import { DocLayout, Term } from "@spin-clinic/ui/kit";
 import { KonsFold } from "./KonsFold";
 
@@ -79,8 +79,6 @@ export default function CouncilPage() {
       <ul className="sc-kons-roles">{ROLES.map(item =>
         <li key={item.role}><h3>{item.role}</h3><p className="sc-kons-roles__who">{item.who}</p><p>{item.text}</p></li>)}</ul>
     </section>
-
-    <section aria-label="Film: jak działa spin.clinic"><HowItWorksFilm /></section>
 
     <section id="droga"><h2>Droga wpisu do diagnozy</h2>
       <ol className="sc-kons-flow">{FLOW.map(([title, text], index) =>

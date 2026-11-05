@@ -5231,7 +5231,9 @@ html[data-theme="light"], html[data-theme="pastel"], [data-sc-theme="light"] { -
 /* ---------- Pas powitalny v2 (29.09): jeden spójny blok — tekst i akcje po lewej, liczniki jak „Praca Kliniki” po prawej ---------- */
 .sc-home-intro[data-v="2"] { display: block; padding: 32px 36px; min-height: 0; }
 .sc-home-intro[data-v="2"]::before { background: linear-gradient(90deg, var(--sc-bg) 0%, color-mix(in srgb, var(--sc-bg) 88%, transparent) 45%, color-mix(in srgb, var(--sc-bg) 55%, transparent) 100%); }
-.sc-hero { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.sc-hero { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: stretch; }
+/* Prawa kolumna: box liczników + przyciski pod nim, wyśrodkowane w pionie (równy odstęp u góry i u dołu boxa). */
+.sc-hero__side { display: grid; gap: 18px; align-content: center; align-self: stretch; }
 .sc-hero__copy { display: grid; gap: 14px; align-content: start; }
 .sc-hero__title { margin: 0; font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em; color: var(--sc-text); text-wrap: balance; }
 .sc-hero__title span { color: var(--sc-text-2); font-weight: 600; }

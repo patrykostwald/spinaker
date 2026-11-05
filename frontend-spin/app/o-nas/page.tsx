@@ -20,7 +20,7 @@ export default function AboutPage() {
     lead="spin.clinic łączy analizę konkretnych wypowiedzi ze źródłami i kontekstem do samodzielnego sprawdzenia.">
     <section id="projekt"><h2>Projekt</h2>
       <p>spin.clinic pomaga czytać publiczne wypowiedzi ze świadomością tego, jak powstaje przekaz. Dr. Spin analizuje konkretne komunikaty polityków: wskazuje techniki perswazji, przytacza cytaty i zestawia twierdzenia ze źródłami. Rządzących i opozycję obejmują te same zasady. Obok Kliniki porządkujemy odnośniki do wiadomości, dokumentów i nagrań, zawsze z nazwą źródła, datą i linkiem do oryginału. Wyniki AI pokazujemy wraz z ograniczeniami, aby czytelnik mógł je sprawdzić i wyrobić własne zdanie. Wybrane diagnozy publikujemy także jako wpisy, grafiki i krótkie filmy w mediach społecznościowych — zawsze z linkiem do pełnej analizy. Projekt działa w wersji beta i rozwija się etapami.</p>
-      <p><Link id="konsylium" href="/konsylium">Jak wykorzystujemy AI</Link> · <Link id="klinika" href="/metodologia">Metodologia analiz</Link> · <Link id="dla-redakcji" href="/dla-redakcji">Dla dziennikarzy i redakcji</Link> · <Link id="film" href="/konsylium#film">Film o serwisie</Link></p>
+      <p><Link id="konsylium" href="/konsylium">Jak wykorzystujemy AI</Link> · <Link id="klinika" href="/metodologia">Metodologia analiz</Link> · <Link id="dla-redakcji" href="/dla-redakcji">Dla dziennikarzy i redakcji</Link></p>
     </section>
     <section id="operator"><h2>Autor i operator</h2>
       <p>Projekt rozwija jedna osoba, korzystając z AI do programowania i analiz. Operatorem serwisu jest iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291, NIP 7831915094, REGON 529962488.</p>

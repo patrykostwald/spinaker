@@ -73,7 +73,6 @@ export * from "./lib/clinic";
 export { CommunityThreadsPage, CommunityThreadPage } from "./components/community/CommunityPages";
 export * from "./lib/community";
 export * from "./lib/features";
-export { HowItWorksFilm } from "./components/HowItWorksFilm";
 export { CouncilRecruitmentLog, CouncilRoster } from "./components/clinic/CouncilRoster";
 export { siteNavigation, socialChannels } from "./lib/siteNavigation";
 export { DataExport } from "./components/DataExport";

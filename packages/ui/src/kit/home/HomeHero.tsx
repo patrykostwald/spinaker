@@ -60,18 +60,19 @@ export function HomeHero() {
         <div className="sc-hero__copy">
           <h1 className="sc-hero__title">Konsylium AI bada przekaz polityków.</h1>
           <p className="sc-hero__lead">Czytamy wpisy polityków rządu i opozycji i sprawdzamy, czy stosują <Term id="spin">spin</Term>, a ich twierdzenia zestawiamy ze źródłami. Chcemy dla Was odszyfrować mechanikę przekazu polityków. <Term id="konsylium">Konsylium AI</Term>, czyli kilka modeli różnych firm, ocenia każdy wybrany wpis osobno, według zasad takich samych dla obu stron.</p>
+        </div>
+        <div className="sc-hero__side">
+          {tiles ? (
+            <div className="sc-hero__stats" aria-label="Praca Kliniki od początku">
+              <ul>{tiles.map(([label, count]) => <li key={label}><strong>{count.toLocaleString("pl-PL")}</strong><span>{label}</span></li>)}</ul>
+              <p>{clinicPeriodLabel(query.data, query.dataUpdatedAt)}</p>
+            </div>
+          ) : <p className="sc-hero__stats-empty" role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}{query.isError ? <> <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></> : null}</p>}
           <div className="sc-hero__actions">
             <Button href="/klinika/diagnozy" variant="primary">Przeglądaj diagnozy</Button>
-            <Button href="/konsylium#film" variant="secondary">▶ Jak to działa (70 s)</Button>
             <Link className="sc-hero__link" href="/konsylium/karta">Karta Konsylium →</Link>
           </div>
         </div>
-        {tiles ? (
-          <div className="sc-hero__stats" aria-label="Praca Kliniki od początku">
-            <ul>{tiles.map(([label, count]) => <li key={label}><strong>{count.toLocaleString("pl-PL")}</strong><span>{label}</span></li>)}</ul>
-            <p>{clinicPeriodLabel(query.data, query.dataUpdatedAt)}</p>
-          </div>
-        ) : <p className="sc-hero__stats-empty" role="status">{query.isPending ? "Wczytujemy liczniki…" : "Liczniki są chwilowo niedostępne."}{query.isError ? <> <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></> : null}</p>}
       </div>
     </section>
   );
