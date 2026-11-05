@@ -1,4 +1,4 @@
-# przeszłość.today — plan narzędzia OSINT (stan na 5 listopada 2026)
+# przeszłość.today — plan narzędzia OSINT (stan na 5 listopada 2026, po scaleniu gałęzi)
 
 Ten dokument **zastępuje** opis przeszlosc.today jako „alternatywnego brandu" z `PLAN_AKTUALNY.md`,
 `project.md`, `roadmap.md` i `docs/CONTEXT_ARCHIVE_PRODUCT.md`. Powstał z przeglądu żywej strony
@@ -42,58 +42,62 @@ Skala bazy (ze strony głównej, 5.11.2026): 775 osób publicznych, 800 spółek
 | Zgłoszenie błędu, rejestr poprawek, informacja RODO art. 14 + sprzeciw | `/przeszlosc/poprawki` |
 | Dla redakcji: pilotaż, wspólne teczki, API (zapowiedź) | `/przeszlosc/pilot`, `/przeszlosc/funkcje` |
 
-## Luki ogłoszone przez samą stronę (to jest nasza lista „jeszcze do podłączenia")
+## Gdzie jest kod i co zostało scalone (ustalone 5.11.2026)
 
-Źródło: sekcje „Skąd mamy dane" i „Czego tu nie ma" na `/przeszlosc/jak-to-dziala` (stan z 13.10.2026).
+Kod przeszlosc.today jest **wspólny ze spin.clinic** (jedna aplikacja, jeden backend, jedna baza), w tym repozytorium.
+Strona to trasy `frontend-spin/app/przeszlosc/*`; `frontend-przeszlosc/` to tylko wariant marki. Backend:
+`backend/news/przeszlosc*.py`, `drzewo_pieniedzy.py`, `pracownia_osint.py`, `krs*.py`; źródła: `backend/scraper/public_records.py`,
+`nowe_zrodla.py`, `access_gate.py`.
 
-**Źródła w bazie, ale ze statusem „do potwierdzenia":**
-1. **BZP / e-Zamówienia** — czy włączone na produkcji, harmonogram, zakres.
-2. **Parlament Europejski** — okres danych; harmonogram.
-3. **Lobbing** (rejestr MSWiA, lobbing w Sejmie) — zakres i harmonogram; część stron za zabezpieczeniem antybotowym, **nie obchodzimy go**.
-4. **Wpisy na X** — zakres, harmonogram, regulamin X i prawo cytatu.
-5. **Media** — harmonogram i zakres; dopasowanie osób bywa automatyczne.
-6. **Kilometrówki i biura posłów** — zakres; jakglosuja.pl to serwis zewnętrzny, nie rejestr urzędowy; PDF-y Kancelarii Sejmu niedostępne automatycznie.
-7. **Meta (reklamy polityczne) i PKW (finanse komitetów)** — zbierane, ale **nie wiadomo, gdzie są widoczne w serwisie**.
-8. **Faktyczny harmonogram odświeżania na produkcji** każdego źródła i data ostatniej aktualizacji — „brak w naszych danych".
+`main` jest nieaktualny (stan z września). Praca z października leżała na gałęziach, które odeszły od wspólnego punktu `b1f33e03`:
 
-**Źródła, których nie ma wcale:**
-9. Centralny Rejestr Umów
-10. Rejestr beneficjentów rzeczywistych
-11. Księgi wieczyste
-12. Orzeczenia sądów
+- `cloud/integracja-2310` (23.10; 33 własne commity): Stan danych (`/przeszlosc/dane`), przepływy pieniędzy v2, pokrycie KRS (nocna kolejka), Korektor, osoby z X, poprawki po recenzji.
+- `codex/mvp-public-frontend` (31.10; 6 własnych commitów): Rada (Nemotron/NIM), dziennik głosów, załączniki uwag „zbudujmi" (głównie spin.clinic).
 
-**Obietnice w treści strony do dopilnowania:**
-13. Procedura i terminy odpowiedzi na wnioski RODO — „do potwierdzenia".
-14. Klauzula informacyjna to wersja robocza do akceptacji prawnika.
-15. Zespoły: wspólne teczki tematów, eksport do publikacji z przypisami, API dla redakcji — zapowiedziane, niewdrożone.
-16. Limit eksportu 20 000 wierszy na kategorię (wiersz „pominięto N").
+Obie gałęzie zostały scalone do gałęzi roboczej `claude/upbeat-noether-7k08ac` (PR #29). Scalenie nie dało konfliktów w kodzie;
+konflikt w `CLAUDE.md` rozwiązano zachowując zasady właściciela i dopisując sekcję zasad nadrzędnych. Powstała migracja
+scalająca `0172_merge_0170_clientnote_file_0171_krs_kolejka` (pusta; obie gałęzie dodały równoległe migracje 0170).
+Gałęzie źródłowe pozostały nietknięte. Nie sprawdzono, który wariant działa dziś na produkcji (VPS, `/srv/spin-clinic`).
 
-## Rozbieżność: kod a żywa strona (ważne)
+## Lista dalszych podłączeń (źródło: `docs/PRZESZLOSC_ZRODLA_DANYCH.md`, 8.10.2026)
 
-Trasy i funkcje powyżej (`/przeszlosc/*`, drzewo KRS, TED, Kohesio, FTS, PE, lobbing, odstępstwa od klubu,
-alerty 7:00, rejestr poprawek) **nie występują w kodzie tego repozytorium**. Tutaj jest tylko wcześniejszy
-stan: `frontend-przeszlosc` (jedna linijka `<PortalHome />`, stary motyw), backend z podstawami KRS
-(`backend/news/krs.py`, `krs_agent.py`, `public_figures.py`, `political_*`) i komponenty
-`packages/ui` (m.in. `PublicFigureProfile`, `PublicFigureDirectory`).
-Ostatni commit kodu w repozytorium: 30 września 2026. Żywa strona zawiera pracę z października.
-Repozytorium `patrykostwald/radar` to osobny produkt (analiza narracji dla instytucji) i nie zawiera
-kodu przeszlosc.today; repozytorium `iapply` ma ostatnią zmianę z października 2025.
+Pełna tabela 25+ źródeł z licencjami, ryzykiem, kluczami łączenia i priorytetem jest w tym dokumencie; poniżej skrót kolejki
+(oznaczenia z katalogu: [P] pewne, [DP] do potwierdzenia). Każde nowe źródło przechodzi przez Prawnika (`pracownia_osint.py: LEGAL`)
+i bramkę `scraper/access_gate.py`.
 
-**Konsekwencja:** przed wdrażaniem funkcji trzeba ustalić, gdzie leży aktualny kod przeszlosc.today
-(prawdopodobnie lokalny komputer lub niewypchnięta gałąź) i dołączyć go do repozytorium (zadanie REPO-01
-z `PLAN_AKTUALNY.md`). Dopiero wtedy sensowne jest dopisywanie źródeł i funkcji.
+**Już zbierane:** KRS (API MS), TED, FTS, Kohesio, Sejm, lobbing (MSWiA, Sejm), PKW, oświadczenia Sejmu (indeks, bez treści), Wikidata, rejestr przejrzystości UE.
+**Zbierane, ale wyłączone:** BZP / e-Zamówienia (`bzp_backfill.py`, czeka na instrukcję UZP).
 
-## Proponowana kolejność prac po odzyskaniu kodu
+**Kolejność z katalogu (6 miesięcy):**
+1. Miesiąc 1, identyfikatory i NIP-y: REGON (GUS BIR), Biała lista VAT (MF), SUDOP (pomoc publiczna UOKiK); włączenie BZP.
+2. Miesiąc 2, nieruchomości: Rejestr Cen Nieruchomości, działki (ULDK/KIEG), numery KW podawane przez użytkownika.
+3. Miesiąc 3: lista beneficjentów funduszy 2021–2027 i KPO.
+4. Miesiąc 4: orzeczenia sądów (Portal Orzeczeń, SAOS, CBOSA, KIO) i KRZ (tylko podmioty).
+5. Miesiąc 5: CRBR (jawny do 31.12.2026, potem ograniczony; wniosek na 2027) i sankcje.
+6. Miesiąc 6: sygnały i API dla redakcji.
 
-1. **REPO-02** — wypchnąć aktualny kod przeszlosc.today na osobną gałąź (bez `.env`, baz, logów).
-2. **OSINT-01** — wykaz źródeł z faktycznym stanem produkcji (włączone / harmonogram / ostatni udany import) i widoczny na stronie „Status danych"; zamiast „do potwierdzenia".
-3. **OSINT-02** — pokazać w serwisie dane już zbierane, ale niewidoczne (PKW, reklamy Meta).
-4. **OSINT-03** — domknąć źródła „do potwierdzenia": BZP, lobbing, kilometrówki, PE (zakres, okno dat, test, opis).
-5. **OSINT-04** — nowe rejestry: Centralny Rejestr Umów, beneficjenci rzeczywiści, orzeczenia sądów, księgi wieczyste — każdy po ocenie podstawy prawnej i dostępności API; kolejność wg wartości dla dziennikarzy.
-6. **OSINT-05** — funkcje dla redakcji: wspólne teczki tematów, eksport z przypisami, API z kluczami i limitami.
-7. **OSINT-06** — kwestie formalne: klauzula RODO zaakceptowana przez prawnika, procedura sprzeciwu z terminami.
-8. **UI-01** — spójna identyfikacja wizualna z `BRAND_AND_THEMES.md` (Noc/Dzień/Auto, jeden akcent), po ustaleniu kierunku z właścicielem.
+**Czekają na decyzje zewnętrzne:** Centralny Rejestr Umów (wniosek do MF z 5.10, brak odpowiedzi w dokumentach), licencje (MS, MC, GUGiK; szkice na komputerze właściciela w `Desktop\projekty\spin-clinic-maile\licencje\`, UODO wstrzymane).
+**Bez legalnej drogi hurtowej:** księgi wieczyste (model „KW przynosi użytkownik", `docs/PRZESZLOSC_KW_LICENCJA.md`, wymaga prawnika).
 
-Zasady bez zmian: tylko osoby publiczne, łączenie po identyfikatorach, jawne braki („brak w naszych danych" z
-zakresem i datą), nieobchodzenie zabezpieczeń, ta sama miara dla rządzących i opozycji, wysyłka próśb do
-wydawców po zatwierdzeniu właściciela.
+**Luki ogłoszone na żywej stronie (`/przeszlosc/jak-to-dziala`, stan 13.10)** i status „do potwierdzenia" dla: BZP, Parlamentu Europejskiego (okres),
+lobbingu, wpisów X, mediów, kilometrówek i biur posłów oraz miejsc widoczności danych PKW i reklam Meta. Brakuje też publicznej informacji
+o faktycznym harmonogramie odświeżania źródeł na produkcji. Strona **Stan danych** z integracji 23.10 częściowo to adresuje; należy zweryfikować,
+czy pokrywa wszystkie źródła.
+
+**Formalne:** klauzula RODO (art. 14) to wersja robocza do akceptacji prawnika; procedura sprzeciwu i terminy odpowiedzi „do potwierdzenia";
+zapowiedziane dla zespołów: wspólne teczki tematów, eksport z przypisami, API (niewdrożone).
+
+## Następne kroki
+
+1. **OSINT-00 (w toku):** testy backendu i build frontendu na scalonej gałęzi; wynik w `HANDOFF_AI.md`.
+2. **OSINT-01:** zweryfikować, czy „Stan danych" pokazuje faktyczny stan każdego źródła na produkcji (włączone / harmonogram / ostatni udany import) i uzupełnić braki; sprawdzić, który kod działa na VPS.
+3. **OSINT-02:** pokazać dane już zbierane, a niewidoczne (PKW, reklamy Meta).
+4. **OSINT-03:** włączyć BZP po uzyskaniu instrukcji UZP; domknąć status „do potwierdzenia" (lobbing, PE, kilometrówki).
+5. **OSINT-04:** źródła P1 z katalogu: BIR, Biała lista, SUDOP; potem RCN i ULDK.
+6. **OSINT-05:** funkcje dla redakcji (teczki tematów, eksport z przypisami, API z kluczami i limitami).
+7. **OSINT-06:** formalne: klauzula RODO zaakceptowana przez prawnika, procedura sprzeciwu.
+8. **GIT-01:** przejrzeć i zdecydować o pozostałych gałęziach `cloud/*` (m.in. `design-przeszlosc`, `spolki-mobile-wersja`, `szybkosc-skroty`, `testy-pelne`, `spina3-s2`) oraz otwartych PR #21–#28.
+9. **UI-01:** spójna identyfikacja wizualna po ustaleniu kierunku z właścicielem (`docs/BRAND_AND_THEMES.md`, gałąź `kit/design`).
+
+Zasady bez zmian: tylko osoby publiczne, łączenie po identyfikatorach (nigdy po nazwie, PESEL nigdy), jawne braki („brak w naszych danych" z zakresem i datą),
+nieobchodzenie zabezpieczeń, ta sama miara dla rządzących i opozycji, wysyłka próśb o licencje tylko po zatwierdzeniu właściciela.

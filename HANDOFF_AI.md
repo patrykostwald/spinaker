@@ -48,10 +48,23 @@ Nie czekaj na potwierdzenie przy rutynowej decyzji technicznej lub przy wypełni
 
 OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. Mistral EU jest drugim dostawcą pilotażowym do klasyfikacji, rankingu kandydatów i embeddings po potwierdzeniu dostępności funkcji regionalnych. Globalnego wyszukiwania Mistral nie włączamy automatycznie. DeepSeek pozostaje wykluczony. Komentarze, dane kont i prywatna aktywność użytkowników nie trafiają do zewnętrznych modeli. Szczegóły: `docs/AI_PROVIDER_PLAN.md`.
 
-## Aktualizacja 5 listopada 2026 — przeszlosc.today jako narzędzie OSINT
+## Aktualizacja 5 listopada 2026: przeszlosc.today jako narzędzie OSINT, scalenie gałęzi
 
-- Zasady nadrzędne właściciela (czystość repo, dokumentacja i przekazanie, standard git „jak CTO", aktualne plany) są w `CLAUDE.md` w katalogu głównym. Obowiązują wszystkich agentów.
-- **przeszlosc.today to dziś narzędzie OSINT** (temat/osoba/KRS → oś czasu, drzewo powiązań, głosowania Sejmu, KRS, TED/BZP, fundusze UE, PE, lobbing, eksporty, alerty). Starsze opisy w `PLAN_AKTUALNY.md`, `project.md`, `roadmap.md` (przeszlosc jako „alternatywny brand" / agregator wiadomości) są przestarzałe w tym zakresie.
-- Aktualny plan tej części: `docs/PLAN_PRZESZLOSC_OSINT.md` (funkcje z żywej strony, lista luk, kolejność prac OSINT-01…06, UI-01).
-- **Ważna rozbieżność:** kod żywej strony (trasy `/przeszlosc/*`, KRS, TED, Kohesio, odstępstwa od klubu, alerty) **nie znajduje się w tym repozytorium** (ostatni commit kodu: 30.09.2026). Nie jest też w `patrykostwald/radar` (osobny produkt: analiza narracji dla instytucji) ani w `patrykostwald/iapply` (ostatnia zmiana: 10.2025). Prawdopodobnie leży lokalnie u właściciela lub na niewypchniętej gałęzi.
-- **Następny krok:** ustalić z właścicielem lokalizację aktualnego kodu i dołączyć go bezpiecznie do repozytorium (REPO-02: bez `.env`, baz, logów). Dopiero potem wdrażać OSINT-01…06. Nic nie wdrażano w tej sesji; zmieniono tylko dokumentację.
+**Zrobione i sprawdzone**
+- Ustalono, gdzie jest kod: wspólny ze spin.clinic, w tym repozytorium (`frontend-spin/app/przeszlosc/*`, `backend/news/przeszlosc*.py`, `drzewo_pieniedzy.py`, `pracownia_osint.py`, `krs*.py`). `main` jest nieaktualny; praca z października leżała na gałęziach `cloud/integracja-2310` (23.10, 33 commity) i `codex/mvp-public-frontend` (31.10, 6 commitów). Żadna nie zawierała drugiej.
+- Obie scalono do gałęzi roboczej `claude/upbeat-noether-7k08ac` (PR #29). Bez konfliktów w kodzie. Konflikt w `CLAUDE.md` rozwiązano: zachowane zasady właściciela, dopisana sekcja zasad nadrzędnych.
+- Dodano migrację scalającą `0172_merge_0170_clientnote_file_0171_krs_kolejka` (pusta): obie gałęzie dodały równoległe migracje 0170. Po niej `makemigrations --check` nie zgłasza zmian.
+- `manage.py check`: bez uwag. Build `frontend-spin` (`pnpm build`): przechodzi.
+- Gałęzie źródłowe i `main` nie były modyfikowane.
+
+**Niesprawdzone / w toku**
+- Pełny zestaw testów backendu (pytest, SQLite): patrz sekcja „Wynik testów" poniżej; jeśli jej brak, testy nie zakończyły się w tej sesji.
+- Nie wiadomo, który wariant jest na produkcji (VPS, `/srv/spin-clinic`). Nic nie wdrażano.
+- Nie przejrzano pozostałych gałęzi `cloud/*` ani otwartych PR #21 do #28.
+
+**Dokumenty**
+- Zasady nadrzędne właściciela: `CLAUDE.md` (sekcja na końcu). Obowiązują wszystkich agentów.
+- Plan przeszlosc.today (OSINT): `docs/PLAN_PRZESZLOSC_OSINT.md`; katalog źródeł z priorytetami: `docs/PRZESZLOSC_ZRODLA_DANYCH.md`; wdrożenie 23.10: `docs/zadania-chmura/WDROZENIE_2310.md`.
+- Starsze opisy przeszlosc.today jako „alternatywnego brandu" w `PLAN_AKTUALNY.md`, `project.md`, `roadmap.md`, `docs/CONTEXT_ARCHIVE_PRODUCT.md` są w tym zakresie przestarzałe.
+
+**Następny krok:** po zielonych testach przejść do OSINT-01 z planu (weryfikacja „Stanu danych" i faktycznego stanu źródeł). Wdrożenie na VPS robi właściciel: komendy w `docs/zadania-chmura/WDROZENIE_2310.md`, kopia bazy przed migracjami (`sh deploy/backup.sh`); nowa migracja 0172 jest pusta, ale musi zostać zastosowana.
