@@ -33,10 +33,15 @@ przypisy, archiwum, brak oceniania („odstępstwo nie jest zarzutem").
 
 ## Wnioski powtarzające się u wielu person (priorytet według liczby person)
 
-**A. Odnajdywalność wejść (pięć+ person)**
-1. Karta spółki od NIP/KRS: istnieje (`/przeszlosc/spolka/[krs]`), ale **nikt z person jej nie znalazł**. Strona główna nie mówi, że służy też do spółek i zamówień. (P1, P4, P6, P8)
-2. „Mój poseł": wyszukiwarka po nazwisku/okręgu z kartą „jak głosował". Dane są, brakuje wejścia. (P3, P7, P9, P10)
-3. Strona główna nie tłumaczy jednym zdaniem, do czego służy; pierwszy ekran to filmy YouTube i posiedzenia komisji. (P1, P3, P6, P8, P9)
+**A. Odnajdywalność wejść (skorygowane po sprawdzeniu kodu, `frontend-spin/app/przeszlosc/TopicTree.tsx`)**
+1. Strona główna **ma** nagłówek „Kto, co i kiedy?", opis („Wpisz temat, a w kilka sekund zobaczysz, kto o nim mówi, ...") i konsolę
+   wyszukiwania z trybami **Temat / Osoba / Spółka** (spółka po nazwie, KRS, NIP lub REGON). Persony P1, P4, P6, P8, P9 napisały, że wejść nie ma,
+   bo Firecrawl nie pokazał nagłówka ani konsoli (część renderowana po stronie klienta). **To artefakt narzędzia, nie usterka.**
+   Do potwierdzenia przeglądarką (zrzut 390 i 1440 px), czy wejścia są dość widoczne dla laika. Nie dublować.
+2. „Mój poseł": wyszukiwanie po okręgu lub kodzie pocztowym z kartą „jak głosował" nadal nie istnieje (jest tryb Osoba po nazwisku). (P3, P7, P9, P10)
+3. Karta spółki (`/przeszlosc/spolka/[krs]`) istnieje i jest bogata (sprawdzone na Orlenie: 61 zamówień TED, 4,02 mld zł, drzewo przepływu, 13 odnośników do rejestrów);
+   wniosek P1/P6/P8 „brak karty" był błędny. Realna luka: w zarządzie widoczny jest tylko jeden Daniel Obajtek (2018-2024), bo portal pokazuje wyłącznie osoby z rejestru
+   osób publicznych (API KRS maskuje pozostałe). Decyzja prawna, czy pokazywać pełne składy zarządów i rad spółek Skarbu Państwa.
 
 **B. Dane są w bazie, brakuje widoku**
 4. Imienne głosy posła w profilu (cała kadencja, frekwencja) i macierz klub x głosowanie; dziś tylko sumy. (P3, P7, P9, P10)
@@ -52,15 +57,15 @@ przypisy, archiwum, brak oceniania („odstępstwo nie jest zarzutem").
 10. Tytuł i OG strony to „spin.clinic - pokazujemy, jak zbudowany jest przekaz" zamiast przeszłość.today (7 person: P2, P3, P5, P6, P7, P9, P10).
 11. Ogłoszenia TED pod nagłówkiem „Ścieżka w Sejmie" (P8, P9; potwierdzone osobno).
 12. Okno „90 dni" w Odstępstwach pokazuje zakres 5-21.10 (17 dni) i „liczone 4 listopada"; dwie liczby (1124 na stronie głównej, 187 na liście) bez wyjaśnienia; lista pokazuje 6 z 187 bez filtra po klubie/pośle i bez CSV. (P2, P3, P5, P10)
-13. Pomyłka dopasowania po nazwisku: artykuł o Marcinie Bosackim w profilu Krzysztofa Bosaka. (P10)
-14. Nagłówek „Głosowania w Sejmie w temacie X" w profilu osoby pokazuje głosowania **o** osobie, nie jej głosy. (P10)
+13. Pomyłka dopasowania po nazwisku: artykuł o Marcinie Bosackim przy wyszukiwaniu „Krzysztof Bosak". (P10) **Do zweryfikowania** na profilu `/przeszlosc/osoba/<slug>`: persona użyła widoku tematu (`?q=...&tryb=osoba`), a nie profilu.
+14. Nagłówek „Głosowania w Sejmie w temacie X": w widoku tematu tekstowego pokazuje głosowania, w których występuje fraza, a nie głosy osoby. (P10) **Do zweryfikowania** w profilu osoby (tam osobny widok `GlosowaniaOsoby.tsx`).
 15. Do „Liczby wpisów według obozu" wliczane cudze wpisy (odpowiedzi innych osób, konto partii). (P10)
 16. „Kto" przy temacie krajowym (MON) zawiera posłów do PE, a nie posłów Sejmu. (P9)
 17. Funkcje w KRS bez dat od-do w niektórych wynikach. (P10)
 18. Niespójne liczniki (22 784 vs 22 786 wpisów); odnośnik „Odstępstwa" w Funkcjach prowadzi do kotwicy zamiast `/odstepstwa`. (P2)
 
 **E. Niezawodność**
-19. Komunikat „Nie udało się pobrać ..." bez przycisku „Spróbuj ponownie", bez ponowienia i bez zapasowych danych; limit 100 zapytań/min na adres, a w razie braku zaufanego proxy (`TRUSTED_PROXY_COUNT`) wszyscy użytkownicy mogą dzielić jeden limit (do sprawdzenia na serwerze). (P1, P2, P4, P6, P7, P9)
+19. Komunikat „Nie udało się pobrać ..." bez przycisku „Spróbuj ponownie", bez ponowienia i bez zapasowych danych; limit 100 zapytań/min na adres, a w razie braku zaufanego proxy (`TRUSTED_PROXY_COUNT`) wszyscy użytkownicy dzielą jeden limit. **Potwierdzone 5.11 na serwerze: zmiennej NIE ma w `.env.production`** (domyślnie 0), a Caddy proxuje `/api/*` do backendu, więc DRF widzi adres proxy. Naprawa: `TRUSTED_PROXY_COUNT=1` w `.env.production` i restart backendu. (P1, P2, P4, P6, P7, P9)
 
 **F. Prawo i zaufanie (do decyzji prawnika, nie kodu)**
 20. Klauzula RODO art. 14 to wersja robocza; procedura sprzeciwu i terminy „do potwierdzenia"; Regulamin X i prawo cytatu „do potwierdzenia". (P1, P2, P3, P6, P9, P10)
@@ -82,14 +87,17 @@ Oznaczenia: [DP] do potwierdzenia dostępności, licencji i podstawy prawnej prz
 - Alerty na projekt ustawy / druk z progami zmian etapu i alert „nowy przetarg w moim CPV" (P7, P8).
 - Eksport briefu (PDF/DOCX) z przypisami, teczki tematu do współdzielenia (P7; zapowiedziane na stronie).
 
-## Szybkie poprawki (mały nakład, duży efekt)
+## Szybkie poprawki (status 5.11.2026)
 
-1. Meta/OG tytuł i opis dla tras `/przeszlosc/*` (zamiast spin.clinic). (#10)
-2. Nagłówek „Ścieżka w Sejmie": nie wkładać pod niego ogłoszeń TED albo zmienić nazwę sekcji. (#11)
-3. Odstępstwa: poprawna etykieta okna, wyjaśnienie dwóch liczb, filtr po klubie/pośle, CSV. (#12)
-4. „Spróbuj ponownie" i jedno automatyczne ponowienie przy błędzie pobierania i HTTP 429. (#19)
-5. Jedno zdanie „do czego służy" i wyraźne wejścia „Spółka (NIP/KRS)" i „Poseł" na stronie głównej. (#1-3)
-6. Poprawka nagłówka „Głosowania w temacie X" w profilu osoby. (#14)
+| # | Poprawka | Status |
+|---|---|---|
+| 1 | Meta/OG tytuł, opis, nazwa serwisu i obrazek dla `/przeszlosc/*` | **zrobione** (`app/przeszlosc/layout.tsx`), czeka na wdrożenie |
+| 2 | Nagłówek „Ścieżka w Sejmie" -> „Ścieżka w Sejmie i rejestrach" (zawiera rekordy TED itd.) | **zrobione** (`TopicTree.tsx`), czeka na wdrożenie |
+| 3 | Odstępstwa: wyjaśnienie okna 90 dni, podpisane liczniki (1124 = wszystkie kluby, 187 = wybrany klub), „Pokaż więcej" | **zrobione** (`Odstepstwa.tsx`, `odstepstwa-okno.ts`, test 130); filtr po pośle i CSV **nie** zrobione |
+| 4 | Automatyczne ponowienie odczytu po 429/502-504 (z `Retry-After`) | **zrobione** (`retry-fetch.ts`, `RetryFetch.tsx`, test 129); przycisk „Spróbuj ponownie" w pojedynczych widokach nie dodany |
+| 5 | Wejścia „Spółka" i „Poseł" oraz opis na stronie głównej | **już istnieją** (patrz A); tylko do oceny wizualnej w przeglądarce |
+| 6 | Nagłówek „Głosowania w temacie X" w profilu osoby | do zweryfikowania (patrz D14) |
+| 7 | `TRUSTED_PROXY_COUNT=1` na produkcji | **do wykonania przez właściciela** (konfiguracja serwera) |
 
 ## Kolejna runda
 

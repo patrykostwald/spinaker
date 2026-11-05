@@ -78,3 +78,19 @@ OpenAI pozostaje dostawcą istniejącego prototypu wyszukiwania internetowego. M
 **OSINT-01 (5.11):** `/przeszlosc/dane` i `/api/przeszlosc/stan-danych/` działają na produkcji. Odczyt: 15 źródeł OK, 14 zaległych, 2 puste, 1 wyłączone. Część „zaległych" to fałszywy alarm (sztywne 48 h dla źródeł tygodniowych i miesięcznych); poprawka w kodzie (`przeszlosc_stan.py`: próg = 2 x własny interwał, min. 48 h; testy w `test_przeszlosc_stan.py`) czeka na wdrożenie. Realne problemy do zbadania w logach: `krs_changes` (JSONDecodeError od 8.10), `assets` (0 rekordów, request_limit_or_host_interval), `fts` (nigdy nie pobrane), `kohesio` (0 rekordów), `interpellations` i `questions` (stoją od 22.10 i 10.10), `niw`/`mf_opp` (od 13.10; beat tygodniowy dodany), `bzp` (9 rekordów). Szczegóły w `docs/PLAN_PRZESZLOSC_OSINT.md`. Teksty „do potwierdzenia" nadal niezmieniane.
 
 **Następny krok:** wdrożyć poprawkę progu; zebrać z serwera logi dla powyższych źródeł i zdiagnozować; potem uzupełnić „do potwierdzenia". Wdrożenie na VPS robi właściciel: komendy w `docs/zadania-chmura/WDROZENIE_2310.md`, kopia bazy przed migracjami (`sh deploy/backup.sh`); nowa migracja 0172 jest pusta, ale musi zostać zastosowana.
+
+## Aktualizacja 5 listopada 2026 (wieczór): pętla person i pierwsze poprawki
+
+**Zrobione i sprawdzone (lokalnie: 145 testów frontendu, typecheck, build; 4 testy modułu Stanu danych)**
+- Runda 1 pętli person (10 person, żywy portal): wyniki i zbiorcza lista w `docs/PERSONY_PRZESZLOSC_RUNDA1.md`. Średnia 4,2/10, ale **zaniżona artefaktami testu** (narzędzie bez przeglądarki, 10 person z jednego IP, HTTP 429). Nie używać jako wskaźnika postępu; kolejne rundy po 2-3 persony naraz, czekanie 8-10 s.
+- Frontend `frontend-spin/app/przeszlosc/`: własne OG/opis przeszłość.today (`layout.tsx`), ponawianie odczytów po 429/502-504 (`retry-fetch.ts`, `RetryFetch.tsx`, test 129), nagłówek „Ścieżka w Sejmie i rejestrach" (`TopicTree.tsx`), Odstępstwa: wyjaśnienie okna, podpisane liczniki, „Pokaż więcej" (`Odstepstwa.tsx`, `odstepstwa-okno.ts`, test 130).
+- Backend `news/przeszlosc_stan.py`: próg zaległości zależy od interwału źródła (2 x, min. 48 h), pola `refresh_hours` i `stale_after_hours`.
+
+**Do wdrożenia przez właściciela (kod na gałęzi `claude/upbeat-noether-7k08ac`, brak nowych migracji):** przebudowa `backend` i `frontend`.
+**Do konfiguracji na serwerze:** `TRUSTED_PROXY_COUNT=1` w `.env.production` (potwierdzone, że brakuje; bez tego wszyscy anonimowi użytkownicy mogą dzielić jeden limit 100 zapytań/min). Wymaga restartu backendu.
+
+**Niesprawdzone / otwarte**
+- Czy wejścia „Spółka" i „Osoba" na stronie głównej są dość widoczne dla laika (przeglądarka, zrzuty 390 i 1440).
+- Pomyłka Bosak/Bosacki i nagłówek „Głosowania w temacie" w profilu osoby: zweryfikować na `/przeszlosc/osoba/<slug>`.
+- 7 zepsutych źródeł (lista w planie) i przekaz dnia spin.clinic: diagnoza przez właściciela (polecenia podane w rozmowie); przekaz dnia prowadzi osobna sesja naprawcza spin.clinic.
+- Odstępstwa: filtr po pośle i eksport CSV; imienne głosy posła i „Mój poseł" w profilu; widoki PKW i lobbingu; oś „projekt ustawy"; tagi tematyczne głosowań (patrz dokument person).
