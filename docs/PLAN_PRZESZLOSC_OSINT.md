@@ -116,6 +116,12 @@ zapowiedziane dla zespołów: wspólne teczki tematów, eksport z przypisami, AP
 
 **Kolejne kroki OSINT-01:** (a) wdrożyć poprawkę progu zaległości (kod w tej gałęzi), (b) właściciel dostarcza z serwera logi worker/beat dla źródeł z listy realnych problemów (polecenia poda agent), (c) po naprawie uzupełnić „do potwierdzenia" w `jak-to-dziala/tresc.ts` faktycznymi danymi (zakres, odświeżanie) i dopisać tam odnośnik do Stanu danych; elementy prawne (Regulamin X, prawo cytatu) do decyzji prawnika.
 
+## Pętla person (od 5.11.2026)
+
+Dziesięć person-użytkowników przechodzi przez żywy portal, ocenia go i zgłasza braki. Wyniki rundy 1, zbiorcza lista wniosków,
+nowe propozycje źródeł i szybkie poprawki: `docs/PERSONY_PRZESZLOSC_RUNDA1.md`. Średnia rundy 1: 4,2/10 (zaniżona przez limity
+zapytań i ładowanie przez narzędzie bez przeglądarki; nie używać jako wskaźnika postępu). Cel: średnia co najmniej 7, żadna persona poniżej 6.
+
 ## Następne kroki
 
 1. **OSINT-00 (w toku):** testy backendu i build frontendu na scalonej gałęzi; wynik w `HANDOFF_AI.md`.
