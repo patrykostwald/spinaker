@@ -38,7 +38,7 @@ def test_item_goes_to_review_queue_only_with_link_from_search_results_and_org_in
     monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: resp)
     by_krs, by_name = db.org_lookup()
     stats, cost, outside = db.research_person(f, by_krs, by_name, apply=True)
-    assert stats['saved'] == 1 and stats['dropped_url'] == 1 and stats['outside_db'] == 1 and outside == ['Fundacja Spoza Bazy [brak numeru KRS]'] and cost > 0
+    assert stats['saved'] == 1 and stats['dropped_url'] == 1 and stats['outside_db'] == 1 and len(outside) == 1 and outside[0].startswith('Fundacja Spoza Bazy [brak numeru KRS i drugiej danej') and cost > 0
     m = PublicFigureMediaMention.objects.get()
     assert (m.status, m.collected_by, m.match_basis, m.category, m.organisation_id) == ('pending_review', 'claude', 'name_only', 'alleged', o.pk)
 
@@ -151,7 +151,7 @@ def test_no_krs_number_means_outside_db_without_registry_call(monkeypatch):
     monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item(organisation_name='Fundacja Profeto', krs_number='', city='')]))
     by_krs, by_name = db.org_lookup()
     stats, _, outside = db.research_person(f, by_krs, by_name, apply=True)
-    assert stats['outside_db'] == 1 and 'brak numeru KRS' in outside[0]
+    assert stats['outside_db'] == 1 and 'brak numeru KRS' in outside[0] and 'miejscowość: -' in outside[0]
 
 
 def test_researched_person_is_logged_and_skipped_next_time(monkeypatch):
@@ -282,7 +282,7 @@ def test_light_researcher_uses_cheap_model_basic_search_tool_and_same_safeguards
     monkeypatch.setattr(clinic_ai, '_client', lambda: _FakeClient([_light_response([item(), item(source_url='https://wymyslony.example/x')])], record))
     by_krs, by_name = db.org_lookup()
     stats, cost, _ = db.research_person_light(f, by_krs, by_name, apply=True)
-    assert record[0]['model'] == 'claude-haiku-5-5' and record[0]['tools'][0]['type'] == 'web_search_20250305' and record[0]['tools'][0]['max_uses'] == 2
+    assert record[0]['model'] == 'claude-haiku-5-5' and record[0]['tools'][0]['type'] == 'web_search_20250305' and record[0]['tools'][0]['max_uses'] == 3
     assert stats['saved'] == 1 and stats['dropped_url'] == 1 and PublicFigureMediaMention.objects.get().organisation_id == o.pk
     assert 0.02 < cost < 0.05          # 30 tys. tokenów wejścia Haiku + 2 wyszukiwania
 
@@ -315,3 +315,12 @@ def test_light_flag_is_used_by_run_and_logged(monkeypatch):
     out = []
     db.run(ids=[f.pk], apply=True, pause=0, write=out.append, light=True)
     assert MediaResearchLog.objects.get().model.startswith('lekki:')
+
+
+def test_unresolved_org_reports_why_and_which_hints_it_had(monkeypatch):
+    f = figure()
+    monkeypatch.setattr(db, '_light_call', lambda *a, **k: (NS(content=[NS(type='text', text=json.dumps({'krs_number': ''}))]), 0.02))
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item(organisation_name='Stowarzyszenie Fidei Defensor', city='Kraków', board_member='')]))
+    by_krs, by_name = db.org_lookup()
+    stats, _, outside = db.research_person(f, by_krs, by_name, apply=False)
+    assert stats['outside_db'] == 1 and 'nie ustalono numeru KRS' in outside[0] and 'miejscowość: Kraków' in outside[0]

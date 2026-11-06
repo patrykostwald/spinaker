@@ -172,7 +172,10 @@ def adopt_from_krs(item, apply, allow_search=True, cache=None):
         if cache is not None:
             cache[key] = number
     if not number:
-        return None, 'brak numeru KRS', cost
+        has_hint = bool((item.get('city') or '').strip() or (item.get('board_member') or '').strip())
+        if not has_hint:
+            return None, 'brak numeru KRS i drugiej danej (miejscowość, osoba z zarządu)', cost
+        return None, 'nie ustalono numeru KRS (wyszukiwanie bez wyniku)', cost
     extract, reason = verify_candidate(number, item)
     if extract is None:
         return None, reason, cost
@@ -224,7 +227,7 @@ def store_items(figure, items, found, by_krs, by_name, apply, collected_by='clau
             cost += extra
             if org_id is None:
                 stats['outside_db'] += 1
-                outside.append(f"{item.get('organisation_name') or '?'} [{basis}]")
+                outside.append(f"{item.get('organisation_name') or '?'} [{basis}; miejscowość: {item.get('city') or '-'}; osoba: {item.get('board_member') or '-'}]")
                 continue
             stats['org_added'] += 1
             if org_id != 'NOWY':
@@ -257,7 +260,7 @@ def _light_call(system, user, schema=None, searches=None, max_tokens=4000):
     client = clinic_ai._client()
     model = os.environ.get('DONIESIENIA_LIGHT_MODEL', LIGHT_MODEL)
     tool = {'type': os.environ.get('DONIESIENIA_SEARCH_TOOL', LIGHT_TOOL), 'name': 'web_search',
-            'max_uses': searches or int(os.environ.get('DONIESIENIA_LIGHT_SEARCHES', '2'))}
+            'max_uses': searches or int(os.environ.get('DONIESIENIA_LIGHT_SEARCHES', '3'))}
     messages = [{'role': 'user', 'content': user}]
     structured = True
     response = None
@@ -297,7 +300,8 @@ def research_person_light(figure, by_krs, by_name, apply=False):
     user = (f'Osoba publiczna: {figure.canonical_name} ({figure.role_title or figure.get_role_category_display()}). '
             'Znajdź doniesienia mediów o fundacjach, stowarzyszeniach i spółkach powiązanych z tą osobą (także lobbing i udział w przyznawaniu środków). '
             f'Zwróć najwyżej {PER_PERSON_ITEMS} najlepiej udokumentowanych pozycji, każdą z adresem artykułu z wyników wyszukiwania i dosłownym cytatem. '
-            'Pole krs_number tylko, gdy numer jest w źródle (inaczej pusty ciąg); city i board_member tylko, gdy wynikają ze źródła; '
+            'Dla każdego podmiotu ustal miejscowość siedziby (z artykułu albo ze strony podmiotu lub rejestru) i wpisz ją w city; board_member to osoba z zarządu lub członek, jeśli jest w źródle. '
+            'Pole krs_number tylko, gdy numer jest w źródle (inaczej pusty ciąg); nie zgaduj; '
             'published_on RRRR-MM-DD albo pusty ciąg.')
     response, cost = _light_call(SYSTEM, user)
     data = clinic_ai._json_from_text(response.content)
