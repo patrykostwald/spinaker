@@ -159,3 +159,13 @@ def test_run_respects_time_budget_and_page_cap(db):
     cache.delete('bzp:pause_until')
     out, _, cycle = _run([{'status': 'ok', 'new_records': 0}] * 500, budget_seconds=10)
     assert 2 <= cycle.call_count <= 4   # ok. 3,2 s na stronę w budżecie 10 s
+
+
+@override_settings(BZP_API_ENABLED=True)
+def test_notice_record_failure_is_logged_not_silent(source, caplog):
+    import logging
+    from scraper.bzp_backfill import save_notice_record
+    with caplog.at_level(logging.WARNING), patch('news.public_records_models.PublicRecord.objects') as manager:
+        manager.update_or_create.side_effect = RuntimeError('boom')
+        save_notice_record(row('x'), 'x', '2026/BZP/x', 'Tytuł', datetime(2026, 9, 13, 8, tzinfo=dt_timezone.utc), DETAIL_URL + 'x')
+    assert 'bzp notice record not saved: RuntimeError: boom' in caplog.text

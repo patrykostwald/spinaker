@@ -151,8 +151,10 @@ def save_notice_record(row, notice_id, number, title, published, url):
                 source_url=url, response_url=SEARCH_URL,
                 response_sha256=hashlib.sha256(json.dumps(row, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest(),
                 date=timezone.localtime(published, ZoneInfo('Europe/Warsaw')).date(), title=title[:2000], data=data))
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        # Błąd zapisu nie zatrzymuje zbieracza, ale nie może być niewidoczny (6.11.2026: 580 zaimportowanych, 9 rekordów w bazie).
+        import logging
+        logging.getLogger(__name__).warning('bzp notice record not saved: %s: %s', type(exc).__name__, str(exc)[:300])
 
 
 def history_floor(cursor):
