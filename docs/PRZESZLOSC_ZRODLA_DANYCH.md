@@ -222,3 +222,28 @@ Reprezentanci i inne osoby fizyczne **nie służą do dopasowania podmiotów** (
 - Otwarte API KRS wyszukuje tylko po numerze (sprawdzone na `prs.ms.gov.pl/krs/openApi`).
 - Wyszukiwarka KRS (strona) wyszukuje po nazwie i zawęża po województwie, powiecie, gminie i miejscowości (`dokladnaNazwa` jako opcja); interfejs strony wymaga klucza wbudowanego we frontend i nie jest udokumentowany dla aplikacji zewnętrznych. **Decyzja:** nie używamy klucza strony ani nagłówków `origin/referer` oficjalnej aplikacji; zapisujemy tylko układ pól zapytania. Projekt wniosku do MS: `docs/WNIOSEK_MS_WYSZUKIWANIE_KRS_PO_NAZWIE.md` (niewysłany).
 - Do czasu uprawnionego dostępu: dopasowanie nazw z własnych danych (zasada dwóch danych, wyżej).
+
+
+## Misja i zasady rozbudowy źródeł (decyzja właściciela 6.11.2026)
+
+**Misja:** przeszłość.today ma być **najlepszym miejscem do OSINT w Polsce**: kto chce coś ustalić o osobach, firmach i powiązaniach, ma zaczynać u nas. Rozstrzygnięcia:
+1. **Zbieramy jak najwięcej źródeł publicznych** i dodajemy je stale; źródła niepubliczne i płatne właściciel kupuje, gdy dają realną wartość (każdy zakup po jego zgodzie i z limitem kwoty).
+2. **Pokazujemy tylko dane sprawdzone, ze źródłem**; nie redagujemy, nie oceniamy i nie piszemy wniosków. Użytkownik sam łączy fakty i wyciąga wnioski. „Sprawdzone” znaczy: źródło rzeczywiście zawiera to, co pokazujemy (przegląd człowieka przy doniesieniach medialnych, weryfikacja identyfikatora w rejestrze przy podmiotach).
+3. Powiązania łączymy tylko po twardych identyfikatorach (KRS, NIP, REGON, numer w rejestrze); sama nazwa to najwyżej oznaczenie „niepotwierdzone” w kolejce przeglądu.
+4. Jedno źródło = jeden zbieracz w kolejce z limitem zapytań, kartą dostępu (host, limity, licencja) i widocznym statusem w „Stanie danych”.
+
+### Kolejka następnych źródeł (stan 6.11.2026; szczegóły i licencje w tabeli w sekcji 2)
+| # | Źródło | Dlaczego teraz | Co potrzebne od właściciela | Koszt |
+|---|---|---|---|---|
+| 1 | **Doniesienia medialne (badacz Claude + korpus RSS)** | powiązania spoza KRS (udział w przyznawaniu środków, lobbing, klienci): to, czego nie ma w rejestrach | zgoda na limity kosztu (jest: 30 USD, partie) | tokeny + 0,01 USD/wyszukiwanie |
+| 2 | **Rejestr lobbingu (MSWiA, Sejm)** (tabela poz. 10) | wprost: kto lobbuje, dla kogo (np. przypadek spółki lobbingowej polityka) | nic | 0 |
+| 3 | **CEIDG** (dane.biznes.gov.pl, poz. 41) | jednoosobowe działalności bez KRS, wskazywane w doniesieniach | konto i token na dane.biznes.gov.pl (do ustalenia, czy wymaga Profilu Zaufanego) | 0 |
+| 4 | **REGON / BIR (GUS)** | uzupełnienie identyfikatorów, podmioty bez KRS | klucz API z GUS (wniosek właściciela) | 0 |
+| 5 | **Sprawozdania finansowe (RDF, eKRS)** (poz. 25) | przychody, zyski, powiązane umowy, rozmiar fundacji | nic | 0 |
+| 6 | **Rejestr Korzyści i oświadczenia majątkowe (Sejm)** (poz. 39) | bez OCR, tylko dokumenty z warstwą tekstową | nic | 0 |
+| 7 | **SUDOP (pomoc publiczna po NIP)** | dotacje i pomoc publiczna dla podmiotów | nic | 0 |
+| 8 | **Fundusz Sprawiedliwości i inne fundusze celowe (listy beneficjentów na gov.pl)** | beneficjenci dotacji wskazywani w doniesieniach | nic | 0 |
+| 9 | **Wyszukiwanie w KRS po nazwie** | brakuje oficjalnego API (wniosek do MS niewysłany) albo komercyjny dostęp | decyzja: wysłać pismo (draft w `docs/`) albo kupić dostęp | do wyceny |
+| 10 | **Źródła płatne** (komercyjne bazy powiązań i dłużników, prasowe archiwa, rejestry zagraniczne) | pokrycie spoza rejestrów publicznych | **budżet miesięczny i zgoda na porównanie dostawców** | do wyceny |
+
+**Pętla do zbudowania (triaż B z zasad projektu):** „Zbieracz źródeł” z opiekunami: co tydzień sprawdza, które źródła z tabeli są wdrożone, nieaktualne lub zablokowane (host, licencja, zmiana formatu), raportuje w „Stanie danych” i dopisuje do kolejki; wpis w LOOPS Automatyka do zrobienia razem z pierwszym nowym zbieraczem.
