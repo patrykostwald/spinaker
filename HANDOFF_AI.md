@@ -138,3 +138,15 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Naprawione w kodzie (lokalnie/na gałęzi, niewdrożone):** `scraper/public_records.py` - `modifiedSince` dla interpelacji i zapytań z godziną `T00:00:00` (API Sejmu zwraca 404 dla samej daty); test `test_sejm_questions_incremental_uses_datetime_modified_since`; 117 testów zbieraczy przechodzi.
 - **Po wdrożeniu trzeba jednorazowo usunąć oczekujące zadania** źródeł `interpellations` i `questions` (mają zapisany błędny adres; kod nie założy nowych, dopóki jakieś są oczekujące). To zmiana w bazie produkcyjnej: tylko za zgodą właściciela i z kopią bazy.
 - **Do sprawdzenia na serwerze (tylko odczyt):** odpowiedź API KRS dla `krs_changes` (JSONDecodeError) i nagłówek pliku FTS (`fts_header_missing`).
+
+
+## Diagnoza zbieraczy, część 3 (6.11.2026): wszystkie cztery przyczyny ustalone i naprawione w kodzie
+
+| Źródło | Przyczyna (potwierdzona) | Poprawka (kod, niewdrożona) |
+|---|---|---|
+| interpellations, questions | API Sejmu: `modifiedSince` bez godziny daje 404 | `T00:00:00` w `scraper/public_records.py` |
+| krs_changes | API KRS: 204 bez treści dla rejestru P (podmiot w rejestrze S) | pusta odpowiedź = próba drugiego rejestru |
+| fts | kolumna kraju to „Beneficiary country" | dodana nazwa w `scraper/nowe_zrodla.py` |
+| kohesio | zbiór nie ma nazw beneficjentów z Polski (0 z 102 721) | status „puste", opis w Stanie danych i „Jak to działa" |
+
+**Po wdrożeniu (zmiana w bazie produkcyjnej, za zgodą właściciela, po kopii bazy):** usunąć oczekujące zadania interpelacji i zapytań (mają zapisany błędny adres, kod nie założy nowych, dopóki istnieją oczekujące) oraz przyspieszyć ponowienie zadań FTS i KRS (`retry_at=teraz`); kod radzi sobie już z obiema przyczynami. `assets`: zablokowane zabezpieczeniem antybotowym, decyzja właściciela o wyłączeniu i oficjalnej drodze dostępu otwarta.

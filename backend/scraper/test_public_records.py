@@ -486,3 +486,16 @@ def test_sejm_questions_incremental_uses_datetime_modified_since(source):
     collectors.seed(state, date(2026, 9, 27), incremental=False)
     query = parse_qs(urlparse(state.jobs.get().url).query)
     assert query['since'] == ['2026-09-27'] and 'modifiedSince' not in query
+
+
+@pytest.mark.django_db
+def test_krs_extract_empty_response_tries_other_register_then_stops():
+    """API KRS: 204 bez treści = brak podmiotu w tym rejestrze. Wcześniej JSONDecodeError i 82 zadania ponawiane od 8.10 (5.11.2026)."""
+    base = 'https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/0000007151?rejestr={}&format=json'
+    first = job('krs_changes', 'krs_extract', url=base.format('P'), context={'krs': '0000007151', 'day': '2026-10-01', 'organisation_id': 1})
+    handle(first, b'')  # bez wyjątku
+    second = first.state.jobs.get(url=base.format('S'))
+    assert second.kind == 'krs_extract' and second.context['tried'] == ['P', 'S']
+    count = first.state.jobs.count()
+    handle(second, b'   ')  # drugi rejestr też pusty: koniec, bez nowych zadań i bez błędu
+    assert first.state.jobs.count() == count

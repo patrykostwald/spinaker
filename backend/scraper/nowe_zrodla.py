@@ -477,7 +477,7 @@ def fts_years(since, today):
 
 
 FTS_COLUMNS = {
-    'name': ('name of beneficiary',), 'vat': ('vat number',), 'country': ('country / territory', 'country'),
+    'name': ('name of beneficiary',), 'vat': ('vat number',), 'country': ('country / territory', 'country', 'beneficiary country'),  # od 2023: „Beneficiary country" (5.11.2026)
     'city': ('city',), 'amount': ("beneficiary's contracted amount", 'beneficiary’s contracted amount',
                                   'contracted amount'),
     'subject': ('subject of grant or contract',), 'programme': ('programme name',), 'year': ('year',),

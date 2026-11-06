@@ -632,6 +632,16 @@ def handle(job, raw, receipt=None):
             enqueue(state, f'{KRS_API}/OdpisAktualny/{org.krs_number}?rejestr={register}&format=json', 'krs_extract',
                     {'krs': org.krs_number, 'day': ctx['day'], 'organisation_id': org.pk})
     elif kind == 'krs_extract':
+        if not raw or not raw.strip():
+            # API KRS odpowiada 204 bez treści, gdy podmiotu nie ma w danym rejestrze (P: przedsiębiorcy, S: stowarzyszenia i fundacje).
+            # Wcześniej json.loads na pustej odpowiedzi kończył się JSONDecodeError, a zadanie wracało co kilka godzin
+            # (5.11.2026: 82 zadania po 33 błędy, zmiany KRS stały od 8.10). Teraz próbujemy drugi rejestr, a gdy i on jest pusty, kończymy zadanie.
+            register = 'S' if 'rejestr=S' in job.url else 'P'
+            other = 'P' if register == 'S' else 'S'
+            tried = list(ctx.get('tried') or [register])
+            if other not in tried:
+                enqueue(state, job.url.replace(f'rejestr={register}', f'rejestr={other}'), 'krs_extract', {**ctx, 'tried': tried + [other]})
+            return
         header = parsers.krs_header(_json(raw, dict), ctx['krs'])
         put('krs_change', f"{ctx['krs']}/{header['last_entry_number']}", title=header['name'],
             date_value=header['last_entry_date'] or ctx['day'],

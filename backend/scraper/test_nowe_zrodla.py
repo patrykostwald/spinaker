@@ -299,3 +299,18 @@ def test_backfill_targets_for_new_sources(monkeypatch):
     assert zb.target('fts') == date(2021, 1, 1)
     monkeypatch.setenv('PUBLIC_RECORDS_FTS_FIRST_YEAR', '2016')
     assert zb.target('fts') == date(2016, 1, 1)
+
+
+def test_fts_header_with_beneficiary_country_column_is_recognised():
+    """Nagłówek FTS (5.11.2026): kolumna kraju nazywa się „Beneficiary country”, nie „Country / Territory”; parser zgłaszał fts_header_missing."""
+    header = ['\ufeffYear', 'Budget', 'Reference of the Legal Commitment (LC)', 'Reference (Budget)', 'Name of beneficiary',
+              'Main registration number of beneficiary', 'VAT number of beneficiary', 'Not-for-profit organisation (NFPO)',
+              'Non-governmental organisation (NGO)', 'Coordinator', 'Address', 'City', 'Postal code', 'Beneficiary country', 'NUTS2',
+              'Beneficiary’s contracted amount (EUR)', 'Subject of grant or contract', 'Responsible department', 'Programme name',
+              'Expense type', 'Benefiting country']
+    columns = nz._fts_columns(header)
+    assert columns is not None
+    assert header[columns['name']] == 'Name of beneficiary' and header[columns['country']] == 'Beneficiary country'
+    assert header[columns['vat']] == 'VAT number of beneficiary' and header[columns['amount']].startswith('Beneficiary’s contracted amount')
+    # stary nagłówek nadal działa
+    assert nz._fts_columns(['Name of beneficiary', 'Country / Territory', 'VAT number'])['country'] == 1
