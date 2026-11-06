@@ -15,3 +15,10 @@ test('komponent czyta attendance i pokazuje oddane głosy bez oceny powodu', () 
 test('wiersz tylko gdy są głosowania (Sejm), nie dla PE ani pustej listy', () => {
   assert.match(c, /data\.attendance && data\.attendance\.total > 0/);
 });
+
+test('etykieta tematu z procesu legislacyjnego: druk i komisje, tylko gdy jest powiązanie', () => {
+  assert.match(c, /topic\?: \{ druk: string; tytul: string; rodzaj: string; komisje: string\[\] \} \| null/);
+  assert.match(c, /r\.topic \? `druk \$\{r\.topic\.druk\}/);
+  assert.match(c, /komisje\.slice\(0, 2\)/);
+  assert.match(c, /title=\{r\.topic\?\.tytul \|\| undefined\}/);
+});

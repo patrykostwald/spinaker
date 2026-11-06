@@ -222,3 +222,13 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Zrobione, niesprawdzone (kod, niewdrożone):** `bzp_backfill_run` ma blokadę „jedno uruchomienie naraz” (cache `bzp:run_lock`, wygasa po budżecie + 90 s); w logu produkcji nakładające się przebiegi walczyły o bramkę hosta (`host_rate_limited:149.8` w wyniku zadania, choć dane rosły). Odpowiedź `GET /api/przeszlosc/odstepstwa/?zdarzenia=1` ma `limit` (domyślnie 100, najwyżej 500; pełna lista tylko w `eksport=csv`), bo dla dużego klubu miała ok. 330 tys. znaków.
 - **Testy:** `scraper/test_bzp_backfill.py` + `news/test_voting_anomalies.py`: 24 zaliczone.
 - **Do sprawdzenia po następnym wdrożeniu:** w logach worker brak `host_rate_limited` w wynikach zadania BZP; kursor dochodzi do ok. 22.09.2025 (365 dni przed odcięciem 22.09.2026), potem przejście „do przodu” od 22.09.2026.
+
+
+## Etykiety tematów przy głosowaniach, opcja B (6.11.2026, kod gotowy, niewdrożone)
+
+- **Decyzja właściciela:** „b”, czyli oficjalne powiązanie głosowanie → proces legislacyjny → druk i komisja, bez zgadywania po słowach w tytule.
+- **Kod:** `news/glosowania_tematy.py` buduje indeks z rekordów `PublicRecord` (`processes/process`: lista `votings`, etapy z `committeeCode`, `titleFinal`, `documentType`; nazwy komisji z `committees/committee`), cache 26 h, odświeżany co noc w `voting_deviations_task` (`news/tasks.py`) i leniwie przy pierwszym użyciu. `news/przeszlosc_glosowania_rodzaje.py::_sejm_rows` dodaje do wiersza głosowania pole `topic` (`druk`, `tytul`, `rodzaj`, `komisje`) albo `null`. Głosowanie bez procesu (wnioski formalne, uchwały) nie ma etykiety: to „brak powiązania w naszych danych”.
+- **Frontend:** `GlosowaniaOsoby.tsx` dopisuje do linii pod tytułem „druk 3300, Komisja Zdrowia” (do 2 komisji), pełny tytuł procesu w podpowiedzi (`title`).
+- **Sprawdzone:** pytest `test_przeszlosc_glosowania_rodzaje.py` 6/6 (etykiety tylko z rekordów procesu i komisji, brak etykiety dla głosowania bez procesu), razem z `test_voting_anomalies` 17 zaliczonych; `node --test` 155/155, typecheck, build.
+- **Niesprawdzone na produkcji:** jaki odsetek głosowań ma powiązany proces (procesów 1776, głosowań ok. 1850; część procesów może nie mieć listy głosowań), czas pierwszego zbudowania indeksu (iteracja po ok. 1800 rekordach z JSON etapów) i rozmiar cache. Cache profilu osoby trwa 1 h, więc etykiety pojawią się po jego wygaśnięciu albo zmianie wersji.
+- **Zostaje:** etykieta w ogólnym widoku `/przeszlosc/glosowania` (lista wszystkich głosowań) i filtr „według komisji”.

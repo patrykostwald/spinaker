@@ -94,3 +94,22 @@ def test_attendance_counts_voted_absent_and_ignores_outcome_and_club_filters():
     payload = gr.person_payload(me, p)
     assert payload['count'] == 1 and payload['attendance']['total'] == 2   # filtr zawęża listę, nie obecność
     assert gr.person_payload(me, gr.params({'rodzaj': 'pe'}))['attendance'] is None
+
+
+def test_topic_labels_come_from_process_and_committee_records_not_from_words_in_titles():
+    from news import glosowania_tematy as gt
+    me = world()
+    PublicRecord.objects.create(source='committees', kind='committee', external_id='10/ZDR', title='Komisja Zdrowia', date=date(2023, 12, 1),
+                                source_url='https://api.sejm.gov.pl/sejm/term10/committees/ZDR', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'code': 'ZDR', 'name': 'Komisja Zdrowia'})
+    PublicRecord.objects.create(source='processes', kind='process', external_id='10/3300', print_number='3300', title='Projekt ustawy o zdrowiu',
+                                source_url='https://api.sejm.gov.pl/sejm/term10/processes/3300', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'number': '3300', 'documentType': 'projekt ustawy', 'titleFinal': 'Ustawa o zdrowiu publicznym',
+                                      'stages': [{'stageName': 'I czytanie', 'committeeCode': 'ZDR'}, {'stageName': 'II czytanie', 'committeeCode': 'ZDR'},
+                                                 {'stageName': 'Senat', 'committeeCode': 'XXX'}],
+                                      'votings': [{'key': '10/40/1', 'sitting': 40, 'votingNumber': 1}]})
+    cache.clear()
+    assert gt.topic_for(10, 40, 1) == {'druk': '3300', 'tytul': 'Ustawa o zdrowiu publicznym', 'rodzaj': 'projekt ustawy', 'komisje': ['Komisja Zdrowia']}
+    assert gt.topic_for(10, 40, 2) is None   # głosowanie bez procesu: brak etykiety, nic nie zgadujemy
+    rows = {r['id']: r for r in gr.person_rows(me)['sejm']}
+    assert rows['sejm:10/40/1']['topic']['komisje'] == ['Komisja Zdrowia'] and rows['sejm:10/40/2']['topic'] is None

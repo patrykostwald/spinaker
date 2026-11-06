@@ -70,6 +70,8 @@ def _sejm_rows(identities):
     ballots = list(_ballots(identities).select_related('voting__article')
                    .order_by(F('voting__article__published_date').desc(nulls_last=True), '-pk'))
     line = club_line(ballots) if ballots else {}
+    from news.glosowania_tematy import index as topics_index, topic_for
+    topics = topics_index()
     rows = []
     for b in ballots:
         v = b.voting
@@ -79,7 +81,7 @@ def _sejm_rows(identities):
         rows.append({'kind': 'sejm', 'id': f'sejm:{v.term}/{v.sitting}/{v.number}', 'term': v.term,
                      'date': when.date().isoformat() if when else None, 'title': v.article.title[:300], 'motion': (v.motion or '')[:300],
                      'vote': VOTE_LABEL.get(b.vote, 'inne'), 'club': b.club, 'with_club': with_club,
-                     'outcome': outcome(v.counts), 'url': vote_url(v)})
+                     'outcome': outcome(v.counts), 'url': vote_url(v), 'topic': topic_for(v.term, v.sitting, v.number, topics)})
     return rows
 
 

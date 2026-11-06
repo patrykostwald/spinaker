@@ -824,7 +824,10 @@ def voting_deviations_task():
     from news import przeszlosc, voting_anomalies
     if not przeszlosc.enabled():
         return {'status': 'disabled'}
-    return voting_anomalies.refresh()
+    result = voting_anomalies.refresh()
+    from news import glosowania_tematy
+    glosowania_tematy.index(rebuild=True)   # indeks tematów głosowań (procesy → druk i komisje) odświeżany razem z nocnym wynikiem
+    return result
 
 
 @shared_task(soft_time_limit=600, time_limit=660)

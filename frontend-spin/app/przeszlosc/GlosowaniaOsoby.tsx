@@ -10,7 +10,8 @@ import './glosowania-osoby.css';
  * potem kadencja, wynik, zgodność z klubem (tylko Sejm) i daty. Wiersze o stałej wysokości, cele 44 px (Fitts).
  */
 type Row = { kind: VoteKindKey; id: string; term: number | null; date: string | null; title: string; motion: string; vote: string;
-  club: string; with_club: boolean | null; outcome: string; url: string };
+  club: string; with_club: boolean | null; outcome: string; url: string;
+  topic?: { druk: string; tytul: string; rodzaj: string; komisje: string[] } | null }; // temat z oficjalnego procesu legislacyjnego Sejmu (druk, komisje); brak = brak powiązania
 type Attendance = { total: number; voted: number; absent: number; other: number; share: number | null };
 type Data = { attendance?: Attendance | null; kinds: VoteKind[]; terms: number[]; club_filter: boolean; club_note: string; count: number; page: number; pages: number; results: Row[] };
 type F = { rodzaj: VoteKindKey; kadencja: string; wynik: string; zgodnosc: string; od: string; do: string };
@@ -73,7 +74,8 @@ export function GlosowaniaOsoby({ ident }: { ident: string | number }) {
         <time className="gv-date">{shortDay(r.date) || 'bez daty'}</time>
         <a className="gv-title" href={r.url} target="_blank" rel="noopener noreferrer" title={r.title}>{r.title}</a>
         <span className="gv-vote" data-v={r.vote}>{r.vote}</span>
-        <span className="gv-meta">{[outcomeLabel(r.outcome), r.club ? `${r.club}${r.with_club === false ? ', inaczej niż klub' : r.with_club ? ', z klubem' : ''}` : ''].filter(Boolean).join(' · ')}</span>
+        <span className="gv-meta" title={r.topic?.tytul || undefined}>{[outcomeLabel(r.outcome), r.club ? `${r.club}${r.with_club === false ? ', inaczej niż klub' : r.with_club ? ', z klubem' : ''}` : '',
+          r.topic ? `druk ${r.topic.druk}${r.topic.komisje.length ? `, ${r.topic.komisje.slice(0, 2).join(', ')}` : ''}` : ''].filter(Boolean).join(' · ')}</span>
       </li>)}</ul>
       {data.page < data.pages && <button type="button" className="gv-chip gv-more" onClick={() => setPage(p => p + 1)}>{`Pokaż kolejne (${data.count - rows.length})`}</button>}
     </>}
