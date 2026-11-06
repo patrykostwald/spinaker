@@ -96,7 +96,7 @@ export function LayerCaption() {
  *  (kroje strony), wysokość jednym tokenem --pt-logo-h (port v3, 13.10: znak większy o ok. 27%, uwaga właściciela „logo za małe”). */
 export function Logo() {
   return <svg className="pt-logo" viewBox="0 0 216 42" role="img" aria-label="przeszłość.today">
-    <text x="0" y="31" className="pt-logo__t" fill="currentColor">przeszłość<tspan className="pt-logo__d" dx="1">.</tspan><tspan className="pt-logo__m" dx="4" fill="currentColor">today</tspan></text></svg>;
+    <text x="0" y="31" textLength="204" lengthAdjust="spacingAndGlyphs" className="pt-logo__t" fill="currentColor">przeszłość<tspan className="pt-logo__d" dx="1">.</tspan><tspan className="pt-logo__m" dx="4" fill="currentColor">today</tspan></text></svg>;
 }
 
 const MENU_LINKS: [string, string][] = [['/przeszlosc/funkcje', 'Funkcje'], ['/przeszlosc?tryb=osoba', 'Osoby'], ['/przeszlosc/odstepstwa', 'Odstępstwa'], ['/przeszlosc/glosowania', 'Głosowania'], ['/przeszlosc/jak-to-dziala', 'Jak to działa']];
