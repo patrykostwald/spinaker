@@ -141,7 +141,10 @@ test('pliki: tokeny czasu w CSS, tylko transform/opacity w animacji, reduced mot
   const css = fs.readFileSync(P('pasek-nowosci.css'), 'utf8');
   for (const tok of ['--fx-ticker-interval: 6000ms', '--fx-ticker-fade: 320ms', '--fx-ticker-shift: 4px', '--pt-tick-h: 40px', '--pt-tick-lh: 1.3']) assert.ok(css.includes(tok), tok);
   assert.match(css, /height: var\(--pt-tick-h\)/);
-  assert.match(css, /\.pt-tick \{[^}]*align-items: baseline/, 'wiersz po linii bazowej (uwaga właściciela 13.10)');
+  // 5.11: wyrównanie do środka linii (baseline zsuwał tekst ok. 5 px nad środek paska przez przyciski z ujemnymi marginesami)
+  assert.match(css, /\.pt-tick \{[^}]*align-items: center/, 'wiersz wyśrodkowany w pionie (uwaga właściciela 5.11)');
+  assert.doesNotMatch(css, /\.pt-tick \{[^}]*align-items: baseline/, 'bez linii bazowej w wierszu paska');
+  assert.match(css, /\.px-home-top:has\(\.pt-tick\) \{ gap: 8px; \}/, 'pasek prawie doklejony do menu: 8 px zamiast 24 px (uwaga właściciela 5.11)');
   assert.match(css, /\.pt-tick__title \{[^}]*flex: 1 1 0px; min-width: 0/, 'tytuł bierze całą wolną szerokość');
   assert.match(css, /max-width: 1099\.98px\) \{ \.pt-v3 \.px \.pt-tick__src \{ display: none; \}/, 'domena znika poniżej 1100 px');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);

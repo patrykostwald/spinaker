@@ -152,3 +152,11 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 **Po wdrożeniu (zmiana w bazie produkcyjnej, za zgodą właściciela, po kopii bazy):** usunąć oczekujące zadania interpelacji i zapytań (mają zapisany błędny adres, kod nie założy nowych, dopóki istnieją oczekujące) oraz przyspieszyć ponowienie zadań FTS i KRS (`retry_at=teraz`); kod radzi sobie już z obiema przyczynami. `assets`: zablokowane zabezpieczeniem antybotowym, decyzja właściciela o wyłączeniu i oficjalnej drodze dostępu otwarta.
 
 **Testy przed wdrożeniem poprawek zbieraczy (6.11.2026, commit `72b6adc`):** pełny backend (pytest, SQLite) 3963 zaliczone, 2 pominięte, 0 nieudanych; frontend 145 testów, typecheck i build czyste (wcześniej). Brak nowych migracji. Punkt powrotu: `1fce1696`.
+
+
+## Pasek „Ostatnio w bazie” i retencja kopii (6.11.2026, niewdrożone)
+
+- **Pasek (uwaga właściciela, zrzut):** tekst stał ok. 5 px nad środkiem paska, a pasek był 24 px pod menu zamiast „prawie doklejony”. Przyczyna: `align-items: baseline` w wierszu, w którym przyciski 44 px z ujemnymi marginesami przesuwały linię bazową. Poprawka w `frontend-spin/app/przeszlosc/pasek-nowosci.css`: `align-items: center` (wiersz, grupa przycisków, odnośniki) i `gap: 8px` w `.px-home-top:has(.pt-tick)` (odstęp od menu 24 -> 8 px; od paska do treści nadal 24 px).
+- **Sprawdzone (Playwright, zrzuty 1329 i 390 px):** środki tekstów 91-92 przy środku paska 92 (desktop), 82,8-83,7 przy 84 (telefon); odstęp od linii menu 8 px na obu. Test `tests/126-przeszlosc-pasek-nowosci.test.cjs` zaktualizowany do nowych reguł; `node --test tests/*.test.cjs` 145/145, `pnpm typecheck` i `pnpm build` przechodzą.
+- **Retencja kopii w B2:** `RETENTION_DAYS` 30 -> 18 (`backend/news/kopia_zapasowa.py`, decyzja właściciela: opcja A). Kopia bazy ok. 0,4 GB x 18 = ok. 7,6 GB, czyli poniżej progu alarmu 8 GB (darmowe 10 GB w Backblaze). Lokalnie nadal 14 dni. Zaktualizowane: `deploy/backup.sh` (komentarze), `docs/KOPIE-I-ODTWORZENIE.md`, testy `news/test_kopia_zapasowa.py` (10 zaliczonych). Przy pierwszym przebiegu po wdrożeniu `kopia_task` usunie z B2 obiekty starsze niż 18 dni (to zamierzone).
+- **Wdrożenie:** razem z następnym wydaniem (frontend + backend); żadne polecenie na serwerze poza standardową procedurą z sekcji o wdrożeniu (kopia bazy, `$DC up -d --build`).

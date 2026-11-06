@@ -1,7 +1,7 @@
 /* =====================================================================
    Pasek "Ostatnio w bazie" (przeszłość.today, strona główna, 13.10.2026). Nie-przewijany ticker: jedna linia o stałej wysokości
    (--pt-tick-h 40 px), jedna pozycja naraz, zmiana co --fx-ticker-interval przenikaniem (opacity + translateY --fx-ticker-shift).
-   Uwaga właściciela po wdrożeniu ("pasek się rozjeżdża"): JEDEN wiersz flex z align-items: baseline, jeden line-height 1.3 dla
+   Uwaga właściciela po wdrożeniu ("pasek się rozjeżdża"): JEDEN wiersz flex (od 5.11 align-items: center, wcześniej baseline), jeden line-height 1.3 dla
    wszystkich tekstów (etykieta, rodzaj, data, tytuł, domena, odnośnik), rodzaj i data jako meta 13-14 px na tej samej linii bazowej,
    ">" jako zwykły tekst w etykiecie, separator o wysokości tekstu, tytuł bierze całą wolną szerokość (flex: 1 1 0, min-width: 0,
    skrót po całym słowie), domena do 14ch i znika poniżej 1100 px, Pauza jako sama ikona (aria-label + title).
@@ -9,14 +9,18 @@
    Kontrasty (ciemny / jasny, na --sc-surface): tytuł --sc-text 15:1 / 16:1, meta --sc-text-3 6,6:1 / 5,8:1, akcent 8,2:1 / 5,6:1.
    ===================================================================== */
 .pt-v3 .px { --fx-ticker-interval: 6000ms; --fx-ticker-fade: 320ms; --fx-ticker-shift: 4px; --pt-tick-h: 40px; --pt-tick-lh: 1.3; }
-/* wiersz: flex-wrap + align-content: center = jedna linia wycentrowana w 40 px, a w linii wszystko po linii bazowej */
+/* wiersz: flex-wrap + align-content: center = jedna linia wycentrowana w 40 px. Pozycje wyrównane do ŚRODKA linii (nie do linii bazowej):
+   przyciski mają ujemne marginesy i własną linię bazową, która spychała cały tekst ok. 5 px nad środek paska (pomiar 5.11, uwaga właściciela:
+   „tekst niewycentrowany w pionie”). Teksty mają ten sam line-height (1,3), więc ich linie bazowe różnią się najwyżej o ułamek piksela. */
 .pt-v3 .px .pt-tick {
-  display: flex; flex-wrap: wrap; align-items: baseline; align-content: center; gap: 0 12px; height: var(--pt-tick-h); min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 0 12px; height: var(--pt-tick-h); min-width: 0;
   padding: 0 6px 0 14px; border-radius: 10px; background: var(--sc-surface); font-family: var(--sc-font-sans); font-size: 15px; line-height: var(--pt-tick-lh); color: var(--sc-text);
   overflow: visible;
 }
 .pt-v3 .px .pt-tick > * { min-width: 0; }
-/* pasek pod menu: 24 px od kreski menu do paska i 24 px od paska do pierwszego elementu (równe odstępy na granicy tła) */
+/* pasek pod menu: 24 px od paska do pierwszego elementu; od kreski menu do paska tylko 8 px (pasek „prawie doklejony” do menu, uwaga
+   właściciela 5.11; kontener .px-home-top ma domyślnie gap 24 px) */
+.pt-v3 .px > .px-home-top:has(.pt-tick) { gap: 8px; }
 .pt-v3 .px > .px-home-top:first-child:has(.pt-tick) { margin-bottom: calc(24px - var(--pt-sec)); }
 /* etykieta: Montserrat 13/600, ">" jako zwykły tekst w tej samej linii (bez osobnego pozycjonowania) */
 .pt-v3 .px .pt-tick__lab { flex: none; font: 600 13px/var(--pt-tick-lh) var(--sc-font-display); letter-spacing: .01em; color: var(--sc-text-2); white-space: nowrap; }
@@ -35,19 +39,19 @@
 .pt-v3 .px .pt-tick__title { position: relative; flex: 1 1 0px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: var(--sc-text); }
 .pt-v3 .px .pt-tick__title[data-cut] { text-overflow: clip; }
 /* źródło (domena do 14ch + ↗) jako odnośnik do oryginału: cel 44 px przez padding pionowy, linia bazowa z tekstu */
-.pt-v3 .px .pt-tick__src { flex: none; display: inline-flex; align-items: baseline; gap: 3px; max-width: calc(14ch + 24px); padding: 13px 4px; margin: -13px 0; color: var(--sc-text-3); font-size: 14px; line-height: var(--pt-tick-lh); text-decoration: none; white-space: nowrap; transition: color .16s ease; }
+.pt-v3 .px .pt-tick__src { flex: none; display: inline-flex; align-items: center; gap: 3px; max-width: calc(14ch + 24px); padding: 13px 4px; margin: -13px 0; color: var(--sc-text-3); font-size: 14px; line-height: var(--pt-tick-lh); text-decoration: none; white-space: nowrap; transition: color .16s ease; }
 .pt-v3 .px .pt-tick__srcname { display: block; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; }
 .pt-v3 .px .pt-tick__src i { font-style: normal; font-size: 13px; }
 .pt-v3 .px .pt-tick__src:is(:hover, :focus-visible) { color: var(--sc-accent); }
 /* kontrolki: osobna grupa, separator 1 px o wysokości tekstu (pseudoelement wycentrowany na linii tekstu) */
-.pt-v3 .px .pt-tick__act { position: relative; flex: none; display: inline-flex; align-items: baseline; gap: 2px; margin-left: 2px; padding-left: 12px; }
+.pt-v3 .px .pt-tick__act { position: relative; flex: none; display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; padding-left: 12px; }
 .pt-v3 .px .pt-tick__act::before { content: ""; position: absolute; left: 0; top: 50%; width: 1px; height: 1.3em; transform: translateY(-50%); background: var(--sc-line); }
 /* Pauza / Następna: sama ikona (aria-label + title), cel 44 x 44; litera o zerowej szerokości w przycisku daje mu linię bazową tekstu */
 .pt-v3 .px .pt-tick__btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-height: 0; margin: -12px 0; padding: 0; font-size: 15px; line-height: var(--pt-tick-lh); }
 .pt-v3 .px .pt-tick__btn::before { display: none; }
 .pt-v3 .px .pt-tick__btn svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--sc-text-3); transition: color .16s ease; }
 .pt-v3 .px .pt-tick__btn:is(:hover, :focus-visible) svg, .pt-v3 .px .pt-tick__btn[aria-pressed="true"] svg { color: var(--sc-accent); }
-.pt-v3 .px .pt-tick__all { display: inline-flex; align-items: baseline; gap: 4px; padding: 12px 8px; margin: -12px 0; font-size: 15px; line-height: var(--pt-tick-lh); text-decoration: none; white-space: nowrap; }
+.pt-v3 .px .pt-tick__all { display: inline-flex; align-items: center; gap: 4px; padding: 12px 8px; margin: -12px 0; font-size: 15px; line-height: var(--pt-tick-lh); text-decoration: none; white-space: nowrap; }
 .pt-v3 .px .pt-tick__all i { font-style: normal; }
 .pt-v3 .px .pt-tick__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 /* ładowanie: szkielet tej samej wysokości (pulsuje samą przezroczystością), żeby nagłówek nie skakał po nadejściu danych */

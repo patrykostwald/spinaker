@@ -1,6 +1,6 @@
 #!/bin/sh
 # Nocna kopia bazy spin.clinic (Z2, przegląd architekta 7.10):
-#   pg_dump z kontenera db -> plik lokalny /srv/backups (14 dni) -> zaszyfrowana kopia w Backblaze B2 (30 dni).
+#   pg_dump z kontenera db -> plik lokalny /srv/backups (14 dni) -> zaszyfrowana kopia w Backblaze B2 (18 dni).
 # Szyfrowanie (openssl AES-256-CBC, PBKDF2) i wysyłka (API S3, podpis SigV4) robi kontener backend: manage.py kopia_zapasowa.
 # Klucze B2 i hasło BACKUP_PASSPHRASE są tylko w .env.production (skrypt wdrożenia generuje hasło raz; właściciel trzyma je
 # w menedżerze haseł - bez niego kopii nie da się odczytać). Odtworzenie: docs/KOPIE-I-ODTWORZENIE.md.
@@ -22,7 +22,7 @@ if ! grep -q '^B2_BUCKET=.' .env.production; then
   echo "$(date) B2: brak B2_BUCKET w .env.production - kopia tylko na dysku VPS (bez kopii poza serwer!)"
   exit 0
 fi
-# Baza: szyfrowanie + wysyłka + retencja 30 dni + stan dla Dyżurnego i Raportu pętli.
+# Baza: szyfrowanie + wysyłka + retencja 18 dni + stan dla Dyżurnego i Raportu pętli.
 $DC exec -T backend python manage.py kopia_zapasowa --z-stdin --nazwa "$name" < "$file" \
   || { echo "$(date) B2: wysyłka kopii bazy NIEUDANA (Dyżurny podniesie alarm po 26 h)"; exit 1; }
 # Pliki, których nie odtworzy kod (media społecznościowe; karty diagnoz generują się same): raz w tygodniu (niedziela), do 500 MB.
@@ -37,7 +37,7 @@ if [ "${BACKUP_MEDIA:-tak}" = tak ] && [ "$(date +%u)" = 7 ]; then
   fi
   rm -f "$media"
 fi
-# Dziennik głosów Rady (E0, /app/media/glosy): codziennie, zaszyfrowany, w B2 do 30 dni; pominięty, gdy brak plików albo ponad 500 MB.
+# Dziennik głosów Rady (E0, /app/media/glosy): codziennie, zaszyfrowany, w B2 do 18 dni; pominięty, gdy brak plików albo ponad 500 MB.
 glosy="/tmp/glosy-$stamp.tar.gz"
 $DC exec -T backend sh -c 'cd /app/media && [ -n "$(ls glosy/*.jsonl 2>/dev/null)" ] && tar czf - glosy' > "$glosy" 2>/dev/null || true
 if [ -s "$glosy" ] && [ "$(stat -c %s "$glosy")" -lt 524288000 ]; then
