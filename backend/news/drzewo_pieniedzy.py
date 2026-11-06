@@ -419,6 +419,8 @@ def company_view(request, ident):
         data = tree(org)
         if connection.vendor == 'postgresql':
             cache.set(key, data, 900)
+    from news import biala_lista_vat
+    data = {**data, 'vat': biala_lista_vat.status_for(org)}   # status VAT z Białej listy MF (poza cache drzewa: tania kwerenda)
     fmt = request.query_params.get('eksport', '')
     if fmt in ('csv', 'json'):
         from django.http import HttpResponse

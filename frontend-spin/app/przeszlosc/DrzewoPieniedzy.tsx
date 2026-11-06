@@ -19,7 +19,25 @@ type Contract = { id: string; source: 'ted' | 'bzp'; role: string; title: string
 type Grant = { id: string; source: 'fts' | 'niw'; title: string; programme: string; amount: number | null; currency: string; date: string | null; year: number | null; url: string; matched_by: string; attribution?: string; beneficiary?: string; contract_no?: string; file_date?: string };
 type Person = { id: string; figure_id: number; name: string; slug: string; profile_url: string; role: string; function: string; status: string; since: string | null; until: string | null; method: string; url: string };
 type Unlinked = { id: string; source: string; title: string; amount: number | null; currency: string; date: string | null; url: string; reason: string };
+/** Status VAT z Białej listy MF (news/biala_lista_vat.py): null = jeszcze nie sprawdzaliśmy; found false = brak podmiotu w wykazie. */
+type Vat = { found: boolean; status: string | null; registration_date: string | null; removal_date: string | null; removal_basis: string | null;
+  restoration_date: string | null; denial_date: string | null; virtual_accounts: boolean | null; accounts: number | null;
+  changes: { date: string; from: string | null; to: string | null }[]; checked_at: string; source: string; url: string; note: string };
+export function vatLine(v?: Vat | null): string {
+  if (!v) return '';
+  const day = v.checked_at.slice(0, 10);
+  if (!v.found) return `Status VAT: brak w wykazie podatników VAT (stan na ${day}).`;
+  const parts = [`Status VAT: ${(v.status || 'nieznany').toLowerCase()}`];
+  if (v.registration_date) parts.push(`zarejestrowany ${v.registration_date}`);
+  if (v.removal_date) parts.push(`wykreślony ${v.removal_date}${v.removal_basis ? ` (${v.removal_basis})` : ''}`);
+  if (v.restoration_date) parts.push(`przywrócony ${v.restoration_date}`);
+  if (v.virtual_accounts) parts.push('rachunki wirtualne');
+  const last = v.changes[v.changes.length - 1];
+  if (last) parts.push(`zmiana statusu ${last.date}: ${last.from ?? '-'} → ${last.to ?? '-'}`);
+  return `${parts.join(', ')} (stan na ${day}).`;
+}
 export type MoneyTree = {
+  vat?: Vat | null;
   organisation: { id: number; name: string; krs_number: string; nip: string; regon: string; kind: string; legal_form: string; sector: string; url: string; source: Source };
   identifiers: Record<string, string>; identifiers_missing: boolean;
   contracts: { count: number; sums: Sum[]; suspect_count?: number; results: Contract[] };
@@ -125,6 +143,7 @@ export function TreeView({ data, lines = true }: { data: MoneyTree; lines?: bool
         <p className="px-kicker">{KIND[o.kind] ?? KIND.other}</p>
         <h1>{o.name}</h1>
         <p className="px-mt__sub">{sub}</p>
+        {data.vat && <p className="px-note px-mt__vat">{vatLine(data.vat)} <a href={data.vat.url} target="_blank" rel="noopener noreferrer">Wykaz MF ↗</a></p>}
         <p className="px-mt__links"><a href={o.url} target="_blank" rel="noopener noreferrer">Wyszukiwarka KRS (MS) ↗</a>
           <a href={`/przeszlosc/przeplyw/${encodeURIComponent(`spolka:${o.krs_number || o.nip}`)}`}>Drzewo przepływu →</a></p>
       </div>

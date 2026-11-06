@@ -32,7 +32,7 @@ from news import krs
 
 logger = logging.getLogger(__name__)
 
-WL_API = 'https://wl-api.mf.gov.pl/api/search/nips/{nips}'
+WL_API = None   # adres bierze news.biala_lista_vat (od 15.10.2026 wykazpodatnikowvat.mf.gov.pl/api; stary host do 1.12.2026)
 WL_BATCH = 30            # tyle NIP-ów przyjmuje jedno zapytanie wyszukiwania Białej listy
 STALE_DAYS = 90          # odpis aktualny starszy niż tyle dni odświeżamy
 MAX_BACKOFF_HOURS = 24 * 7
@@ -159,7 +159,11 @@ def biala_lista(nips: list[str], day: date | None = None) -> tuple[dict[str, str
     NIP nieznany Białej liście (albo podmiot bez KRS, np. działalność osoby fizycznej) daje ''."""
     if not nips:
         return {}, 'ok'
-    url = WL_API.format(nips=','.join(nips))
+    from news import biala_lista_vat
+    if not biala_lista_vat.reserve_request():   # wspólny dzienny limit „search” (urząd: 100 zapytań na dobę)
+        logger.warning('Biała lista: dzienny limit zapytań wyczerpany')
+        return {}, 'limit'
+    url = biala_lista_vat.search_url(nips)
     try:
         response = requests.get(url, params={'date': (day or timezone.localdate()).isoformat()}, headers=krs.HEADERS, timeout=(5, 30))
     except requests.RequestException as error:
@@ -255,6 +259,9 @@ def uzupelnij(limit: int | None = None, wl_limit: int | None = None) -> dict:
     for offset in range(0, len(nip_items), WL_BATCH):
         batch = nip_items[offset:offset + WL_BATCH]
         found, status = biala_lista([i.value for i in batch])
+        if status == 'limit':
+            stats['limit_dzienny'] += 1   # bez ponowień: pozycje zostają w kolejce na kolejną dobę
+            break
         stats['biala_lista_zapytania'] += 1
         for item in batch:
             if status == 'error':

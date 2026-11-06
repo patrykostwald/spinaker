@@ -946,6 +946,18 @@ def krs_pokrycie_task():
         cache.delete("krs-pokrycie-lock")
 
 
+@shared_task(name="news.tasks.biala_lista_vat_task", soft_time_limit=1500, time_limit=1700)
+def biala_lista_vat_task():
+    """Noc (6.11.2026): status VAT podmiotów z Białej listy MF (BIALA_LISTA_VAT_ENABLED), do 20 zapytań po 30 NIP."""
+    if not cache.add("biala-lista-vat-lock", "1", timeout=1800):
+        return {"status": "locked"}
+    try:
+        from news import biala_lista_vat
+        return biala_lista_vat.refresh()
+    finally:
+        cache.delete("biala-lista-vat-lock")
+
+
 def _auto(name):
     import os
     return os.environ.get(name, 'true').strip().lower() not in ('0', 'false', 'no', 'off')

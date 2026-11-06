@@ -17,11 +17,13 @@ from rest_framework.response import Response
 
 STALE_HOURS = 48
 # Interwały odświeżania źródeł spoza SOURCES (godziny): NIW i OPP raz w tygodniu (beat), BZP codziennie.
-EXTRA_REFRESH = {'bzp': 24, 'niw': 168, 'mf_opp': 168}
+EXTRA_REFRESH = {'bzp': 24, 'niw': 168, 'mf_opp': 168, 'biala_lista': 24}
 # Źródła spoza zbieraczy collect_public_*: (klucz w PublicRecord.source, nazwa, flaga harmonogramu, domyślnie, znane braki)
 EXTRA = [
     ('bzp', 'Biuletyn Zamówień Publicznych (ezamowienia.gov.pl)', 'BZP_API_ENABLED', False,
      'Ogłoszenia zamawiających po NIP; BZP nie podaje wykonawcy ani kwoty w metadanych.'),
+    ('biala_lista', 'Status VAT podmiotów (Biała lista MF)', 'BIALA_LISTA_VAT_ENABLED', True,
+     'Tylko podmioty z NIP, które już mamy; status i daty, bez rachunków, adresów i reprezentantów; limit urzędu 100 zapytań dziennie.'),
     ('niw', 'Lista dotacji NIW-CRSO', 'PRZESZLOSC_NIW_AUTO', True, 'Tylko umowy z numerem KRS; plik raz w tygodniu.'),
     ('mf_opp', 'Wykaz OPP - 1,5% podatku (Ministerstwo Finansów)', 'PRZESZLOSC_OPP_AUTO', True,
      'Kwoty wskazań podatników, poza dotacjami i sumami.'),
