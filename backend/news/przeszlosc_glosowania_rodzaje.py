@@ -142,6 +142,19 @@ def filtered(rows, p):
     return out
 
 
+VOTED = ('za', 'przeciw', 'wstrzymał się')
+
+
+def attendance(rows):
+    """Oddane głosy posła w głosowaniach Sejmu (6.11.2026): ile pozycji, w ilu padł głos za / przeciw / wstrzymał się.
+    Brak głosu to nieobecność albo niegłosowanie; powodu nie znamy i nie oceniamy. Tylko Sejm (PE: tylko europosłowie z Polski)."""
+    total = len(rows)
+    voted = sum(1 for r in rows if r['vote'] in VOTED)
+    absent = sum(1 for r in rows if r['vote'] == 'nieobecny')
+    return {'total': total, 'voted': voted, 'absent': absent, 'other': total - voted - absent,
+            'share': round(100 * voted / total, 1) if total else None}
+
+
 def person_payload(figure, p):
     data = person_rows(figure)
     rows = filtered(data[p['rodzaj']], p)
@@ -150,6 +163,8 @@ def person_payload(figure, p):
     terms = sorted({r['term'] for r in data['sejm'] if r['term']}, reverse=True)
     return {'kinds': kinds({k: len(v) for k, v in data.items()}), 'filters': p, 'terms': terms,
             'club_filter': p['rodzaj'] == 'sejm',
+            # liczone po kadencji i datach, bez filtrów wyniku i klubu: to ogólny obraz obecności, nie wynik filtra
+            'attendance': attendance(filtered(data['sejm'], {**p, 'wynik': None, 'klub': None})) if p['rodzaj'] == 'sejm' else None,
             'club_note': '' if p['rodzaj'] == 'sejm' else 'Zgodność z klubem liczymy tylko dla Sejmu; w PE mamy głosy wyłącznie europosłów z Polski.',
             'count': len(rows), 'page': page, 'pages': pages, 'results': rows[(page - 1) * PER_PAGE: page * PER_PAGE]}
 

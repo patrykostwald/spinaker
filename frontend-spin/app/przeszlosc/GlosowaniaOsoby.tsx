@@ -11,7 +11,8 @@ import './glosowania-osoby.css';
  */
 type Row = { kind: VoteKindKey; id: string; term: number | null; date: string | null; title: string; motion: string; vote: string;
   club: string; with_club: boolean | null; outcome: string; url: string };
-type Data = { kinds: VoteKind[]; terms: number[]; club_filter: boolean; club_note: string; count: number; page: number; pages: number; results: Row[] };
+type Attendance = { total: number; voted: number; absent: number; other: number; share: number | null };
+type Data = { attendance?: Attendance | null; kinds: VoteKind[]; terms: number[]; club_filter: boolean; club_note: string; count: number; page: number; pages: number; results: Row[] };
 type F = { rodzaj: VoteKindKey; kadencja: string; wynik: string; zgodnosc: string; od: string; do: string };
 const START: F = { rodzaj: 'sejm', kadencja: '', wynik: '', zgodnosc: '', od: '', do: '' };
 const OUT = [['', 'Każdy wynik'], ['przyjete', 'Przyjęte'], ['odrzucone', 'Odrzucone']] as const;
@@ -66,6 +67,7 @@ export function GlosowaniaOsoby({ ident }: { ident: string | number }) {
         {empty.length > 0 && <p className="px-note gv-empty">{nb(empty.map(k => `${k.label} - ${k.note}`).join(' '))}</p>}
         {data.club_note && <p className="px-note gv-empty">{nb(data.club_note)}</p>}
       </div>
+      {data.attendance && data.attendance.total > 0 && <p className="px-note gv-att">{nb(`Oddane głosy: ${data.attendance.voted} z ${data.attendance.total} głosowań${data.attendance.share !== null ? ` (${data.attendance.share.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%)` : ''}${data.attendance.absent ? `, bez głosu: ${data.attendance.absent}` : ''}. Brak głosu to nieobecność albo niegłosowanie; powodu nie oceniamy.`)}</p>}
       <p className="gv-count" role="status">{nb(`${data.count} ${data.count === 1 ? 'głosowanie' : 'głosowań'} spełnia filtry`)}</p>
       <ul className="gv-list">{rows.map(r => <li key={r.id} className="gv-row">
         <time className="gv-date">{shortDay(r.date) || 'bez daty'}</time>

@@ -198,3 +198,11 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Sprawdzone:** pytest `test_przeszlosc_moj_posel.py` (2), `test_pracownia_osint`, `test_przeszlosc_dostep` razem 14 zaliczonych; `node --test` 152/152, typecheck, build; pomiar Playwright 1440 i 390 px (atrapa API): odstęp od menu 32 i 24 px, wiersze 64 px, pole 44 px, bez przewijania poziomego.
 - **Niesprawdzone na produkcji:** czy pole `district` roster ma wartości dla wszystkich posłów i jak wyglądają nazwy okręgów (numer okręgu nie jest zapisywany, tylko nazwa z API Sejmu); ile figur ma powiązanie z rejestrem. Do odczytu po wdrożeniu: `/api/przeszlosc/moj-posel/`.
 - **Zostaje z pozycji 2:** imienne głosy w profilu osoby, etykiety tematów przy głosowaniach.
+
+
+## Pozycja 2, część c: oddane głosy w profilu; etykiety tematów wstrzymane (6.11.2026, niewdrożone)
+
+- **Imienne głosy w profilu już istniały** (`GlosowaniaOsoby.tsx`, `/api/przeszlosc/osoba/<id>/glosowania/`: pełna lista z filtrami kadencji, wyniku, zgodności z klubem i dat, ładowana po przewinięciu do sekcji). Wniosek z rundy person „dziś tylko sumy” wynikał z lazy-ładowania (narzędzie bez przewijania); nie ma czego dublować.
+- **Dodane:** `attendance` w odpowiedzi (`news/przeszlosc_glosowania_rodzaje.py::attendance`): liczba głosowań, oddane głosy (za/przeciw/wstrzymał się), bez głosu; liczone po kadencji i datach, bez filtrów wyniku i klubu; tylko Sejm (dla PE `null`). Wiersz „Oddane głosy: X z Y głosowań (Z%)…” nad listą; nazwa celowo nie „frekwencja”, bo brak głosu to nieobecność albo niegłosowanie, a powodu nie znamy i nie oceniamy.
+- **Testy:** pytest `test_przeszlosc_glosowania_rodzaje.py` 5/5 (nowy: obecność niezależna od filtrów, PE bez obecności); `node --test` 154/154; typecheck i build.
+- **Etykiety tematów przy głosowaniach: NIE zbudowane (decyzja potrzebna).** Słownik `news/topics.py` to tagi wydawców i ma zasadę „dokładne tagi, nigdy zgadywanie po tytułach”. Opcje: (A) reguły słów kluczowych w tytule, jawnie opisane „wg słów w tytule”, po recenzji Prawnika i Recenzenta (szybkie, ale to heurystyka); (B) powiązanie głosowania z drukiem, procesem legislacyjnym i komisją (źródło oficjalne, ale większa praca i brak komisji w wielu tytułach, np. „Sprawozdanie Komisji o uchwale Senatu…”). Rekomendacja: B, A tylko jako uzupełnienie z wyraźną etykietą.

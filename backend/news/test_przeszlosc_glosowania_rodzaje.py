@@ -83,3 +83,14 @@ def test_ep_page_filters_result_and_pages():
     page = gr.ep_page({'wynik': 'przyjete'}, 10)
     assert page['count'] == 1 and page['results'][0]['outcome'] == 'przyjete' and page['results'][0]['polish']
     assert gr.ep_page({'wynik': 'odrzucone'}, 10)['count'] == 0
+
+
+def test_attendance_counts_voted_absent_and_ignores_outcome_and_club_filters():
+    rows = [{'vote': v} for v in ('za', 'przeciw', 'wstrzymał się', 'nieobecny', 'nieobecny', 'obecny, bez głosu')]
+    assert gr.attendance(rows) == {'total': 6, 'voted': 3, 'absent': 2, 'other': 1, 'share': 50.0}
+    assert gr.attendance([]) == {'total': 0, 'voted': 0, 'absent': 0, 'other': 0, 'share': None}
+    me = world()
+    p = gr.params({'rodzaj': 'sejm', 'wynik': 'odrzucone', 'zgodnosc': 'inaczej'})
+    payload = gr.person_payload(me, p)
+    assert payload['count'] == 1 and payload['attendance']['total'] == 2   # filtr zawęża listę, nie obecność
+    assert gr.person_payload(me, gr.params({'rodzaj': 'pe'}))['attendance'] is None
