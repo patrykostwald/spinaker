@@ -116,3 +116,46 @@ def test_notice_after_utc_evening_is_accepted_when_api_day_is_utc(source):
     assert result['status'] == 'ok' and result['new_records'] == 2
     assert Article.objects.count() == 2
     assert ImportState.objects.get().last_error == ''
+
+
+def _run(results, **kwargs):
+    from scraper.bzp_backfill import bzp_backfill_run
+    sleeps, clock = [], {'t': 0.0}
+    def fake_sleep(seconds):
+        sleeps.append(seconds); clock['t'] += seconds
+    with patch('scraper.bzp_backfill.bzp_backfill_cycle', side_effect=results) as cycle:
+        out = bzp_backfill_run(sleep=fake_sleep, monotonic=lambda: clock['t'], **kwargs)
+    return out, sleeps, cycle
+
+
+def test_run_fetches_many_pages_spaced_at_most_20_per_minute_and_stops_when_complete(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until')
+    out, sleeps, cycle = _run([{'status': 'ok', 'new_records': 5}] * 3 + [{'status': 'complete', 'new_records': 0}])
+    assert out['status'] == 'complete' and out['pages'] == 3 and out['new_records'] == 15 and cycle.call_count == 4
+    assert len(sleeps) == 3 and all(s >= 3 for s in sleeps)   # co najmniej 3 s = najwyżej 20/min
+
+
+def test_run_waits_out_host_gate_then_continues(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until')
+    out, sleeps, _ = _run([{'status': 'error', 'error': 'host_rate_limited:1.500'}, {'status': 'ok', 'new_records': 1},
+                           {'status': 'complete', 'new_records': 0}])
+    assert out['pages'] == 1 and sleeps[0] == pytest.approx(1.7)
+
+
+def test_run_stops_on_429_and_pauses_until_retry_after(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until')
+    out, _, cycle = _run([{'status': 'ok', 'new_records': 1}, {'status': 'deferred', 'retry_after_seconds': 600}, {'status': 'ok'}])
+    assert out['status'] == 'deferred' and cycle.call_count == 2
+    out2, _, cycle2 = _run([{'status': 'ok', 'new_records': 1}])
+    assert out2['status'] == 'paused' and cycle2.call_count == 0
+    cache.delete('bzp:pause_until')
+
+
+def test_run_respects_time_budget_and_page_cap(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until')
+    out, _, cycle = _run([{'status': 'ok', 'new_records': 0}] * 500, budget_seconds=10)
+    assert 2 <= cycle.call_count <= 4   # ok. 3,2 s na stronę w budżecie 10 s

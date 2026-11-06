@@ -167,11 +167,11 @@ def import_official_task(kind):
             cache.delete('priority:official:votings')
 
 
-@shared_task(soft_time_limit=120, time_limit=150)
+@shared_task(soft_time_limit=330, time_limit=360)
 def import_bzp_metadata():
-    """One bounded BZP API page; the environment flag remains the final on/off switch."""
-    from scraper.bzp_backfill import bzp_backfill_cycle
-    return bzp_backfill_cycle()
+    """Bounded BZP API run (a few minutes, pages spaced by the reviewed card); the environment flag remains the final on/off switch."""
+    from scraper.bzp_backfill import bzp_backfill_run
+    return bzp_backfill_run()
 
 
 @shared_task(soft_time_limit=300, time_limit=360)

@@ -8,9 +8,11 @@ from datetime import date, datetime, time, timedelta
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 import json
+import time
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -244,3 +246,42 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
     except Exception as exc:
         ImportState.objects.filter(pk=state.pk).update(last_error=str(exc)[:200])
         return {'status': 'error', 'new_records': 0, 'error': str(exc)[:200]}
+
+
+PAUSE_CACHE_KEY = 'bzp:pause_until'
+RUN_BUDGET_SECONDS = 240      # jedno uruchomienie zadania; twardy limit zadania 360 s, harmonogram co 5 min
+MAX_PAGES_PER_RUN = 120
+PAGE_PAUSE_SECONDS = MIN_REQUEST_INTERVAL_SECONDS + 0.2   # 20 zapytań/min to dolna granica bramki (3 s) z zapasem
+
+
+def bzp_backfill_run(*, budget_seconds=RUN_BUDGET_SECONDS, sleep=time.sleep, monotonic=time.monotonic):
+    """Kilka stron w jednym uruchomieniu (6.11.2026, zgoda właściciela: najwyżej 20 zapytań/min).
+
+    Tempo wyznacza karta dostępu (bramka hosta: minimum_interval_seconds, dzienny limit) i pauza między stronami.
+    Odpowiedź 429 (deferred) wyłącza zbieracz do czasu Retry-After (cache), więc wraca do wolnego trybu zamiast naciskać."""
+    now = timezone.now()
+    paused_until = cache.get(PAUSE_CACHE_KEY)
+    if paused_until and paused_until > now.timestamp():
+        return {'status': 'paused', 'new_records': 0, 'pages': 0}
+    deadline = monotonic() + budget_seconds
+    pages = created = 0
+    result = {'status': 'ok', 'new_records': 0}
+    while pages < MAX_PAGES_PER_RUN and monotonic() < deadline:
+        result = bzp_backfill_cycle()
+        status = result.get('status')
+        error = str(result.get('error', ''))
+        if status == 'ok':
+            pages += 1
+            created += result.get('new_records', 0)
+            sleep(PAGE_PAUSE_SECONDS)
+            continue
+        if status == 'error' and error.startswith('host_rate_limited:'):
+            wait = float(error.split(':', 1)[1] or 3)
+            if wait > deadline - monotonic():
+                break
+            sleep(wait + 0.2)
+            continue
+        if status == 'deferred':
+            cache.set(PAUSE_CACHE_KEY, now.timestamp() + max(60, int(result.get('retry_after_seconds') or 60)), 86400)
+        break
+    return {**result, 'pages': pages, 'new_records': created}
