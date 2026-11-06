@@ -22,9 +22,10 @@ class Command(BaseCommand):
         parser.add_argument('--limit-usd', type=float, default=2.0)
         parser.add_argument('--szukaj-krs', action='store_true', help='Druga runda z wyszukiwarką (drogi Sonnet) dla podmiotów bez numeru KRS.')
         parser.add_argument('--bez-gdelt', action='store_true')
+        parser.add_argument('--diagnoza', action='store_true', help='Wypisz, co znaleziono i pobrano przy każdej osobie (korpus, GDELT, długość tekstu).')
 
     def handle(self, *args, **o):
         result = lejek.run(names=o['nazwisko'], ids=o['osoba'], apply=o['apply'], budget_usd=o['limit_usd'], write=self.stdout.write,
                            skip_days=0 if o['ponow'] else 60, everyone=o['wszyscy'], limit=o['max_osob'], allow_search=o['szukaj_krs'],
-                           use_gdelt=not o['bez_gdelt'])
+                           use_gdelt=not o['bez_gdelt'], verbose=o['diagnoza'])
         self.stdout.write(f"{'ZAPISANO' if o['apply'] else 'Raport (bez zapisu)'}: {result}")

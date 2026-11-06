@@ -99,13 +99,17 @@ def excerpts(text, person):
     return ' … '.join(parts)[:MAX_EXCERPT_CHARS]
 
 
-def gdelt_articles(name, limit=15, get=requests.get):
+def gdelt_articles(name, limit=15, get=requests.get, diag=None):
     query = '"%s" (fundacja OR stowarzyszenie OR spółka OR lobbing OR lobbysta OR dotacja) sourcelang:polish' % name
     try:
         response = get(GDELT_URL, params={'query': query, 'mode': 'artlist', 'maxrecords': limit, 'format': 'json', 'sort': 'datedesc'},
                        headers={'User-Agent': 'przeszlosc.today (iapply sp. z o.o.)'}, timeout=25)
+        if diag is not None:
+            diag['status'] = getattr(response, 'status_code', '?')
         rows = response.json().get('articles') or []
-    except (requests.RequestException, ValueError, AttributeError):
+    except (requests.RequestException, ValueError, AttributeError) as error:
+        if diag is not None:
+            diag['error'] = type(error).__name__
         return []
     out = []
     for row in rows:
@@ -117,6 +121,7 @@ def gdelt_articles(name, limit=15, get=requests.get):
 
 
 def corpus_articles(figure, limit=10):
+    """Artykuły z korpusu z pełnym imieniem i nazwiskiem ORAZ wyzwalaczem (fundacja, spółka, lobbing...) już w tytule lub opisie."""
     person = name_pattern(figure.canonical_name)
     if person is None:
         return []
@@ -124,7 +129,8 @@ def corpus_articles(figure, limit=10):
         .select_related('source').order_by('-published_date')[:CANDIDATE_LIMIT]
     out = []
     for a in rows:
-        if person.search(' '.join(filter(None, (a.title, a.description)))):
+        head = ' '.join(filter(None, (a.title, a.description)))
+        if person.search(head) and TRIGGER.search(head):
             out.append({'url': a.url, 'title': a.title[:300], 'outlet': a.source.name if a.source_id else '',
                         'date': a.published_date.date().isoformat() if a.published_date else ''})
             if len(out) >= limit:
@@ -215,16 +221,22 @@ def verify(items, articles):
     return kept, dropped
 
 
-def research_person_funnel(figure, by_krs, by_name, apply=False, allow_search=False, use_gdelt=True, pause=FETCH_PAUSE):
+def research_person_funnel(figure, by_krs, by_name, apply=False, allow_search=False, use_gdelt=True, pause=FETCH_PAUSE, trace=None):
     """Jedna osoba: (statystyki, koszt USD, poza bazą). Błąd modelu rzuca ClinicAIError."""
     person = name_pattern(figure.canonical_name)
     stats = {'candidates': 0, 'fetched': 0, 'refused': 0, 'excerpts': 0, 'dropped_quote': 0}
     if person is None or figure.archived or figure.merged_into_id or namesakes(figure, normalize_name(figure.canonical_name)):
         return {**stats, 'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0}, 0.0, []
     candidates = corpus_articles(figure)
+    if trace is not None:
+        trace.append(f'  korpus: {len(candidates)} artykułów z nazwiskiem i wyzwalaczem')
     if use_gdelt:
         known = {c['url'] for c in candidates}
-        candidates += [c for c in gdelt_articles(figure.canonical_name) if c['url'] not in known]
+        diag = {}
+        found_g = gdelt_articles(figure.canonical_name, diag=diag)
+        candidates += [c for c in found_g if c['url'] not in known]
+        if trace is not None:
+            trace.append(f'  GDELT: {len(found_g)} artykułów (http {diag.get("status", "-")}, błąd {diag.get("error", "brak")})')
         time.sleep(GDELT_PAUSE)
     candidates = candidates[:MAX_ARTICLES * 2]
     stats['candidates'] = len(candidates)
@@ -236,9 +248,13 @@ def research_person_funnel(figure, by_krs, by_name, apply=False, allow_search=Fa
         time.sleep(pause)
         if text is None:
             stats['refused'] += 1
+            if trace is not None:
+                trace.append(f'  - pominięto {c["outlet"] or c["url"][:40]}: {reason}')
             continue
         stats['fetched'] += 1
         fragment = excerpts(text, person)
+        if trace is not None:
+            trace.append(f'  - {c["outlet"] or c["url"][:40]}: tekst {len(text)} znaków, nazwisko {len(person.findall(text))}x, fragment {len(fragment)} znaków | {c["title"][:70]}')
         if fragment:
             articles.append({**c, 'excerpt': fragment})
     stats['excerpts'] = len(articles)
@@ -252,7 +268,7 @@ def research_person_funnel(figure, by_krs, by_name, apply=False, allow_search=Fa
 
 
 def run(names=None, ids=None, apply=False, budget_usd=2.0, write=print, skip_days=60, everyone=False, limit=None, allow_search=False,
-        use_gdelt=True, pause=FETCH_PAUSE):
+        use_gdelt=True, pause=FETCH_PAUSE, verbose=False):
     figures = db.pick_figures(names, ids, skip_days, everyone=everyone, limit=limit)
     by_krs, by_name = db.org_lookup()
     total = {'persons': 0, 'candidates': 0, 'fetched': 0, 'excerpts': 0, 'items': 0, 'saved': 0, 'dropped_quote': 0, 'outside_db': 0,
@@ -264,7 +280,10 @@ def run(names=None, ids=None, apply=False, budget_usd=2.0, write=print, skip_day
             break
         write(f'Badam: {figure.canonical_name} ...')
         try:
-            stats, cost, outside = research_person_funnel(figure, by_krs, by_name, apply, allow_search, use_gdelt, pause)
+            trace = [] if verbose else None
+            stats, cost, outside = research_person_funnel(figure, by_krs, by_name, apply, allow_search, use_gdelt, pause, trace)
+            for line in trace or []:
+                write(line)
         except clinic_ai.ClinicAIError as error:
             total['errors'] += 1
             write(f'{figure.canonical_name}: błąd {error.code}')

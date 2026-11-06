@@ -98,3 +98,27 @@ def test_org_name_is_matched_in_inflected_form_but_not_when_a_word_is_missing():
     assert lj.name_in_text('Fundacja Akademia Przyszłości', text)
     assert not lj.name_in_text('Fundacja Akademia Rozwoju', text)
     assert not lj.name_in_text('', text)
+
+
+def test_corpus_requires_trigger_word_in_title_or_description_and_diag_reports_gdelt(monkeypatch):
+    f = figure()
+    src = Source.objects.create(name='Portal', url='https://portal.example')
+    now = timezone.now()
+    Article.objects.create(source=src, title='Jan Kowalski i fundacja Akademia Przyszłości', description='', url='https://portal.example/1', published_date=now)
+    Article.objects.create(source=src, title='Jan Kowalski odwiedził Sejm', description='Spotkanie klubu.', url='https://portal.example/2', published_date=now)
+    assert [a['url'] for a in lj.corpus_articles(f)] == ['https://portal.example/1']
+    diag = {}
+    bad = NS(status_code=429, json=lambda: (_ for _ in ()).throw(ValueError('limit')))
+    assert lj.gdelt_articles('Jan Kowalski', get=lambda *a, **k: bad, diag=diag) == [] and diag == {'status': 429, 'error': 'ValueError'}
+
+
+def test_trace_lists_what_was_found_and_fetched(monkeypatch):
+    from scraper import media_metadata
+    f = figure()
+    monkeypatch.setattr(media_metadata, '_known', lambda url: '')
+    monkeypatch.setattr(lj.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(lj, 'gdelt_articles', lambda name, diag=None, **k: (diag.update(status=200) if diag is not None else None, [{'url': 'https://m.example/a', 'title': 'Tytuł', 'outlet': 'm.example', 'date': '2026-10-01'}])[1])
+    monkeypatch.setattr(lj, 'fetch_text', lambda url, get=None: ('Zupełnie inny tekst bez nazwiska.', ''))
+    lines = []
+    lj.research_person_funnel(f, {}, {}, trace=lines)
+    assert any('GDELT: 1 artykułów (http 200' in l for l in lines) and any('nazwisko 0x' in l for l in lines)
