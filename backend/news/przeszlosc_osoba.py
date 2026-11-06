@@ -699,7 +699,8 @@ def person_view(request, ident):
     fmt = request.query_params.get('eksport', '')
     if fmt in ('csv', 'json') and not has('export', request):
         return locked('export')
-    data = {**data, 'access': access(request)}
+    from news.przeszlosc_doniesienia import mentions_for  # doniesienia medialne o podmiotach: tylko opublikowane po przeglądzie (zawsze świeże, poza cache)
+    data = {**data, 'org_mentions': mentions_for(figure), 'access': access(request)}
     from news.position_pairs import extend_profile  # v3 „Wcześniej i teraz”: tylko przy POSITION_PAIRS_ENABLED
     data = extend_profile(data, figure)
     from news import asset_declarations, privacy_notice  # decyzje właściciela 13.10: art. 14 i oświadczenia (flagi)

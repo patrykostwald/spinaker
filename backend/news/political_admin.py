@@ -7,7 +7,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, PublicFigureMediaMention, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -307,6 +307,32 @@ class PublicFigureOrganisationRelationAdmin(admin.ModelAdmin):
         return False
 
 
+class PublicFigureMediaMentionAdmin(admin.ModelAdmin):
+    list_display = ['public_figure', 'organisation', 'category', 'match_basis', 'source_outlet', 'published_on', 'status']
+    list_filter = ['status', 'category', 'match_basis']
+    search_fields = ['public_figure__canonical_name', 'organisation__name', 'organisation__krs_number', 'source_title', 'source_outlet']
+    autocomplete_fields = ['public_figure', 'organisation']
+    readonly_fields = ['reviewed_by', 'reviewed_at', 'created_at', 'updated_at']
+    actions = ['publish_mentions', 'reject_mentions']
+
+    @admin.action(description='Opublikuj wybrane doniesienia (po sprawdzeniu źródła)')
+    def publish_mentions(self, request, queryset):
+        for mention in queryset.filter(status='pending_review'):
+            try:
+                mention.publish(request.user)
+            except ValidationError as exc:
+                self.message_user(request, f'{mention}: {"; ".join(exc.messages)}', messages.ERROR)
+            else:
+                self.message_user(request, f'Opublikowano: {mention}', messages.SUCCESS)
+
+    @admin.action(description='Odrzuć wybrane doniesienia')
+    def reject_mentions(self, request, queryset):
+        queryset.filter(status='pending_review').update(status='rejected', reviewed_by=request.user, reviewed_at=timezone.now())
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class SocialHandleEvidenceAdmin(admin.ModelAdmin):
     list_display = ['handle', 'roster_entry', 'platform', 'status', 'observed_at', 'candidate']
     list_filter = ['platform', 'status', 'roster_entry__source']
@@ -408,6 +434,7 @@ def register_political_admin(site):
     site.register(PublicFigureArticleReference, PublicFigureArticleReferenceAdmin)
     site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
     site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)
+    site.register(PublicFigureMediaMention, PublicFigureMediaMentionAdmin)
     site.register(SocialHandleEvidence, SocialHandleEvidenceAdmin)
     site.register(PoliticalPost, PoliticalPostAdmin)
     site.register(PoliticalDraft, PoliticalDraftAdmin)

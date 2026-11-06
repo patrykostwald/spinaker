@@ -5,6 +5,7 @@ import { Loading } from '@spin-clinic/ui/kit';
 import { Bar, Follow, Foot, Icon, LayerCaption, PageIndex, day, host, nb, plural, short, spinColor, text, tidyLinks, useNarrativeLayer, useStandalone, type Access } from './ui';
 import { ProfileOpenData, SejmVideos, type OpenData, type SejmVideo } from './OpenData';
 import { WMediach } from './WMediach';
+import { PodmiotyZMediow, type OrgMentions } from './PodmiotyZMediow';
 import { Przybornik, personTools } from './Przybornik';
 import { sumLine } from './DrzewoPieniedzy';
 import { Przeplywy } from './Przeplywy';
@@ -40,6 +41,7 @@ type Profile = {
   employment_timeline: { position: string; organisation: string; status: string; since?: string | null; until?: string | null; checked_at?: string | null; source?: { url: string } }[];
   source_checked_at?: string;
   materials: { count: number; results: ProfileMaterial[] };
+  org_mentions?: OrgMentions;
   mentions?: { results: ProfileMaterial[]; total?: number; limit?: number; reason?: string; reason_code?: string };
   articles_total?: number;
   /** „Wcześniej i teraz” (API-v3.md sekcja 5): zatwierdzone pary; klucza brak = funkcja wyłączona flagą backendu */
@@ -209,6 +211,7 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
         {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
         <div id="pp-media" className="pt-anchor" /><WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
         <WMediach id="pp-mentions-h" heading="Wzmianki" automatic total={data.mentions?.total} emptyReason={data.mentions?.reason} items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, confidence: m.confidence, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
+        <PodmiotyZMediow data={data.org_mentions} />
       </div>
       <aside className="px-side">
         <section className="px-card" id="pp-funkcje" aria-labelledby="pp-roles-h">

@@ -511,6 +511,80 @@ class PublicFigureOrganisationRelation(models.Model):
         self.save(update_fields=['verified_by', 'verified_at', 'verification_status', 'updated_at'])
 
 
+MEDIA_MENTION_CATEGORIES = [
+    ('mention', 'Wzmianka'),
+    ('alleged', 'Rzekome powiązanie'),
+    ('denied', 'Sprostowane lub zaprzeczone'),
+    ('other', 'Inne'),
+]
+MEDIA_MENTION_MATCH = [
+    ('identifier', 'Po numerze KRS lub NIP'),
+    ('name_only', 'Tylko po nazwie (niepotwierdzone)'),
+]
+MEDIA_MENTION_STATUSES = [
+    ('pending_review', 'Do przeglądu'),
+    ('published', 'Opublikowana'),
+    ('rejected', 'Odrzucona'),
+]
+MEDIA_QUOTE_LIMIT = 300
+
+
+class PublicFigureMediaMention(models.Model):
+    """Doniesienie medialne łączące osobę publiczną z podmiotem z naszej bazy (6.11.2026).
+
+    Nie opisujemy charakteru powiązania: pokazujemy źródło (link, tytuł, redakcja, data, krótki cytat) i kategorię doniesienia.
+    Wzmianka w mediach nie jest dowodem powiązania. Każda pozycja przechodzi kolejkę zatwierdzania (domyślnie „do przeglądu”);
+    zmiana treści wskazującej na powiązanie cofa publikację do kolejki. Podmiot wyłącznie z naszej bazy (KRS), dopasowanie
+    po numerze KRS/NIP albo oznaczone jako niepotwierdzone (tylko nazwa)."""
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT, related_name='media_mentions')
+    organisation = models.ForeignKey(RegisteredOrganisation, on_delete=models.PROTECT, related_name='media_mentions')
+    category = models.CharField(max_length=10, choices=MEDIA_MENTION_CATEGORIES, default='mention')
+    match_basis = models.CharField(max_length=12, choices=MEDIA_MENTION_MATCH, default='name_only')
+    source_url = models.URLField(max_length=1024, help_text='Bezpośredni link do doniesienia.')
+    source_title = models.CharField(max_length=300)
+    source_outlet = models.CharField(max_length=120, blank=True, help_text='Redakcja lub portal.')
+    published_on = models.DateField(null=True, blank=True)
+    quote = models.CharField(max_length=MEDIA_QUOTE_LIMIT, blank=True,
+        help_text='Krótki cytat z doniesienia (najwyżej 300 znaków); bez kopiowania całego tekstu.')
+    status = models.CharField(max_length=14, choices=MEDIA_MENTION_STATUSES, default='pending_review', db_index=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='reviewed_media_mentions', editable=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    collected_by = models.CharField(max_length=16, default='manual', help_text='manual, agent albo import.')
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-published_on', '-pk']
+        constraints = [models.UniqueConstraint(fields=['public_figure', 'organisation', 'source_url'],
+                                               name='unique_media_mention_per_source')]
+
+    def clean(self):
+        super().clean()
+        if urlparse(self.source_url or '').scheme not in ('http', 'https'):
+            raise ValidationError('Link do doniesienia musi zaczynać się od http lub https.')
+        if len(self.quote or '') > MEDIA_QUOTE_LIMIT:
+            raise ValidationError('Cytat może mieć najwyżej 300 znaków.')
+
+    def save(self, *args, **kwargs):
+        """Zmiana treści doniesienia cofa opublikowaną pozycję do kolejki zatwierdzania."""
+        watched = ('public_figure_id', 'organisation_id', 'category', 'match_basis', 'source_url', 'source_title', 'quote')
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).values('status', *watched).first()
+            if previous and previous['status'] == 'published' and any(previous[f] != getattr(self, f) for f in watched):
+                self.status, self.reviewed_by_id, self.reviewed_at = 'pending_review', None, None
+                if kwargs.get('update_fields') is not None:
+                    kwargs['update_fields'] = set(kwargs['update_fields']) | {'status', 'reviewed_by', 'reviewed_at', 'updated_at'}
+        super().save(*args, **kwargs)
+
+    def publish(self, staff):
+        if not staff.is_active or not staff.is_staff:
+            raise ValidationError('Publikacja doniesienia wymaga aktywnej osoby z zespołu.')
+        self.full_clean()
+        self.status, self.reviewed_by, self.reviewed_at = 'published', staff, timezone.now()
+        self.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'updated_at'])
+
+
 SOCIAL_EVIDENCE_STATUSES = [
     ('pending_review', 'Do przeglądu'),
     ('candidate_created', 'Przekazano do kandydatur'),
