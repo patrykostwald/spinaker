@@ -112,7 +112,11 @@ def _metadata(row, window_from, window_to):
     if timezone.is_naive(dt):
         dt = dt.replace(tzinfo=ZoneInfo('Europe/Warsaw'))
     local_day = timezone.localtime(dt, ZoneInfo('Europe/Warsaw')).date()
-    if not window_from <= local_day <= window_to:
+    utc_day = dt.astimezone(ZoneInfo('UTC')).date()
+    # API filtruje dni po dacie UTC, a nie warszawskiej: ogłoszenie z 22:57 UTC leży już w następnym dniu
+    # czasu polskiego. Wpis spoza okna w obu miarach nadal zatrzymuje kursor (zła odpowiedź).
+    # Błąd z 6.11.2026: wpis z 26.07 22:57 UTC (27.07 w Warszawie) blokował kursor od 6.10.
+    if not (window_from <= local_day <= window_to or window_from <= utc_day <= window_to):
         raise ValueError('BZP notice outside requested frozen window')
     url = DETAIL_URL + quote(notice_id, safe='')
     return notice_id, number, title, dt, url

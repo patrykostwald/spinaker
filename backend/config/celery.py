@@ -94,7 +94,9 @@ app.conf.beat_schedule = {
     # treated as self-updating sources.
     'live-public-rosters-daily': {'task': 'news.tasks.sync_live_public_rosters_task', 'schedule': crontab(hour=4, minute=10)},
     # BZP remains inactive until BZP_API_ENABLED=true is set in the deployment environment.
-    'bzp-metadata-3m': {'task': 'scraper.tasks.import_bzp_metadata', 'schedule': crontab(minute='*/3')},
+    # Nazwa wpisu zostaje (odwołują się do niej repairer i harvester_coverage). Od 6.11.2026 co 4 minuty: bramka hosta wymaga 3 minut
+    # przerwy po zakończeniu żądania, więc tick co 3 minuty był co drugi raz odrzucany (host_rate_limited).
+    'bzp-metadata-3m': {'task': 'scraper.tasks.import_bzp_metadata', 'schedule': crontab(minute='*/4')},
 }
 app.conf.beat_schedule['push-evening-spin'] = {
     'task': 'news.push_events.evening_spin', 'schedule': crontab(hour=21, minute=15)}

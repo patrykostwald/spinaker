@@ -98,8 +98,21 @@ def test_fetch_uses_official_endpoint_and_audited_get_transport(source):
 @override_settings(BZP_API_ENABLED=True)
 def test_malformed_or_out_of_window_page_does_not_advance(source):
     with patch('scraper.bzp_backfill.timezone.localdate', return_value=date(2026, 9, 14)), \
-            patch('scraper.bzp_backfill.fetch_page', return_value=[row('late', '2026-09-14T01:00:00+02:00')]):
+            patch('scraper.bzp_backfill.fetch_page', return_value=[row('late', '2026-09-16T10:00:00+02:00')]):
         result = bzp_backfill_cycle()
     assert result['status'] == 'error'
     assert ImportState.objects.get().cursor['page'] == 1
     assert not Article.objects.exists()
+
+
+@override_settings(BZP_API_ENABLED=True)
+def test_notice_after_utc_evening_is_accepted_when_api_day_is_utc(source):
+    """22:57 UTC 26.07 to 00:57 27.07 w Warszawie: API zwraca je dla 26.07, więc kursor nie może stanąć."""
+    now = datetime(2026, 7, 27, 8, tzinfo=dt_timezone.utc)
+    rows = [row('niegowa', '2026-07-26T22:57:40.9814811Z'), row('pionki', '2026-07-26T10:46:53.7454917Z')]
+    with patch('scraper.bzp_backfill.timezone.now', return_value=now), \
+            patch('scraper.bzp_backfill.fetch_page', return_value=rows):
+        result = bzp_backfill_cycle()
+    assert result['status'] == 'ok' and result['new_records'] == 2
+    assert Article.objects.count() == 2
+    assert ImportState.objects.get().last_error == ''
