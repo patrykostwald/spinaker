@@ -89,3 +89,19 @@ def test_more_items_than_the_limit_are_cut_in_code(monkeypatch):
     by_krs, by_name = db.org_lookup()
     stats, _, _ = db.research_person(f, by_krs, by_name, apply=True)
     assert stats['items'] == db.PER_PERSON_ITEMS and PublicFigureMediaMention.objects.count() == db.PER_PERSON_ITEMS
+
+
+def test_light_settings_apply_only_during_the_call(monkeypatch):
+    import os
+    seen = {}
+    f = figure()
+    monkeypatch.setenv('CLINIC_EFFORT', 'high')
+    monkeypatch.delenv('CLINIC_WEB_SEARCH_MAX_USES', raising=False)
+
+    def fake(*a, **k):
+        seen.update(effort=os.environ['CLINIC_EFFORT'], uses=os.environ['CLINIC_WEB_SEARCH_MAX_USES'])
+        return fake_response([])
+    monkeypatch.setattr(clinic_ai, '_call_claude', fake)
+    db.research_person(f, {}, {}, apply=False)
+    assert seen == {'effort': 'low', 'uses': '4'}
+    assert os.environ['CLINIC_EFFORT'] == 'high' and 'CLINIC_WEB_SEARCH_MAX_USES' not in os.environ

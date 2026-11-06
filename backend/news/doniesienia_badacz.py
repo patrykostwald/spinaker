@@ -8,7 +8,9 @@ cytat i kategoria doniesienia. Kod NIE ufa modelowi:
  - wszystko trafia do kolejki przeglądu (`pending_review`, zbierał „claude”), nic nie jest publiczne bez akceptacji,
  - łączny koszt przebiegu ma twardy limit (USD, wg clinic_ai.cost_usd, wycena zawyżona).
 """
+import contextlib
 import logging
+import os
 import re
 import time
 import unicodedata
@@ -59,6 +61,23 @@ SCHEMA = {
 }
 
 
+@contextlib.contextmanager
+def _light_settings():
+    """Badanie ma być szybkie i tanie: niski wysiłek myślenia i mniej wyszukiwań niż domyślne ustawienia Kliniki (high, 6), bo przy
+    domyślnych jedno zapytanie przekraczało limit 5 minut klienta. Ustawienia tylko na czas wywołania; nie zmieniamy clinic_ai."""
+    keys = {'CLINIC_EFFORT': os.environ.get('DONIESIENIA_EFFORT', 'low'), 'CLINIC_WEB_SEARCH_MAX_USES': os.environ.get('DONIESIENIA_MAX_SEARCHES', '4')}
+    old = {k: os.environ.get(k) for k in keys}
+    os.environ.update(keys)
+    try:
+        yield
+    finally:
+        for k, v in old.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
 def _fold(text):
     return re.sub(r'\s+', ' ', unicodedata.normalize('NFC', text or '')).strip().casefold()
 
@@ -101,7 +120,8 @@ def research_person(figure, by_krs, by_name, apply=False):
             'Znajdź doniesienia polskich i zagranicznych mediów o fundacjach, stowarzyszeniach i spółkach powiązanych z tą osobą. '
             f'Zwróć najwyżej {PER_PERSON_ITEMS} najlepiej udokumentowanych pozycji. Pole krs_number wypełnij tylko, gdy numer KRS jest '
             'w przeczytanym źródle, inaczej zostaw pusty ciąg. published_on w formacie RRRR-MM-DD albo pusty ciąg.')
-    response = clinic_ai._call_claude(SYSTEM, user, SCHEMA, web_search=True, max_tokens=8000)
+    with _light_settings():
+        response = clinic_ai._call_claude(SYSTEM, user, SCHEMA, web_search=True, max_tokens=8000)
     cost = clinic_ai.cost_usd(clinic_ai._usage(response))
     data = clinic_ai._json_from_text(response.content)
     found = clinic_ai._search_results(response.content)
@@ -148,6 +168,7 @@ def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=prin
         if spent >= budget_usd:
             write(f'LIMIT KOSZTU {budget_usd:.2f} USD osiągnięty, przerywam po {total["persons"]} osobach.')
             break
+        write(f'Badam: {figure.canonical_name} ... (do 3 minut)')
         try:
             stats, cost, outside = research_person(figure, by_krs, by_name, apply=apply)
         except clinic_ai.ClinicAIError as error:
