@@ -25,7 +25,7 @@ type Vote = { id: string; title: string; motion: string; date: string | null; ki
   clubs: { club: string; size: number; votes: Record<string, number>; members: [string, string][] }[] };
 type Graph = { topic: string; terms: string[]; nodes: Node[]; edges: Edge[]; counts: Record<string, number>; record_origins?: Record<string, { label: string; count: number }>; votes?: Vote[]; eu_funds?: EuFunds; access?: { beta: boolean; label: string; locked: string[] } };
 type FirmHit = { id: number; name: string; krs_number: string; nip: string; legal_form: string; url: string };
-type FirmSearch = { results: FirmHit[]; status: string; message?: string; coverage?: { organisations: number; scope: string } };
+type FirmSearch = { results: FirmHit[]; status: string; message?: string; nip_page?: { url: string; has_data: boolean }; coverage?: { organisations: number; scope: string } };
 type PersonHit = { id: number; slug: string; name: string; role: string; organisation?: string; has_x?: boolean };
 type Open = (p: { kind: 'person' | 'entry'; id: string } | null) => void;
 
@@ -209,7 +209,8 @@ export function TopicTree() {
             {firms.results.length ? firms.results.slice(0, 8).map(f => <li key={f.id}><a href={f.url}>
               <span className="px-hits__ic"><Icon name="organisation" /></span>
               <span className="px-hits__body"><b>{f.name}</b><small>{[f.legal_form, `KRS ${f.krs_number}`, f.nip ? `NIP ${f.nip}` : ''].filter(Boolean).join(' · ')}</small></span></a></li>)
-              : <li className="px-hits__none" role="status">{nb(firms.message ?? 'Brak w naszych danych.')}</li>}
+              : <li className="px-hits__none" role="status">{nb(firms.message ?? 'Brak w naszych danych.')}
+                {firms.nip_page && <> <a className="px-link" href={firms.nip_page.url}>{firms.nip_page.has_data ? 'Zobacz ogłoszenia i dotacje po NIP →' : 'Otwórz stronę podmiotu po NIP →'}</a></>}</li>}
           </ul>}
         </div>
         {/* odnośnik „Jak to działa” w wierszu z tematami dnia, dociągnięty do prawej (właściciel 13.10: bez osobnego wiersza) */}

@@ -157,6 +157,12 @@ def search(query, ip='-'):
     else:
         hits = by_name(base, value)
     out['results'] = [card(o) for o in hits]
+    if not hits and kind == 'nip':
+        # podmiot bez KRS (gmina, jednostka budżetowa): widok po samym NIP (przeszlosc_podmiot_nip), jeśli to poprawny NIP
+        from news import przeszlosc_podmiot_nip as pn
+        valid = pn.valid_nip(value)
+        if valid:
+            out['nip_page'] = {'url': f'/przeszlosc/podmiot/{valid}', 'has_data': pn.has_data(valid)}
     if hits:
         out['status'] = 'ok'
     else:
@@ -172,6 +178,13 @@ def search(query, ip='-'):
             else:
                 extra = ' Szukamy tylko wśród podmiotów, które już mamy; wpisz numer KRS, a pobierzemy go z rejestru.'
             out['message'] = f'Brak w naszych danych: nie znaleźliśmy podmiotu po {label} „{out["query"]}”.{extra}'
+            if kind == 'name' and re.search(r'(?i)\b(gmin|urz[aą]d|miast|powiat|starostw|szko[łl]|sp[óo][łl]dziel|zak[łl]ad)', out['query']):
+                out['message'] += (' Jednostki samorządu i urzędy zwykle nie mają numeru KRS: wpisz ich NIP (zakładka „Spółka”), a pokażemy ogłoszenia '
+                                   'BZP i dotacje powiązane po NIP.')
+            elif kind == 'nip' and out.get('nip_page'):
+                out['message'] = (f'Brak podmiotu z KRS o NIP „{out["query"]}”. '
+                                  + ('Mamy jednak ogłoszenia lub dotacje powiązane po tym NIP-ie.' if out['nip_page']['has_data']
+                                     else 'Nie mamy też ogłoszeń ani dotacji powiązanych po tym NIP-ie.'))
     return out
 
 
