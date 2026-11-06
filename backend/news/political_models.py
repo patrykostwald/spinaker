@@ -415,6 +415,9 @@ class RegisteredOrganisation(models.Model):
     # łączymy wyłącznie po NIP, KRS albo REGON - nigdy po samej nazwie.
     nip = models.CharField(max_length=10, blank=True, db_index=True, help_text='NIP z odpisu KRS (same cyfry).')
     regon = models.CharField(max_length=14, blank=True, db_index=True, help_text='REGON z odpisu KRS (same cyfry).')
+    seat_city = models.CharField(max_length=128, blank=True, db_index=True, help_text='Miejscowość siedziby z odpisu KRS (dopasowanie po nazwie i siedzibie).')
+    seat_postal_code = models.CharField(max_length=6, blank=True, help_text='Kod pocztowy siedziby z odpisu KRS (bez ulicy).')
+    seat_voivodeship = models.CharField(max_length=64, blank=True, help_text='Województwo siedziby z odpisu KRS.')
     source_checked_at = models.DateTimeField(default=timezone.now)
     archived = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

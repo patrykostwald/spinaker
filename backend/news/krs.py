@@ -68,6 +68,9 @@ class Extract:
     persons: list[Person] = field(default_factory=list)
     nip: str = ''  # identyfikatory podmiotu (nie osób) z działu 1 odpisu; same cyfry
     regon: str = ''
+    seat_city: str = ''         # siedziba podmiotu (dział 1: siedziba i adres): miejscowość, kod pocztowy, województwo; bez ulicy
+    seat_postal_code: str = ''
+    seat_voivodeship: str = ''
 
     @property
     def official_url(self) -> str:
@@ -90,6 +93,17 @@ class Extract:
 def normalize_krs(value) -> str:
     digits = re.sub(r'\D', '', str(value or ''))
     return digits.zfill(10) if 0 < len(digits) <= 10 else ''
+
+
+def seat(dzial1: dict) -> dict[str, str]:
+    """Siedziba podmiotu z dzial1.siedzibaIAdres (siedziba.miejscowosc / wojewodztwo, adres.kodPocztowy). Bez ulicy i numeru.
+    Pola puste, gdy odpis ma inny układ; dane podmiotu, nie osób."""
+    block = (dzial1 or {}).get('siedzibaIAdres') or {}
+    where, address = block.get('siedziba') or {}, block.get('adres') or {}
+    postal = re.sub(r'[^\d-]', '', str(address.get('kodPocztowy') or ''))[:6]
+    return {'seat_city': str(where.get('miejscowosc') or address.get('miejscowosc') or '').strip()[:128],
+            'seat_postal_code': postal if re.fullmatch(r'\d{2}-\d{3}', postal) else '',
+            'seat_voivodeship': str(where.get('wojewodztwo') or address.get('wojewodztwo') or '').strip()[:64]}
 
 
 def identifiers(subject: dict) -> dict[str, str]:
@@ -199,7 +213,7 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     subject = (body.get('dzial1') or {}).get('danePodmiotu') or {}
     name = _text(subject.get('nazwa') or [], 'nazwa')
     legal_form = _text(subject.get('formaPrawna') or [], 'formaPrawna')
-    extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form), **identifiers(subject))
+    extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form), **identifiers(subject), **seat(body.get('dzial1') or {}))
     extract.owners = _owners({k: v for k, v in (body.get('dzial1') or {}).items() if k != 'danePodmiotu'})
     persons: list[Person] = []
     dates = _entry_dates(header)

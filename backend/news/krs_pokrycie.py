@@ -197,7 +197,8 @@ def save_extract(extract: krs.Extract):
     defaults = {'name': (_pretty(extract.name) or extract.name).strip()[:512], 'kind': extract.kind,
                 'legal_form': extract.legal_form.lower()[:128], 'register': extract.register,
                 'official_register_url': extract.public_url, 'source_checked_at': timezone.now(),
-                **{k: v for k, v in (('nip', extract.nip), ('regon', extract.regon)) if v}}
+                **{k: v for k, v in (('nip', extract.nip), ('regon', extract.regon), ('seat_city', extract.seat_city),
+                                     ('seat_postal_code', extract.seat_postal_code), ('seat_voivodeship', extract.seat_voivodeship)) if v}}
     org = RegisteredOrganisation.objects.filter(krs_number=extract.krs).first()
     if org is None:
         defaults['sector'] = extract.sector
