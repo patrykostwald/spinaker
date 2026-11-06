@@ -27,7 +27,8 @@ class Command(BaseCommand):
         skip = 0 if o['ponow'] else 60
         figures = db.pick_figures(names=o['nazwisko'], ids=o['osoba'], skip_days=skip, everyone=o['wszyscy'], limit=o['max_osob'])
         if o['szacuj']:
-            self.stdout.write(f'Osób do zbadania: {len(figures)} (z {len(o['nazwisko'] or o['osoba'] or db.DEFAULT_NAMES) if not o['wszyscy'] else 'wszystkich niezbadanych'} na liście)')
+            requested = 'wszystkich niezbadanych' if o['wszyscy'] else len(o['nazwisko'] or o['osoba'] or db.DEFAULT_NAMES)
+            self.stdout.write(f'Osób do zbadania: {len(figures)} (z {requested} na liście)')
             self.stdout.write('; '.join(f'{f.pk}:{f.canonical_name}' for f in figures))
             self.stdout.write(f'Szacunek kosztu najwyżej ok. {len(figures) * db.ESTIMATE_PER_PERSON_USD:.2f} USD (limit przebiegu {o["limit_usd"]:.2f} USD). Nic nie wysłano.')
             return
