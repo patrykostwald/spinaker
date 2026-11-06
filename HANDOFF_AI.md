@@ -150,3 +150,5 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 | kohesio | zbiór nie ma nazw beneficjentów z Polski (0 z 102 721) | status „puste", opis w Stanie danych i „Jak to działa" |
 
 **Po wdrożeniu (zmiana w bazie produkcyjnej, za zgodą właściciela, po kopii bazy):** usunąć oczekujące zadania interpelacji i zapytań (mają zapisany błędny adres, kod nie założy nowych, dopóki istnieją oczekujące) oraz przyspieszyć ponowienie zadań FTS i KRS (`retry_at=teraz`); kod radzi sobie już z obiema przyczynami. `assets`: zablokowane zabezpieczeniem antybotowym, decyzja właściciela o wyłączeniu i oficjalnej drodze dostępu otwarta.
+
+**Testy przed wdrożeniem poprawek zbieraczy (6.11.2026, commit `72b6adc`):** pełny backend (pytest, SQLite) 3963 zaliczone, 2 pominięte, 0 nieudanych; frontend 145 testów, typecheck i build czyste (wcześniej). Brak nowych migracji. Punkt powrotu: `1fce1696`.
