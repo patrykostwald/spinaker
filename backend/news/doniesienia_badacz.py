@@ -158,12 +158,12 @@ def verify_candidate(number, item):
     return extract, 'ok'
 
 
-def adopt_from_krs(item, apply):
+def adopt_from_krs(item, apply, allow_search=True):
     """Podmiot spoza bazy: numer KRS (z odpowiedzi albo z drugiej rundy) przechodzi weryfikację w urzędowym API KRS: nazwa i druga
     niezależna dana muszą się zgadzać z odpisem. Dopiero wtedy dodajemy podmiot (dane z odpisu, nie od modelu).
     Zwraca (id | 'NOWY' | None, podstawa lub powód, koszt drugiej rundy USD). Bez --apply nic nie zapisujemy ('NOWY' w raporcie)."""
     number, cost = krs.normalize_krs(item.get('krs_number') or ''), 0.0
-    if not number:
+    if not number and allow_search:
         number, cost = find_krs_candidate(item)
     if not number:
         return None, 'brak numeru KRS', cost
@@ -195,9 +195,17 @@ def research_person(figure, by_krs, by_name, apply=False):
     cost = clinic_ai.cost_usd(clinic_ai._usage(response))
     data = clinic_ai._json_from_text(response.content)
     found = clinic_ai._search_results(response.content)
+    stats, extra, outside = store_items(figure, (data.get('items') or [])[:PER_PERSON_ITEMS], found, by_krs, by_name, apply)
+    return stats, cost + extra, outside
+
+
+def store_items(figure, items, found, by_krs, by_name, apply, collected_by='claude', allow_search=True):
+    """Wspólny etap po zebraniu pozycji (badacz z wyszukiwarką i lejek): link musi być w `found` ({url: tytuł}), podmiot z bazy albo
+    zweryfikowany w KRS (nazwa + druga dana), zapis tylko do kolejki przeglądu. Zwraca (statystyki, koszt dodatkowy USD, poza bazą)."""
+    cost = 0.0
     stats = {'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0}
     outside = []
-    for item in (data.get('items') or [])[:PER_PERSON_ITEMS]:
+    for item in items:
         stats['items'] += 1
         url = (item.get('source_url') or '').strip()
         if url not in found:
@@ -205,13 +213,13 @@ def research_person(figure, by_krs, by_name, apply=False):
             continue
         org_id, basis = resolve_org(item, by_krs, by_name)
         if org_id is None:
-            org_id, basis, extra = adopt_from_krs(item, apply)
+            org_id, basis, extra = adopt_from_krs(item, apply, allow_search)
             cost += extra
             if org_id is None:
                 stats['outside_db'] += 1
                 outside.append(f"{item.get('organisation_name') or '?'} [{basis}]")
                 continue
-            stats['org_added'] = stats.get('org_added', 0) + 1
+            stats['org_added'] += 1
             if org_id != 'NOWY':
                 by_krs[RegisteredOrganisation.objects.get(pk=org_id).krs_number] = org_id
         if org_id == 'NOWY':
@@ -225,7 +233,7 @@ def research_person(figure, by_krs, by_name, apply=False):
             PublicFigureMediaMention.objects.create(
                 public_figure=figure, organisation_id=org_id, category=category, match_basis=basis, source_url=url[:1024],
                 source_title=(item.get('source_title') or found[url])[:300], source_outlet=(item.get('outlet') or '')[:120],
-                published_on=_parse_date(item.get('published_on')), quote=(item.get('quote') or '')[:MEDIA_QUOTE_LIMIT], collected_by='claude')
+                published_on=_parse_date(item.get('published_on')), quote=(item.get('quote') or '')[:MEDIA_QUOTE_LIMIT], collected_by=collected_by)
         stats['saved'] += 1
     return stats, cost, outside
 
