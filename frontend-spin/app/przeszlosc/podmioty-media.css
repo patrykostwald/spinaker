@@ -6,7 +6,7 @@ html body .pt-v3 .px .px-om__heading .px-h3 { margin: 0; white-space: nowrap; ov
 .px-om__status { flex: none; font-size: 12px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); }
 .px-om__head .px-note { margin: 0; max-width: 72ch; }
 .px-om__list { list-style: none; margin: 0; padding: 0; display: grid; }
-.px-om__list li { --om-row: 96px; min-height: var(--om-row); display: grid; grid-template-rows: auto auto 1fr; align-content: start; row-gap: 2px; padding: 10px 0; border-top: 1px solid var(--sc-line); min-width: 0; }
+.px-om__list li { --om-row: 120px; min-height: var(--om-row); display: grid; grid-template-rows: auto auto auto 1fr; align-content: start; row-gap: 2px; padding: 10px 0; border-top: 1px solid var(--sc-line); min-width: 0; }
 .px-om__list li:first-child { border-top: 0; }
 .px-om__top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
 .px-om__org { min-width: 0; font: 600 15px/1.4 var(--sc-font-sans); color: var(--sc-text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -21,3 +21,5 @@ html body .pt-v3 .px .px-om__heading .px-h3 { margin: 0; white-space: nowrap; ov
 .px-om__quote { margin: 0; font-size: 14px; line-height: 1.45; color: var(--sc-text-3); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-height: 20px; }
 .px-om__foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 @media (max-width: 760px) { .px-om__status { display: none; } .px-om__cat { font-size: 12px; } .px-om__src { grid-template-columns: auto minmax(0, 1fr) auto; } .px-om__src time { display: none; } }
+.px-om__reg { justify-self: start; font-size: 13px; line-height: 1.4; color: var(--sc-text-3); text-decoration: none; min-height: 24px; }
+.px-om__reg:hover, .px-om__reg:focus-visible { color: var(--sc-accent); }

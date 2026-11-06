@@ -19,7 +19,7 @@ def mentions_for(figure, limit=100):
     results = [{
         'id': m.pk, 'category': m.category, 'category_label': LABELS.get(m.category, m.category),
         'organisation': {'name': m.organisation.name, 'krs_number': m.organisation.krs_number, 'kind': m.organisation.kind,
-                         'url': f'/przeszlosc/spolka/{m.organisation.krs_number}'},
+                         'url': f'/przeszlosc/spolka/{m.organisation.krs_number}', 'register_url': m.organisation.official_register_url},
         'unconfirmed': m.match_basis == 'name_only',
         'source': {'url': m.source_url, 'title': m.source_title, 'outlet': m.source_outlet,
                    'date': m.published_on.isoformat() if m.published_on else None},

@@ -98,3 +98,8 @@ def test_import_goes_to_review_queue_and_rejects_bad_rows(figure, org, tmp_path)
     assert m.status == 'pending_review' and m.collected_by == 'import' and pd.mentions_for(figure)['count'] == 0
     call_command('przeszlosc_doniesienia_import', str(path), '--apply')
     assert PublicFigureMediaMention.objects.count() == 1            # ponowny import nie dubluje
+
+
+def test_organisation_carries_link_to_official_register(figure, org):
+    mention(figure, org).publish(staff())
+    assert pd.mentions_for(figure)['results'][0]['organisation']['register_url'] == 'https://ekrs.ms.gov.pl/x'

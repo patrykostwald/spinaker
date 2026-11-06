@@ -29,6 +29,11 @@ test('profil osoby: okno po wzmiankach, dane z org_mentions', () => {
 
 test('układ: wiersze o stałej wysokości, tytuły w jednej linii, cele 44 px przez chipy wspólne', () => {
   const css = read('app/przeszlosc/podmioty-media.css');
-  assert.match(css, /--om-row: 96px/); assert.match(css, /text-overflow: ellipsis/);
+  assert.match(css, /--om-row: 120px/); assert.match(css, /text-overflow: ellipsis/);
   assert.match(css, /-webkit-line-clamp: 1/);
+});
+
+test('podmiot ma link do urzędowego rejestru (KRS) w nowej karcie', () => {
+  assert.match(c, /register_url\?: string/);
+  assert.match(c, /href=\{m\.organisation\.register_url\} target="_blank" rel="noopener noreferrer"/);
 });
