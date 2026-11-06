@@ -290,3 +290,12 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Frontend:** strona `/przeszlosc/podmiot/<NIP>` (`PodmiotNip.tsx`, `podmiot-nip.css`), link w wyszukiwarce spółek (`TopicTree.tsx`: „Zobacz ogłoszenia i dotacje po NIP →”).
 - **Sprawdzone:** pytest `news/test_przeszlosc_podmiot_nip.py` (suma kontrolna, inne zapisy NIP, inny NIP nie wchodzi, brak danych, podmiot z KRS, walidacja i flaga, wskazówki wyszukiwarki) + `test_krs_pokrycie` 18 zaliczonych; `node --test` 172/172, typecheck, build; pomiar Playwright 1440 i 390 px (atrapa API).
 - **Niesprawdzone na produkcji:** ile gmin ma ogłoszenia (BZP ma 3513 rekordów; wcześniej zaobserwowano niski wolumen), jakość nazw z BZP. Zwrotnie do rundy person: radny ma ścieżkę „NIP gminy → ogłoszenia”; kwot i wykonawców BZP nie podaje, więc lista to metadane ogłoszeń.
+
+
+## Wdrożenie 6.11.2026 (wieczór, commit `eba10bd`)
+
+- **Zrobione i sprawdzone (wynik wklejony przez właściciela):** `deploy/wdroz.sh` przeszedł do końca: budowa 212 s, `backend odpowiada`, `wszystkie migracje zastosowane` (bez nowych od `0173`), Odstępstwa przeliczone (kadencja 10: 1851 głosowań, 4 oznaczone), usługi `Up`. Wdrożone razem: filtr komisji i etykiety tematów w ogólnym widoku głosowań, poprawki z rundy person 2, PKW (odczyt uchwał, `/przeszlosc/finanse-partii`), podmiot po NIP.
+- **Kolejka PKW:** `manage.py pkw_raporty_zasiej --apply` dodało 969 zadań `pkw_pdf` (do odczytu 969, odczytanych 0). `PUBLIC_RECORDS_PKW_DAILY_CAP=200` ustawione w `.env.production` (worker i beat przeładowane), czyli odczyt całości ok. 5 dni zamiast ponad 3 tygodni.
+- **Sprawdzone po wdrożeniu (w Django test client z serwera):** `/api/przeszlosc/pkw/`, `/podmiot/5771960580/`, `/podmiot/7962958767/`, `/glosowania/`, `/stan-danych/` zwracają 200. Właściciel obejrzał stronę `/przeszlosc/podmiot/5771960580` (Gmina Niegowa): 1 zamówienie BZP (Orlik 2012, 27.07.2026), 0 dotacji FTS, opis „podmiot bez wpisu KRS”.
+- **Niesprawdzone:** filtr komisji i „Mój poseł” na ekranie, strona Finanse partii z danymi (zależy od odczytu kolejki), pierwszy przebieg Białej listy (noc 2:33), pomiary wyglądu strony podmiotu na produkcji (uwagi niżej).
+- **Do poprawy (z zrzutu właściciela, telefon/tablet):** na stronie podmiotu napis BETA dotyka logo w nagłówku; w boksie „Zamówienia publiczne” zostaje pusta przestrzeń pod jedną pozycją, a przypis źródeł ma nierówne odstępy między wierszami. Podmiot z jednym ogłoszeniem potwierdza niski wolumen BZP (3513 rekordów/rok), do zbadania.
