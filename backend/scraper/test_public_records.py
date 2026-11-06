@@ -168,7 +168,9 @@ def test_pkw_metadata_and_machine_amounts():
     handle(j, raw('pkw.html'))
     handle(j, raw('pkw.html'))
     assert PublicRecord.objects.filter(kind='financial_document').count() == 3
-    assert not j.state.jobs.filter(url__endswith='.pdf').exists()
+    # od 6.11.2026 PDF-y z /uploaded_files/ dostają zadanie odczytu uchwały (pkw_pdf, tylko warstwa tekstowa, bez OCR); inne PDF-y nadal nie
+    assert {x.kind for x in j.state.jobs.filter(url__endswith='.pdf')} <= {'pkw_pdf'}
+    assert all('/uploaded_files/' in x.url for x in j.state.jobs.filter(kind='pkw_pdf'))
     assert j.state.jobs.filter(kind='pkw_xlsx').count() == 1
     record = PublicRecord.objects.get(kind='financial_row')
     assert record.data['amounts'] == {'Przychody (zł)': '1234.56'}

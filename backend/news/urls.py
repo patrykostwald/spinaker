@@ -46,7 +46,7 @@ from news.zbudujmi_inquiry import client_note as zbudujmi_client_note, inquiry a
 from news.zbudujmi_note_files import note_file as zbudujmi_note_file
 from news.przeszlosc import topic_view as przeszlosc_topic, start_view as przeszlosc_start, rss_view as przeszlosc_rss
 from news.przeszlosc import topic_votes_view as przeszlosc_topic_votes
-from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_moj_posel, przeszlosc_przeplyw, przeszlosc_przeplywy, przeszlosc_stan, przeszlosc_glosowania_rodzaje, przeszlosc_wersja
+from news import przeszlosc_spolki, drzewo_pieniedzy, przeszlosc_alerts, przeszlosc_dostep, przeszlosc_osoba, przeszlosc_moj_posel, przeszlosc_pkw, przeszlosc_przeplyw, przeszlosc_przeplywy, przeszlosc_stan, przeszlosc_glosowania_rodzaje, przeszlosc_wersja
 from news.przeszlosc_paski import strips_view
 from news import rcl_api
 from news import przeszlosc_v3, position_pairs, privacy_notice
@@ -131,6 +131,7 @@ urlpatterns = [
     path('przeszlosc/poprawki/', przeszlosc_wersja.corrections_view),
     path('przeszlosc/rss/', przeszlosc_rss),
     path('przeszlosc/moj-posel/', przeszlosc_moj_posel.moj_posel_view),
+    path('przeszlosc/pkw/', przeszlosc_pkw.pkw_view),
     path('przeszlosc/osoby/', przeszlosc_osoba.people_view),
     path('przeszlosc/osoba/<str:ident>/', przeszlosc_osoba.person_view),
     path('przeszlosc/osoba/<str:ident>/powiazania/', przeszlosc_v3.network_view),

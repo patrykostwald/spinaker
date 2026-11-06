@@ -633,3 +633,52 @@ def transparency_polish(chunks, max_bytes=300_000_000):
     if not total[0]:
         raise ValueError('transparency_export_empty')
     return rows
+
+
+# --- PKW: uchwały o sprawozdaniach finansowych partii (6.11.2026) ---------------------------------------------------
+_PL_MONTHS = {'stycznia': 1, 'lutego': 2, 'marca': 3, 'kwietnia': 4, 'maja': 5, 'czerwca': 6, 'lipca': 7, 'sierpnia': 8,
+              'września': 9, 'października': 10, 'listopada': 11, 'grudnia': 12}
+_AMT = r'(\d{1,3}(?:[ \u00a0]\d{3})*|\d+),(\d{2})\s*zł'
+
+
+def _pl_amount(whole, cents):
+    return str(Decimal(re.sub(r'[ \u00a0]', '', whole) + '.' + cents))
+
+
+def pkw_report(text):
+    """Uchwała PKW o sprawozdaniu partii (tekst z warstwy tekstowej PDF, bez OCR) -> słownik pól albo None, gdy to nie uchwała.
+
+    Bierzemy tylko to, co stoi w zdaniach uchwały: numer i datę, nazwę partii, rok, decyzję, łączne przychody, wpłaty osób fizycznych
+    (składki i darowizny zbiorczo), wartości niepieniężne i wpływy na Fundusz Wyborczy. Nazwisk darczyńców, numerów rachunków
+    i adresów NIE zapisujemy. Każda kwota ma cytat z uchwały (`evidence`); pole bez dopasowania jest pominięte, nie zgadywane."""
+    flat = re.sub(r'[ \t\r\n\u00a0]+', ' ', (text or '').replace('**', ' ')).strip()
+    head = re.search(r'UCHWA[ŁL]A\s+NR\s+(\d+/\d{4})[^.]{0,200}?z dnia (\d{1,2}) (\w+) (\d{4}) r', flat, re.I)
+    subject = re.search(r'w sprawie sprawozdania (.{3,260}?) w (20\d{2}) r\.', flat)
+    if not head or not subject or 'sprawozdan' not in subject.group(0):
+        return None
+    month = _PL_MONTHS.get(head.group(3).lower())
+    if not month:
+        return None
+    what = subject.group(1)
+    name = re.sub(r'^(partii politycznej|komitetu wyborczego|koalicyjnego komitetu wyborczego)\s+', '', what).strip()
+    name = re.split(r' o (?:źródłach|przychodach|wydatkach)', name)[0].strip()
+    kind = 'partia' if what.startswith('partii politycznej') else 'komitet' if 'komitet' in what else 'inne'
+    decision_part = flat.split('postanawia', 1)[1] if 'postanawia' in flat else flat
+    verb = re.search(r'\b(przyjąć|odrzucić|pozostawić bez rozpatrzenia)\b', decision_part)
+    decision = {'przyjąć': 'przyjete', 'odrzucić': 'odrzucone', 'pozostawić bez rozpatrzenia': 'bez_rozpatrzenia'}.get(verb.group(1)) if verb else None
+    amounts, evidence = {}, {}
+    for key, pattern in (
+            ('income_total', r'przychody o łącznej wartości ' + _AMT),
+            ('individuals_total', r'od osób fizycznych w kwocie ' + _AMT),
+            ('membership_fees', r'składki członkowskie[^:]{0,160}?:\s*' + _AMT),
+            ('donations_cash', r'darowizny \(pieniężne\):\s*' + _AMT),
+            ('non_cash_value', r'wycenione na kwotę ' + _AMT),
+            ('election_fund_inflow', r'na rachunek Funduszu Wyborczego[^.]{0,120}?wpłynęły środki w kwocie ' + _AMT)):
+        found = re.search(pattern, flat)
+        if found:
+            amounts[key] = _pl_amount(found.group(1), found.group(2))
+            evidence[key] = flat[max(0, found.start() - 40): found.end() + 20][:220]
+    return {'resolution': head.group(1), 'resolution_date': f'{int(head.group(4)):04d}-{month:02d}-{int(head.group(2)):02d}',
+            'subject_kind': kind, 'name': name[:200], 'report_year': int(subject.group(2)), 'decision': decision,
+            'with_irregularity': bool(decision == 'przyjete' and 'ze wskazaniem uchybienia' in decision_part),
+            'amounts': amounts, 'currency': 'PLN', 'evidence': evidence, 'readable': True, 'method': 'wzorce na tekście uchwały (bez OCR)'}

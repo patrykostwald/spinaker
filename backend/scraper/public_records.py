@@ -551,6 +551,8 @@ def handle(job, raw, receipt=None):
                     enqueue(state, row['url'], 'pkw_csv')
                 elif p.path.lower().endswith('.xlsx'):
                     enqueue(state, row['url'], 'pkw_xlsx')
+                if p.path.lower().endswith('.pdf') and p.path.startswith('/uploaded_files/'):
+                    enqueue(state, row['url'], 'pkw_pdf')   # 6.11.2026: odczyt uchwały z warstwy tekstowej (bez OCR)
                 found += 1
             elif p.path.startswith('/finansowanie-polityki/') and ctx['depth'] < 6:
                 if ('sprawozdan' in p.path or 'finansowanie-kampanii-wyborczych' in p.path
@@ -559,6 +561,20 @@ def handle(job, raw, receipt=None):
                     found += 1
         if not found and not financial_rows:
             raise ValueError('pkw_no_documents_or_tables')
+    elif kind == 'pkw_pdf':
+        # Uchwała PKW o sprawozdaniu partii: tekst z warstwy tekstowej, nigdy OCR. Skan formularza (sprawozdania komitetów) albo
+        # dokument, który nie jest uchwałą, dostaje rekord „nieczytelny” z powodem i odnośnikiem do oryginału, bez ponowień.
+        try:
+            text = parsers.pdf_text(raw)
+            reason = '' if len(text.strip()) >= 200 else 'skan_bez_warstwy_tekstowej'
+        except ValueError as exc:
+            text, reason = '', str(exc)
+        report = parsers.pkw_report(text) if text and not reason else None
+        if report is None:
+            report = {'readable': False, 'reason': reason or 'nie_jest_uchwala_o_sprawozdaniu', 'method': 'bez OCR'}
+        key = sha256(job.url.encode()).hexdigest()   # ten sam klucz co rekord financial_document tego pliku
+        put('financial_report', key, source_url=job.url, data=report,
+            title=(f"{report['name']} ({report['report_year']})" if report.get('readable') else ''), date_value=report.get('resolution_date'))
     elif kind == 'meta_page':
         payload = _json(raw, dict)
         if not isinstance(payload.get('data'), list):
