@@ -71,3 +71,21 @@ def test_estimate_command_makes_no_paid_call(monkeypatch, capsys):
     monkeypatch.setattr(clinic_ai, '_call_claude', boom)
     call_command('przeszlosc_doniesienia_badaj', '--szacuj', '--osoba', str(PublicFigure.objects.get().pk))
     assert 'Nic nie wysłano' in capsys.readouterr().out
+
+
+def test_schema_uses_only_keywords_accepted_by_structured_outputs():
+    """Produkcja odrzuciła 'maxItems' (400: property 'maxItems' is not supported); limit pozycji pilnuje kod, nie schemat."""
+    text = json.dumps(db.SCHEMA)
+    for forbidden in ('maxItems', 'minItems', 'maxLength', 'minLength', 'minimum', 'maximum'):
+        assert forbidden not in text
+
+
+def test_more_items_than_the_limit_are_cut_in_code(monkeypatch):
+    f = figure()
+    org('Fundacja Akademia Przyszłości', '0000000111')
+    many = [item(source_url=f'https://portal.example/{i}') for i in range(db.PER_PERSON_ITEMS + 4)]
+    urls = tuple(f'https://portal.example/{i}' for i in range(db.PER_PERSON_ITEMS + 4))
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response(many, urls))
+    by_krs, by_name = db.org_lookup()
+    stats, _, _ = db.research_person(f, by_krs, by_name, apply=True)
+    assert stats['items'] == db.PER_PERSON_ITEMS and PublicFigureMediaMention.objects.count() == db.PER_PERSON_ITEMS

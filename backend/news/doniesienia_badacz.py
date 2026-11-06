@@ -49,7 +49,7 @@ SYSTEM = (
 
 SCHEMA = {
     'type': 'object', 'additionalProperties': False, 'required': ['items'],
-    'properties': {'items': {'type': 'array', 'maxItems': PER_PERSON_ITEMS, 'items': {
+    'properties': {'items': {'type': 'array', 'items': {
         'type': 'object', 'additionalProperties': False,
         'required': ['organisation_name', 'krs_number', 'source_url', 'source_title', 'outlet', 'published_on', 'quote', 'category'],
         'properties': {
