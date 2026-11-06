@@ -217,3 +217,8 @@ Gdy źródło nie podaje NIP ani KRS (np. lista projektów UE 2021-2027 ma tylko
 - **drugie dane nie przeczą nigdy po cichu:** gdy siedziba z KRS jest sprzeczna z danymi źródła, dopasowanie nie rośnie w klasie (miejsce realizacji projektu bywa inne niż siedziba, więc to wskazówka, nie dowód).
 Reprezentanci i inne osoby fizyczne **nie służą do dopasowania podmiotów** (to dane osób; łączymy tylko osoby publiczne z potwierdzoną funkcją w KRS).
 **Luka w danych:** `RegisteredOrganisation` nie ma dziś siedziby (parser odpisu KRS `news/krs.py::Extract` czyta nazwę, formę, wspólników, osoby, NIP i REGON, bez adresu). Wymaga pól `seat_city`, `seat_postal_code`, `seat_voivodeship` (migracja) i odświeżenia odpisów (kolejka KRS, `STALE_DAYS` 90) albo uzupełnienia z odpowiedzi Białej listy (`residenceAddress`/`workingAddress` tylko dla podmiotów z KRS, bez ulicy).
+
+### Wyszukiwanie w KRS po nazwie: stan na 6.11.2026
+- Otwarte API KRS wyszukuje tylko po numerze (sprawdzone na `prs.ms.gov.pl/krs/openApi`).
+- Wyszukiwarka KRS (strona) wyszukuje po nazwie i zawęża po województwie, powiecie, gminie i miejscowości (`dokladnaNazwa` jako opcja); interfejs strony wymaga klucza wbudowanego we frontend i nie jest udokumentowany dla aplikacji zewnętrznych. **Decyzja:** nie używamy klucza strony ani nagłówków `origin/referer` oficjalnej aplikacji; zapisujemy tylko układ pól zapytania. Projekt wniosku do MS: `docs/WNIOSEK_MS_WYSZUKIWANIE_KRS_PO_NAZWIE.md` (niewysłany).
+- Do czasu uprawnionego dostępu: dopasowanie nazw z własnych danych (zasada dwóch danych, wyżej).
