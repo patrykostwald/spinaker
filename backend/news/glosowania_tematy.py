@@ -52,3 +52,21 @@ def index(rebuild=False):
 
 def topic_for(term, sitting, number, idx=None):
     return (idx if idx is not None else index()).get(f'{term}/{sitting}/{number}')
+
+
+def committees(idx=None):
+    """[{'name', 'votings'}] komisje z liczbą powiązanych głosowań (malejąco), do listy filtra „według komisji”."""
+    counts = {}
+    for entry in (idx if idx is not None else index()).values():
+        for name in entry.get('komisje') or []:
+            counts[name] = counts.get(name, 0) + 1
+    return [{'name': n, 'votings': c} for n, c in sorted(counts.items(), key=lambda x: (-x[1], x[0]))]
+
+
+def keys_for_committee(name, idx=None):
+    """Klucze głosowań '10/12/3' powiązanych z komisją o tej nazwie (bez względu na wielkość liter); pusta lista, gdy brak."""
+    wanted = str(name or '').strip().casefold()
+    if not wanted:
+        return []
+    return [key for key, entry in (idx if idx is not None else index()).items()
+            if any(n.casefold() == wanted for n in entry.get('komisje') or [])]

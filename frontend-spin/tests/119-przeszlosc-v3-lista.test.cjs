@@ -39,7 +39,7 @@ test('zapytanie: tylko poprawne parametry, q od 3 znaków, od > do zamienione, n
 
 test('filtry <-> adres strony i krótkie zapytanie', () => {
   const f = L.parseFilters('?q=Kodeks&klub=PiS&wynik=przyjete&od=2026-01-02&do=2026-02-03');
-  eq({ ...f }, { q: 'Kodeks', klub: 'PiS', wynik: 'przyjete', od: '2026-01-02', do: '2026-02-03', rodzaj: 'sejm' });
+  eq({ ...f }, { q: 'Kodeks', klub: 'PiS', wynik: 'przyjete', od: '2026-01-02', do: '2026-02-03', rodzaj: 'sejm', komisja: '' });
   assert.equal(L.filtersToSearch(f), '?q=Kodeks&klub=PiS&wynik=przyjete&od=2026-01-02&do=2026-02-03');
   assert.equal(L.filtersToSearch(L.EMPTY_FILTERS), '');
   assert.equal(L.parseFilters('?wynik=<script>&od=zły').wynik, '');

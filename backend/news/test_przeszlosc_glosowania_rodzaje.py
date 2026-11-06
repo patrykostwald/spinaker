@@ -113,3 +113,25 @@ def test_topic_labels_come_from_process_and_committee_records_not_from_words_in_
     assert gt.topic_for(10, 40, 2) is None   # głosowanie bez procesu: brak etykiety, nic nie zgadujemy
     rows = {r['id']: r for r in gr.person_rows(me)['sejm']}
     assert rows['sejm:10/40/1']['topic']['komisje'] == ['Komisja Zdrowia'] and rows['sejm:10/40/2']['topic'] is None
+
+
+def test_general_votes_list_has_topic_labels_and_committee_filter(monkeypatch, settings):
+    settings.PRZESZLOSC_VOTES_LIST_ENABLED = True; monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    world()
+    PublicRecord.objects.create(source='committees', kind='committee', external_id='10/ZDR', title='Komisja Zdrowia', date=date(2023, 12, 1),
+                                source_url='https://api.sejm.gov.pl/sejm/term10/committees/ZDR', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'code': 'ZDR', 'name': 'Komisja Zdrowia'})
+    PublicRecord.objects.create(source='processes', kind='process', external_id='10/3300', print_number='3300', title='Projekt ustawy o zdrowiu',
+                                source_url='https://api.sejm.gov.pl/sejm/term10/processes/3300', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'number': '3300', 'documentType': 'projekt ustawy', 'titleFinal': 'Ustawa o zdrowiu publicznym',
+                                      'stages': [{'stageName': 'I czytanie', 'committeeCode': 'ZDR'}],
+                                      'votings': [{'key': '10/40/1', 'sitting': 40, 'votingNumber': 1}]})
+    cache.clear()
+    client = APIClient()
+    every = client.get('/api/przeszlosc/glosowania/').json()
+    assert every['total'] == 2 and every['committees'] == [{'name': 'Komisja Zdrowia', 'votings': 1}]
+    topics = {r['id']: r['topic'] for r in every['results']}
+    assert topics['10/40/1']['druk'] == '3300' and topics['10/40/1']['komisje'] == ['Komisja Zdrowia'] and topics['10/40/2'] is None
+    only = client.get('/api/przeszlosc/glosowania/?komisja=komisja%20zdrowia').json()
+    assert only['total'] == 1 and only['results'][0]['id'] == '10/40/1' and only['filter']['komisja'] == 'komisja zdrowia'
+    assert client.get('/api/przeszlosc/glosowania/?komisja=Nieistniejaca').json()['total'] == 0   # nieznana komisja: pusto, nie „wszystko”

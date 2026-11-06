@@ -32,10 +32,13 @@ function Row({ v, club }: { v: VoteListRow; club: string }) {
   const r = v.result;
   const sum = clubSummary(v.club_votes);
   const unknown = v.outcome === 'nieustalone' || !['przyjete', 'odrzucone'].includes(v.outcome);
+  // jedna linia pod tytułem (stała wysokość wiersza): temat z procesu legislacyjnego (druk, komisje), potem opis głosowania
+  const sub = [v.topic ? `druk ${v.topic.druk}${v.topic.komisje.length ? `, ${v.topic.komisje.slice(0, 2).join(', ')}` : ''}` : '',
+    v.motion && v.motion !== v.title ? v.motion : ''].filter(Boolean).join(' · ');
   return <tr className="gl-row">
     <td data-c="d" data-l="Data"><time dateTime={v.date ?? undefined}>{shortDay(v.date) || 'brak w naszych danych'}</time></td>
     <td data-c="t"><p className="gl-t" title={v.title}>{v.title}</p>
-      {v.motion && v.motion !== v.title && <small className="gl-m" title={v.motion}>{v.motion}</small>}</td>
+      {sub && <small className="gl-m" title={v.topic?.tytul || v.motion || undefined}>{sub}</small>}</td>
     <td data-c="r" data-l="Wynik ogółem">
       {v.polish ? <>
         <span className="gl-out" data-o={v.outcome}>{outcomeLabel(v.outcome)}</span>
@@ -174,6 +177,14 @@ export function GlosowaniaPage() {
             <button type="button" aria-pressed={!filters.klub} onClick={() => apply({ klub: '' })}>Wszystkie</button>
             {clubs.map(c => <button key={c} type="button" aria-pressed={filters.klub === c} onClick={() => apply({ klub: c })}>{c}</button>)}
           </div>
+        </div>}
+        {filters.rodzaj === 'sejm' && (meta?.committees?.length ?? 0) > 0 && <div className="gl-line">
+          <label className="gl-lab" htmlFor="gl-kom">Komisja</label>
+          <select id="gl-kom" className="gl-sel" value={filters.komisja} onChange={e => apply({ komisja: e.target.value })}>
+            <option value="">Wszystkie</option>
+            {meta!.committees!.map(c => <option key={c.name} value={c.name}>{`${c.name} (${c.votings})`}</option>)}
+          </select>
+          <p className="gl-hint">{nb('Komisja z oficjalnego procesu legislacyjnego Sejmu; głosowania poza procesem (np. wnioski formalne) nie mają przypisanej komisji.')}</p>
         </div>}
         <div className="gl-line">
           <span className="gl-lab" id="gl-out-l">Wynik</span>

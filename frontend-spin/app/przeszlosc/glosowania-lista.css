@@ -127,3 +127,7 @@
    (przeglądarki bez składni "content: x / y" zostają przy dotychczasowej treści) */
 .pt-v3 .px .gl :is(.px-btn, .px-tool, .px-more, .px-chips button, .px-seg button)::before { content: ">" / ""; }
 .pt-v3 .px .gl :is(.px-seg button)::after { content: "_" / ""; }
+
+/* Filtr „Komisja” (6.11.2026): pole wyboru w jednej linii filtrów, cel 44 px (Fitts), styl pól przeszłości */
+.pt-v3 .px .gl-sel { min-height: 44px; max-width: min(100%, 420px); padding: 0 36px 0 12px; border: 0; border-radius: 10px; background-color: var(--sc-surface); color: var(--sc-text); font: 500 15px/1.3 var(--sc-font-sans); }
+.pt-v3 .px .gl-sel:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }

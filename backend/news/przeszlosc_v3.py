@@ -93,7 +93,7 @@ def _params(params):
               'na_strone': max(1, min(PAGE_MAX, number('na_strone', PER_PAGE))),
               'klub': (params.get('klub') or '').strip()[:100] or None,
               'wynik': (params.get('wynik') or '').strip() or None, 'q': (params.get('q') or '').strip()[:120],
-              'rodzaj': (params.get('rodzaj') or 'sejm').strip()}
+              'rodzaj': (params.get('rodzaj') or 'sejm').strip(), 'komisja': (params.get('komisja') or '').strip()[:120] or None}
     from news.przeszlosc_glosowania_rodzaje import KINDS
     if result['rodzaj'] not in KINDS:
         raise ValueError('Rodzaj: sejm, komisje, senat albo pe.')
@@ -147,6 +147,18 @@ def votes_page(p: dict) -> dict:
         rows = rows.filter(pk__in=Ballot.objects.filter(club=p['klub']).values('voting_id'))
     if p['wynik']:
         rows = rows.filter(outcome_q(p['wynik']))  # w bazie, ta sama reguła co outcome() (recenzja Codex 13.10)
+    from news import glosowania_tematy as tematy
+    topics = tematy.index()
+    if p.get('komisja'):
+        # komisja z oficjalnego procesu legislacyjnego (news/glosowania_tematy.py): grupy (kadencja, posiedzenie) -> numery głosowań
+        groups = {}
+        for key in tematy.keys_for_committee(p['komisja'], topics):
+            term, sitting, number = (int(x) for x in key.split('/'))
+            groups.setdefault((term, sitting), []).append(number)
+        committee_q = Q(pk__in=[])
+        for (term, sitting), numbers in groups.items():
+            committee_q |= Q(term=term, sitting=sitting, number__in=numbers)
+        rows = rows.filter(committee_q)
     rows = rows.order_by(F('article__published_date').desc(nulls_last=True), '-term', '-sitting', '-number')
     total = rows.count()
     pages = max(1, -(-total // p['na_strone']))
@@ -168,13 +180,13 @@ def votes_page(p: dict) -> dict:
                 'date': when.date().isoformat() if when else None, 'kind': v.kind,
                 'result': {k: counts.get(k) for k in ('yes', 'no', 'abstain', 'notParticipating') if k in counts},
                 'majority': {'type': counts.get('majorityType'), 'votes': counts.get('majorityVotes')},
-                'outcome': outcome(counts), 'url': vote_url(v)}
+                'outcome': outcome(counts), 'url': vote_url(v), 'topic': tematy.topic_for(v.term, v.sitting, v.number, topics)}
         if p['klub']:
             item['club_votes'] = {'club': p['klub'], 'votes': dict(club_votes.get(v.pk, {}))}
         results.append(item)
     return {'results': results, 'total': total, 'page': page, 'pages': pages, 'per_page': p['na_strone'],
-            'filter': {key: p[key] for key in ('kadencja', 'klub', 'od', 'do', 'wynik', 'q')},
-            'clubs': clubs(p['kadencja']), 'coverage': coverage()}
+            'filter': {key: p.get(key) for key in ('kadencja', 'klub', 'od', 'do', 'wynik', 'q', 'komisja')},
+            'clubs': clubs(p['kadencja']), 'committees': tematy.committees(topics), 'coverage': coverage()}
 
 
 @api_view(['GET'])
@@ -196,7 +208,7 @@ def votes_list_view(request):
         data['total'] = data.pop('count')
     else:
         data = {'results': [], 'total': 0, 'page': 1, 'pages': 1, 'per_page': params['na_strone'], 'clubs': [], 'coverage': None}
-    data['filter'] = {**data.get('filter', {key: params[key] for key in ('kadencja', 'klub', 'od', 'do', 'wynik', 'q')}), 'rodzaj': params['rodzaj']}
+    data['filter'] = {**data.get('filter', {key: params.get(key) for key in ('kadencja', 'klub', 'od', 'do', 'wynik', 'q')}), 'rodzaj': params['rodzaj']}
     data['kinds'] = rodzaje.general_kinds()
     response = Response(data)
     response['Cache-Control'] = 'public, max-age=300'
