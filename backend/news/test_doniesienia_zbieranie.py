@@ -92,3 +92,24 @@ def test_clear_agent_queue_removes_only_unpublished_agent_rows():
     PublicFigureMediaMention.objects.create(source_url='https://x.example/2', collected_by='import', **base)
     PublicFigureMediaMention.objects.create(source_url='https://x.example/3', collected_by='agent', status='published', **base)
     assert dz.clear_agent_queue() == 1 and PublicFigureMediaMention.objects.count() == 2
+
+
+def test_single_word_political_and_party_cases_are_not_candidates():
+    f = fig()
+    org('Skrzydła', '0000000201')                                  # jedno zwykłe słowo
+    org('Komitet Obrony Demokracji', '0000000202')                  # polityczny
+    org('Fundacja Akademia Przyszłości', '0000000111')
+    party = PublicFigure.objects.create(canonical_name='Platforma Obywatelska', role_category='party', role_title='Partia', import_key='p')
+    art('Jan Kowalski pod skrzydła premiera, Komitet Obrony Demokracji protestuje')
+    art('Platforma Obywatelska i Fundacja Akademia Przyszłości')
+    pattern, index = dz.org_index()
+    assert dz.candidates_for(f, pattern, index) == [] and dz.candidates_for(party, pattern, index) == []
+
+
+def test_list_layout_is_skipped_because_the_org_belongs_to_the_next_person():
+    f = fig()
+    org('Fundacja Dajemy Dzieciom Siłę', '0000000301')
+    art('Konferencja', '- Jan Kowalski - rzecznik praw dziecka - Anna Nowak - Fundacja Dajemy Dzieciom Siłę - Piotr Wiśniewski - dyrektor')
+    art('Goście', '▪ Jan Kowalski ▪ Fundacja Dajemy Dzieciom Siłę')
+    pattern, index = dz.org_index()
+    assert dz.candidates_for(f, pattern, index) == []

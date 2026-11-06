@@ -26,6 +26,11 @@ CUES = (('denied', re.compile(r'dementuj|zaprzecz|sprostowa|nieprawd', re.I)),
 PROXIMITY = 100        # osoba i podmiot najwyżej tyle znaków od siebie (inaczej to tylko dwa nazwiska w jednym opisie)
 MAX_ORGS_IN_TEXT = 3   # tekst z większą liczbą różnych podmiotów z bazy to lista gości/partnerów/komunikat o grupie spółek: pomijamy
 CUE_WINDOW = 120
+# Teksty w układzie listy (wypunktowania, myślniki między pozycjami): podmiot po nazwisku zwykle należy do NASTĘPNEJ osoby z listy.
+LIST_MARKS = re.compile(r'[▪🔴👉•●]|\s[-–—]\s.*\s[-–—]\s.*\s[-–—]\s')
+# Podmioty polityczne i związki samorządów to inny rodzaj relacji niż fundacje i spółki osoby (partie mamy osobno).
+POLITICAL_WORDS = ('komitet', 'koalicja', 'lewica', 'partia', 'inicjatywa polska', 'forum młodych', 'stronnictwo', 'związek miast',
+                   'związek powiatów', 'związek gmin', 'młodzi ', 'ruch społeczny', 'platforma', 'konfederacja')
 WIDTH = 80
 
 
@@ -49,7 +54,8 @@ def org_index():
     phrases = defaultdict(set)
     for org in RegisteredOrganisation.objects.filter(archived=False).only('pk', 'name'):
         full = _norm(org.name)
-        if distinct_part(org.name) and len(full) >= MIN_DISTINCT_CHARS:
+        if (distinct_part(org.name) and len(full) >= MIN_DISTINCT_CHARS and len(full.split()) >= 2
+                and not any(w in full for w in POLITICAL_WORDS)):
             phrases[full].add(org.pk)
     unique = {p: next(iter(ids)) for p, ids in phrases.items() if len(ids) == 1}
     if not unique:
@@ -86,6 +92,8 @@ def candidates_for(figure, pattern, index, known_orgs=frozenset()):
     Warunki: pełne imię i nazwisko osoby oraz pełna nazwa podmiotu w tym samym artykule, najwyżej PROXIMITY znaków od siebie;
     teksty z więcej niż MAX_ORGS_IN_TEXT różnych podmiotów z bazy (listy gości, komunikaty o grupie spółek) pomijamy."""
     person = name_pattern(figure.canonical_name)
+    if figure.role_category == 'party':
+        return []
     if person is None or figure.archived or figure.merged_into_id or namesakes(figure, normalize_name(figure.canonical_name)):
         return []
     rows = Article.objects.filter(candidate_filter(normalize_name(figure.canonical_name).split()[-1]), published_date__isnull=False) \
@@ -94,6 +102,8 @@ def candidates_for(figure, pattern, index, known_orgs=frozenset()):
     for article in rows:
         text = ' '.join(filter(None, (article.title, article.description)))
         normalized = _norm(text)
+        if LIST_MARKS.search(normalized):
+            continue
         person_spans = [m.span() for m in person.finditer(normalized)]
         if not person_spans:
             continue
