@@ -514,6 +514,7 @@ class PublicFigureOrganisationRelation(models.Model):
 MEDIA_MENTION_CATEGORIES = [
     ('mention', 'Wzmianka'),
     ('alleged', 'Rzekome powiązanie'),
+    ('lobbying', 'Lobbing'),
     ('denied', 'Sprostowane lub zaprzeczone'),
     ('other', 'Inne'),
 ]

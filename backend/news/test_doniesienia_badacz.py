@@ -175,3 +175,23 @@ def test_dry_run_does_not_mark_person_as_researched(monkeypatch):
     monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([]))
     db.run(ids=[f.pk], apply=False, pause=0, write=lambda x: None)
     assert MediaResearchLog.objects.count() == 0 and [x.pk for x in db.pick_figures(ids=[f.pk])] == [f.pk]
+
+
+def test_everyone_mode_orders_government_first_skips_parties_and_researched(monkeypatch):
+    from news.political_models import MediaResearchLog
+    a = PublicFigure.objects.create(canonical_name='Anna Parlament', role_category='parliamentary', role_title='Posłanka', import_key='a')
+    b = PublicFigure.objects.create(canonical_name='Piotr Rząd', role_category='government', role_title='Minister', import_key='b')
+    PublicFigure.objects.create(canonical_name='Partia Testowa', role_category='party', role_title='Partia', import_key='p')
+    done = PublicFigure.objects.create(canonical_name='Ewa Zbadana', role_category='government', role_title='Minister', import_key='c')
+    MediaResearchLog.objects.create(public_figure=done)
+    assert [f.pk for f in db.pick_figures(everyone=True)] == [b.pk, a.pk]
+    assert [f.pk for f in db.pick_figures(everyone=True, limit=1)] == [b.pk]
+
+
+def test_lobbying_category_is_accepted_and_saved(monkeypatch):
+    f = figure()
+    org('Fundacja Akademia Przyszłości', '0000000111')
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item(category='lobbying')]))
+    by_krs, by_name = db.org_lookup()
+    db.research_person(f, by_krs, by_name, apply=True)
+    assert PublicFigureMediaMention.objects.get().category == 'lobbying'

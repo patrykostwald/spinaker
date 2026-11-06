@@ -19,15 +19,17 @@ class Command(BaseCommand):
         parser.add_argument('--osoba', type=int, action='append', help='Id osoby (można powtórzyć); bez tego lista znanych osób.')
         parser.add_argument('--nazwisko', action='append', help='Imię i nazwisko jak w rejestrze (można powtórzyć), np. --nazwisko "Dariusz Matecki".')
         parser.add_argument('--ponow', action='store_true', help='Zbadaj też osoby zbadane w ostatnich 60 dniach (domyślnie pomijane).')
+        parser.add_argument('--wszyscy', action='store_true', help='Wszystkie osoby jeszcze niezbadane (rząd, partie, parlament, potem reszta).')
+        parser.add_argument('--max-osob', type=int, help='Najwyżej tyle osób w przebiegu (np. z --wszyscy).')
         parser.add_argument('--limit-usd', type=float, default=5.0, help='Twardy limit kosztu przebiegu w USD (domyślnie 5).')
 
     def handle(self, *args, **o):
         skip = 0 if o['ponow'] else 60
-        figures = db.pick_figures(names=o['nazwisko'], ids=o['osoba'], skip_days=skip)
+        figures = db.pick_figures(names=o['nazwisko'], ids=o['osoba'], skip_days=skip, everyone=o['wszyscy'], limit=o['max_osob'])
         if o['szacuj']:
-            self.stdout.write(f'Osób do zbadania: {len(figures)} (z {len(o['nazwisko'] or o['osoba'] or db.DEFAULT_NAMES)} na liście)')
+            self.stdout.write(f'Osób do zbadania: {len(figures)} (z {len(o['nazwisko'] or o['osoba'] or db.DEFAULT_NAMES) if not o['wszyscy'] else 'wszystkich niezbadanych'} na liście)')
             self.stdout.write('; '.join(f'{f.pk}:{f.canonical_name}' for f in figures))
             self.stdout.write(f'Szacunek kosztu najwyżej ok. {len(figures) * db.ESTIMATE_PER_PERSON_USD:.2f} USD (limit przebiegu {o["limit_usd"]:.2f} USD). Nic nie wysłano.')
             return
-        result = db.run(names=o['nazwisko'], ids=o['osoba'], apply=o['apply'], budget_usd=o['limit_usd'], write=self.stdout.write, skip_days=skip)
+        result = db.run(names=o['nazwisko'], ids=o['osoba'], apply=o['apply'], budget_usd=o['limit_usd'], write=self.stdout.write, skip_days=skip, everyone=o['wszyscy'], limit=o['max_osob'])
         self.stdout.write(f"{'ZAPISANO' if o['apply'] else 'Raport (bez zapisu)'}: {result}")

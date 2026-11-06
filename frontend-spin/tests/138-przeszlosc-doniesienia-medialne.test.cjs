@@ -20,11 +20,11 @@ test('okno: podmiot prowadzi do strony spółki, źródło otwiera się w nowej 
   assert.doesNotMatch(c, /powiązan[a-z]* z|związek|współpracuje/i);
 });
 
-test('profil osoby: okno po wzmiankach, dane z org_mentions', () => {
+test('profil osoby: okno wysoko, przed „W mediach”, dane z org_mentions', () => {
   const p = read('app/przeszlosc/PersonProfile.tsx');
   assert.match(p, /org_mentions\?: OrgMentions/);
   assert.match(p, /<PodmiotyZMediow data=\{data\.org_mentions\} \/>/);
-  assert.ok(p.indexOf('id="pp-mentions-h"') < p.indexOf('<PodmiotyZMediow'));
+  assert.ok(p.indexOf('<PodmiotyZMediow') < p.indexOf('id="pp-media"'));
 });
 
 test('układ: wiersze o stałej wysokości, tytuły w jednej linii, cele 44 px przez chipy wspólne', () => {

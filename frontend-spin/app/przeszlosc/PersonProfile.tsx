@@ -209,9 +209,9 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
           {shown.length > 12 && <button type="button" className="px-more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${shown.length})`}</button>}
         </section>
         {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
+        <PodmiotyZMediow data={data.org_mentions} />
         <div id="pp-media" className="pt-anchor" /><WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
         <WMediach id="pp-mentions-h" heading="Wzmianki" automatic total={data.mentions?.total} emptyReason={data.mentions?.reason} items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, confidence: m.confidence, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
-        <PodmiotyZMediow data={data.org_mentions} />
       </div>
       <aside className="px-side">
         <section className="px-card" id="pp-funkcje" aria-labelledby="pp-roles-h">
