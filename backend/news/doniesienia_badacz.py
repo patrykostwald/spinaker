@@ -16,7 +16,7 @@ import time
 import unicodedata
 from datetime import date
 
-from news import clinic_ai
+from news import clinic_ai, krs
 from news.media_mentions import namesakes, normalize_name
 from news.political_models import MEDIA_MENTION_CATEGORIES, MEDIA_QUOTE_LIMIT, PublicFigure, PublicFigureMediaMention, RegisteredOrganisation
 
@@ -107,6 +107,25 @@ def resolve_org(item, by_krs, by_name):
     return None, 'poza bazą'
 
 
+def adopt_from_krs(item, apply):
+    """Podmiot spoza bazy: numer KRS z odpowiedzi sprawdzamy w urzędowym API KRS i nazwę porównujemy z odpisem (krs.names_match).
+    Dopiero po zgodności dodajemy podmiot do bazy (dane z odpisu, nie od modelu). (id | 'NOWY', status).
+    Bez --apply nic nie zapisujemy, ale zwracamy 'NOWY', żeby raport pokazał, ile podmiotów dałoby się dodać."""
+    number = krs.normalize_krs(item.get('krs_number') or '')
+    if not number:
+        return None, 'brak numeru KRS'
+    time.sleep(1.0)   # grzeczność wobec api-krs
+    extract, status = krs.fetch_status(number, full=False)
+    if extract is None:
+        return None, f'KRS {status}'
+    if not krs.names_match(item.get('organisation_name') or '', extract.name):
+        return None, 'nazwa niezgodna z odpisem KRS'
+    if not apply:
+        return 'NOWY', 'identifier'
+    from news import krs_pokrycie
+    return krs_pokrycie.save_extract(extract).pk, 'identifier'
+
+
 def _parse_date(value):
     try:
         return date.fromisoformat((value or '').strip()[:10])
@@ -118,14 +137,14 @@ def research_person(figure, by_krs, by_name, apply=False):
     """Jedna osoba: (statystyki, koszt USD, nazwy podmiotów spoza bazy). Rzuca ClinicAIError przy błędzie API."""
     user = (f'Osoba publiczna: {figure.canonical_name} ({figure.role_title or figure.get_role_category_display()}). '
             'Znajdź doniesienia polskich i zagranicznych mediów o fundacjach, stowarzyszeniach i spółkach powiązanych z tą osobą. '
-            f'Zwróć najwyżej {PER_PERSON_ITEMS} najlepiej udokumentowanych pozycji. Pole krs_number wypełnij tylko, gdy numer KRS jest '
-            'w przeczytanym źródle, inaczej zostaw pusty ciąg. published_on w formacie RRRR-MM-DD albo pusty ciąg.')
+            f'Zwróć najwyżej {PER_PERSON_ITEMS} najlepiej udokumentowanych pozycji. Pole krs_number wypełnij, gdy numer KRS podmiotu '
+            'ustaliłeś w źródle rejestrowym (np. rejestr.io, ekrs.ms.gov.pl) albo w artykule; inaczej zostaw pusty ciąg (nie zgaduj). published_on w formacie RRRR-MM-DD albo pusty ciąg.')
     with _light_settings():
         response = clinic_ai._call_claude(SYSTEM, user, SCHEMA, web_search=True, max_tokens=8000)
     cost = clinic_ai.cost_usd(clinic_ai._usage(response))
     data = clinic_ai._json_from_text(response.content)
     found = clinic_ai._search_results(response.content)
-    stats = {'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0}
+    stats = {'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0}
     outside = []
     for item in (data.get('items') or [])[:PER_PERSON_ITEMS]:
         stats['items'] += 1
@@ -135,8 +154,16 @@ def research_person(figure, by_krs, by_name, apply=False):
             continue
         org_id, basis = resolve_org(item, by_krs, by_name)
         if org_id is None:
-            stats['outside_db'] += 1
-            outside.append(item.get('organisation_name') or '?')
+            org_id, basis = adopt_from_krs(item, apply)
+            if org_id is None:
+                stats['outside_db'] += 1
+                outside.append(f"{item.get('organisation_name') or '?'} [{basis}]")
+                continue
+            stats['org_added'] = stats.get('org_added', 0) + 1
+            if org_id != 'NOWY':
+                by_krs[krs.normalize_krs(item.get('krs_number'))] = org_id
+        if org_id == 'NOWY':
+            stats['saved'] += 1
             continue
         category = item.get('category') if item.get('category') in CATEGORIES else 'other'
         if PublicFigureMediaMention.objects.filter(public_figure=figure, organisation_id=org_id, source_url=url).exists():
@@ -163,7 +190,7 @@ def pick_figures(names=None, ids=None):
 def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=print):
     figures = pick_figures(names, ids)
     by_krs, by_name = org_lookup()
-    total, spent = {'persons': 0, 'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'errors': 0}, 0.0
+    total, spent = {'persons': 0, 'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0, 'errors': 0}, 0.0
     for figure in figures:
         if spent >= budget_usd:
             write(f'LIMIT KOSZTU {budget_usd:.2f} USD osiągnięty, przerywam po {total["persons"]} osobach.')
@@ -179,10 +206,10 @@ def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=prin
             continue
         spent += cost
         total['persons'] += 1
-        for key in ('items', 'saved', 'dropped_url', 'outside_db', 'existing'):
+        for key in ('items', 'saved', 'dropped_url', 'outside_db', 'existing', 'org_added'):
             total[key] += stats[key]
         write(f'{figure.canonical_name}: pozycji {stats["items"]}, do kolejki {stats["saved"]}, odrzucone linki {stats["dropped_url"]}, '
-              f'poza bazą {stats["outside_db"]}{" (" + "; ".join(outside[:4]) + ")" if outside else ""}, koszt ~{cost:.2f} USD')
+              f'nowe podmioty z KRS {stats["org_added"]}, poza bazą {stats["outside_db"]}{" (" + "; ".join(outside[:4]) + ")" if outside else ""}, koszt ~{cost:.2f} USD')
         time.sleep(pause)
     total['spent_usd'] = round(spent, 2)
     total['not_found_in_registry'] = [n for n in (names or DEFAULT_NAMES) if _fold(n) not in {_fold(f.canonical_name) for f in figures}] if not ids else []

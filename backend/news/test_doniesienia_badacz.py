@@ -38,7 +38,7 @@ def test_item_goes_to_review_queue_only_with_link_from_search_results_and_org_in
     monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: resp)
     by_krs, by_name = db.org_lookup()
     stats, cost, outside = db.research_person(f, by_krs, by_name, apply=True)
-    assert stats['saved'] == 1 and stats['dropped_url'] == 1 and stats['outside_db'] == 1 and outside == ['Fundacja Spoza Bazy'] and cost > 0
+    assert stats['saved'] == 1 and stats['dropped_url'] == 1 and stats['outside_db'] == 1 and outside == ['Fundacja Spoza Bazy [brak numeru KRS]'] and cost > 0
     m = PublicFigureMediaMention.objects.get()
     assert (m.status, m.collected_by, m.match_basis, m.category, m.organisation_id) == ('pending_review', 'claude', 'name_only', 'alleged', o.pk)
 
@@ -105,3 +105,50 @@ def test_light_settings_apply_only_during_the_call(monkeypatch):
     db.research_person(f, {}, {}, apply=False)
     assert seen == {'effort': 'low', 'uses': '4'}
     assert os.environ['CLINIC_EFFORT'] == 'high' and 'CLINIC_WEB_SEARCH_MAX_USES' not in os.environ
+
+
+def _extract(name='FUNDACJA PROFETO', number='0000012345'):
+    return NS(name=name, krs=number)
+
+
+def test_org_outside_db_is_adopted_only_after_krs_registry_confirms_the_name(monkeypatch):
+    from news import krs, krs_pokrycie
+    f = figure()
+    monkeypatch.setattr(db.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(krs, 'fetch_status', lambda number, full=False, timeout=30: (_extract('FUNDACJA PROFETO', number), 'ok'))
+    created = []
+    def fake_save(extract):
+        o = org('Fundacja Profeto', extract.krs)
+        created.append(o.pk)
+        return o
+    monkeypatch.setattr(krs_pokrycie, 'save_extract', fake_save)
+    resp = fake_response([item(organisation_name='Fundacja Profeto', krs_number='0000012345'),
+                          item(organisation_name='Zupełnie Inna Nazwa', krs_number='0000099999', source_url='https://portal.example/b')],
+                         urls=('https://portal.example/a', 'https://portal.example/b'))
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: resp)
+    by_krs, by_name = db.org_lookup()
+    stats, _, outside = db.research_person(f, by_krs, by_name, apply=True)
+    assert stats['org_added'] == 1 and stats['saved'] == 1 and created and stats['outside_db'] == 1
+    assert 'nazwa niezgodna z odpisem KRS' in outside[0] and PublicFigureMediaMention.objects.get().organisation.krs_number == '0000012345'
+
+
+def test_dry_run_checks_krs_but_creates_nothing(monkeypatch):
+    from news import krs
+    f = figure()
+    monkeypatch.setattr(db.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(krs, 'fetch_status', lambda number, full=False, timeout=30: (_extract(), 'ok'))
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item(organisation_name='Fundacja Profeto', krs_number='0000012345')]))
+    by_krs, by_name = db.org_lookup()
+    stats, _, _ = db.research_person(f, by_krs, by_name, apply=False)
+    assert stats['org_added'] == 1 and stats['saved'] == 1
+    assert RegisteredOrganisation.objects.count() == 0 and PublicFigureMediaMention.objects.count() == 0
+
+
+def test_no_krs_number_means_outside_db_without_registry_call(monkeypatch):
+    from news import krs
+    f = figure()
+    monkeypatch.setattr(krs, 'fetch_status', lambda *a, **k: (_ for _ in ()).throw(AssertionError('bez numeru nie pytamy KRS')))
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item(organisation_name='Fundacja Profeto', krs_number='')]))
+    by_krs, by_name = db.org_lookup()
+    stats, _, outside = db.research_person(f, by_krs, by_name, apply=True)
+    assert stats['outside_db'] == 1 and 'brak numeru KRS' in outside[0]
