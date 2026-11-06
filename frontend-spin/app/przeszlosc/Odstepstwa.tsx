@@ -10,10 +10,14 @@ import { windowNote } from './odstepstwa-okno';
  */
 type Event = { id: string; date: string | null; title: string; url: string; mp_id: number; name: string; club: string; vote: string; club_vote: string; unity: number };
 type Member = { mp_id: number; name: string; club: string; counted: number; deviations: number; share: number; club_median: number | null; excess: number | null; flagged: boolean; rebellions_total: number; latest: Event | null };
-type Club = { club: string; mps: number; members: number; median: number | null; flagged: Member[]; rebellions_total: number; rebellions: Event[] };
+type Rebel = { mp_id: number; name: string; count: number };
+type Club = { club: string; mps: number; members: number; median: number | null; flagged: Member[]; rebellions_total: number; rebellions: Event[]; rebels?: Rebel[] };
+type Full = { total: number; events: Event[] };
 type Data = { term: number | null; period: string; computed_at: string | null; votings: number; range: { from: string | null; to: string | null }; method: string; clubs: Club[] };
 
 const LIST = 6;
+const SHOWN_MAX = 100; // po „Pokaż więcej” najwyżej tyle pozycji naraz; reszta w pliku CSV
+const API = '/api/przeszlosc/odstepstwa/';
 const pct = (v: number | null) => v === null ? '-' : `${v.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}%`;
 const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 const short = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : '';
@@ -25,7 +29,19 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
   const [club, setClub] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [more, setMore] = useState(false); // pełne listy zamiast pierwszych LIST pozycji; wraca do skrótu przy zmianie klubu lub okresu
-  useEffect(() => { setMore(false); }, [club, period]);
+  const [mp, setMp] = useState<number | null>(null); // filtr po pośle (identyfikator Sejmu); wraca do „wszyscy” przy zmianie klubu lub okresu
+  const [full, setFull] = useState<Full | null>(null); // pełna lista z nocnego przeliczenia; null = brak (stary zapis) i wtedy zostaje skrót 30
+  useEffect(() => { setMore(false); setMp(null); }, [club, period]);
+  useEffect(() => { setMore(false); }, [mp]);
+  useEffect(() => {
+    if (!club) return;
+    let live = true;
+    const q = new URLSearchParams({ okres: period, klub: club, zdarzenia: '1' });
+    if (mp !== null) q.set('posel', String(mp));
+    setFull(null);
+    fetch(`${API}?${q}`).then(r => r.ok ? r.json() : Promise.reject(r.status)).then((d: Full) => { if (live) setFull(d); }).catch(() => { if (live) setFull(null); });
+    return () => { live = false; };
+  }, [club, period, mp]);
   useEffect(() => {
     let live = true;
     fetch(`/api/przeszlosc/odstepstwa/?okres=${period}`).then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -37,6 +53,9 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
   if (failed && !data) return standalone ? <p className="px-msg" role="alert">Nie udało się pobrać odstępstw. Spróbuj ponownie za chwilę.</p> : null;
   if (data && !data.clubs.length) return standalone ? <p className="px-msg">Brak danych o odstępstwach w tym okresie.</p> : null;
   const current = data?.clubs.find(c => c.club === club) ?? data?.clubs[0];
+  const events = full?.events ?? current?.rebellions ?? [];
+  const total = full?.total ?? current?.rebellions_total ?? 0;
+  const csvQuery = new URLSearchParams({ okres: period, klub: current?.club ?? '', eksport: 'csv', ...(mp !== null ? { posel: String(mp) } : {}) }).toString();
   // strona główna (recenzja Fable 13.10: sekcja miała 781 / 1953 px): jedna zwarta karta z liczbami i odnośnikiem do pełnego zestawienia
   if (compact && !data) return null;
   if (compact && data) {
@@ -73,6 +92,14 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
       {data.clubs.map(c => <button key={c.club} type="button" role="tab" id={`dev-tab-${c.club}`} aria-selected={c.club === current?.club}
         aria-controls="dev-panel" onClick={() => setClub(c.club)}>{c.club}<small>{c.members}</small></button>)}
     </div>}
+    {current && (current.rebels?.length ?? 0) > 0 && <div className="px-dev__tools">
+      <label className="px-dev__pick">Poseł z klubu {current.club}
+        <select value={mp ?? ''} onChange={e => setMp(e.target.value ? Number(e.target.value) : null)}>
+          <option value="">wszyscy ({current.rebellions_total} głosów)</option>
+          {current.rebels!.map(r => <option key={r.mp_id} value={r.mp_id}>{nice(r.name)} ({r.count})</option>)}
+        </select></label>
+      <p className="px-note">Filtr dotyczy listy „Głosy inne niż większość klubu”.</p>
+    </div>}
     {current && <div className="px-dev__grid" id="dev-panel" role="tabpanel" aria-labelledby={`dev-tab-${current.club}`}>
       <section className="px-card px-dev__card" aria-labelledby="dev-mps-h">
         <h3 id="dev-mps-h" className="px-h3">Wyższy udział głosów innych niż większość klubu <small>{current.flagged.length}</small></h3>
@@ -85,15 +112,16 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
         <p className="px-card__foot">Mediana klubu: {pct(current.median)} · porównano {current.mps} {current.mps === 1 ? 'posła' : 'posłów'} z&nbsp;co najmniej 20 głosami</p>
       </section>
       <section className="px-card px-dev__card" aria-labelledby="dev-reb-h">
-        <h3 id="dev-reb-h" className="px-h3">Głosy inne niż większość klubu <small title={`Liczba w klubie ${current.club}`}>{current.rebellions_total}</small></h3>
-        {current.rebellions.length ? <ol className="px-dev__list">{(more ? current.rebellions : current.rebellions.slice(0, LIST)).map(e => <li key={`${e.id}-${e.mp_id}`}>
+        <h3 id="dev-reb-h" className="px-h3">Głosy inne niż większość klubu <small title={mp === null ? `Liczba w klubie ${current.club}` : 'Liczba dla wybranego posła'}>{total}</small></h3>
+        {events.length ? <ol className="px-dev__list">{(more ? events.slice(0, SHOWN_MAX) : events.slice(0, LIST)).map(e => <li key={`${e.id}-${e.mp_id}`}>
           <a href={e.url} target="_blank" rel="noopener noreferrer"><b>{nice(e.name)}</b><span className="px-dev__val">{short(e.date)}</span>
             <small>{e.vote}, klub {e.club_vote} ({e.unity}%) · {e.title} ↗</small></a>
         </li>)}</ol> : <p className="px-dev__empty">Brak głosów innych niż większość klubu przy zgodności klubu w&nbsp;tym okresie.</p>}
-        {current.rebellions.length > LIST && <button type="button" className="px-more" aria-expanded={more} onClick={() => setMore(m => !m)}>
-          {more ? 'Pokaż mniej' : `Pokaż więcej (${current.rebellions.length - LIST})`}</button>}
+        {events.length > LIST && <button type="button" className="px-more" aria-expanded={more} onClick={() => setMore(m => !m)}>
+          {more ? 'Pokaż mniej' : `Pokaż więcej (${Math.min(events.length, SHOWN_MAX) - LIST})`}</button>}
         <p className="px-card__foot">Klub {current.club}: gdy co najmniej 80% klubu głosowało tak samo
-          {current.rebellions.length < current.rebellions_total ? ` · pokazujemy ${current.rebellions.length} z ${current.rebellions_total}` : ''}</p>
+          {events.length < total ? ` · pokazujemy ${events.length} z ${total}` : more && events.length > SHOWN_MAX ? ` · pokazujemy ${SHOWN_MAX} z ${events.length}, resztę znajdziesz w pliku CSV` : ''}
+          {full && <> · <a className="px-link" href={`${API}?${csvQuery}`} download>Pobierz CSV ({full.total})</a></>}</p>
       </section>
     </div>}
   </section>;

@@ -32,3 +32,11 @@
   .px-dev { --dev-row: 68px; }
   .px-dev .px-dev__card { padding: 16px; }
 }
+
+/* Filtr po pośle (6.11.2026): jeden wiersz nad obu boksami (boksy zostają równe), cel 44 px (Fitts), pole wyboru w stylu pól przeszłości */
+.px-dev__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 8px; min-height: 44px; }
+.px-dev__tools .px-note { margin: 0; font-size: 14px; color: var(--sc-text-3); }
+.px-dev__pick { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--sc-text-2); min-width: 0; }
+.px-dev__pick select { min-height: 44px; max-width: min(100%, 360px); padding: 0 36px 0 12px; border: 0; border-radius: 10px; background-color: var(--sc-surface); color: var(--sc-text); font: 500 15px/1.3 var(--sc-font-sans); }
+.px-dev__pick select:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+@media (max-width: 719.98px) { .px-dev__pick { flex-wrap: wrap; } .px-dev__pick select { max-width: 100%; } }

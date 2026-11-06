@@ -41,5 +41,5 @@ test('komponent korzysta z funkcji, pokazuje „Pokaż więcej” i podpisuje li
   assert.match(c, /from '\.\/odstepstwa-okno'/);
   assert.match(c, /Pokaż więcej \(/);
   assert.match(c, /wszystkie kluby razem/);
-  assert.match(c, /pokazujemy \$\{current\.rebellions\.length\} z \$\{current\.rebellions_total\}/);
+  assert.match(c, /pokazujemy \$\{events\.length\} z \$\{total\}/); // od 6.11 liczniki idą za filtrem posła i pełną listą
 });

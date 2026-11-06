@@ -178,3 +178,13 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Nowa karta dostępu:** `configure_bzp_metadata_source` tworzy kartę v+1: `minimum_interval_seconds=3` (20/min), `daily_request_cap=5000`; stara karta (180 s, 480/dobę) zostaje w historii, bo wygrywa najwyższa wersja. Karta wchodzi w życie dopiero po poleceniu na serwerze (za zgodą właściciela).
 - **Testy:** `scraper/test_bzp_backfill.py` (4 nowe testy runnera), `test_configure_bzp_metadata_source.py` (wymiana karty); scraper + repairer + automatyk + przeszlosc_stan: 848 zaliczonych, 1 pominięty.
 - **Do sprawdzenia po wdrożeniu:** rekordy BZP w „Stan danych” rosną; brak błędów `host_rate_limited` w stanie `official-backfill:bzp:v1`; liczba żądań dziennie poniżej 5000; kursor schodzi w głąb historii.
+
+
+## Pozycja 2, część a: filtr po pośle i CSV w Odstępstwach (6.11.2026, niewdrożone)
+
+- **Backend (`news/voting_anomalies.py`):** nocne przeliczenie zapisuje wszystkie odstępstwa w zwartej formie (`ev`: tabela głosowań, tabela posłów, wiersze), a klub ma listę `rebels` (poseł, liczba). Nowe parametry `GET /api/przeszlosc/odstepstwa/`: `zdarzenia=1` (pełna lista JSON, opcjonalnie `klub`, `posel`), `eksport=csv` (średniki, BOM, komórki zabezpieczone przed formułami arkusza; nazwa pliku `odstepstwa-{posel-ID|klub|wszystkie}-{okres}.csv`). Parametr nazywa się `eksport`, nie `format`, bo `format` przejmuje DRF. Odpowiedź publiczna listy klubów nadal nie zawiera `ev` ani `members`.
+- **Ważne po wdrożeniu:** stary zapis nie ma pola `ev`, więc pełna lista i CSV dają 409 („pojawi się po nocnym przeliczeniu”), a strona zostaje przy skrócie 30. Przeliczenie ręczne: komenda `odstepstwa` (albo poczekać na 4:35). Frontend sam przechodzi na pełną listę, gdy ją dostanie.
+- **Frontend (`app/przeszlosc/Odstepstwa.tsx`, `odstepstwa.css`):** wiersz „Poseł z klubu X” z listą posłów i liczbą odstępstw (nad obu boksami, żeby boksy zostały równe), pełna lista zamiast skrótu 30, po „Pokaż więcej” do 100 pozycji, odnośnik „Pobierz CSV (N)”. Filtr i okres/klub resetują się razem.
+- **Sprawdzone:** pytest `news/test_voting_anomalies.py` 11/11 (3 nowe: zwarta lista i filtry, zabezpieczenie formuł w CSV, API i brak `ev`); `node --test tests/*.test.cjs` 149/149, `pnpm typecheck`, `pnpm build`; pomiar Playwright 1440 i 390 px z atrapą API (lista i CSV zmieniają się po wyborze posła, bez przewijania poziomego, cele 44 px).
+- **Niesprawdzone na produkcji:** rozmiar zapisu `ev` dla całej kadencji (szacunek kilka MB) i czas odpowiedzi eksportu; do zmierzenia po pierwszym przeliczeniu.
+- **Zostaje z pozycji 2:** „Mój poseł” (wejście po nazwisku/okręgu), imienne głosy w profilu osoby, etykiety tematów przy głosowaniach.

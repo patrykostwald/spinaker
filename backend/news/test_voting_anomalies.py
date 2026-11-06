@@ -117,3 +117,53 @@ def test_profile_summary_uses_official_id_only():
     summary = deviation_summary({(10, 104)})
     assert summary['club'] == 'KO' and summary['flagged'] and summary['rebellions_total'] == 5 and summary['share'] == 20.0
     assert deviation_summary({(10, 999)}) is None and deviation_summary(set()) is None
+
+
+def test_full_event_list_is_stored_compactly_and_filterable():
+    from news.voting_anomalies import expand_events
+    result = analyse(mirrored(count=40))
+    ko = next(c for c in result['clubs'] if c['club'] == 'KO')
+    assert ko['rebellions_total'] == 8 and len(ko['rebellions']) == 8
+    assert ko['rebels'] == [{'mp_id': 104, 'name': 'KO Poseł 4', 'count': 8}]
+    assert 'ev' in result and len(result['ev']['rows']) == 16   # oba kluby po 8
+    every = expand_events(result)
+    assert len(every) == 16 and every[0]['date'] >= every[-1]['date']
+    only_ko = expand_events(result, club='KO')
+    assert len(only_ko) == 8 and {e['club'] for e in only_ko} == {'KO'}
+    one = expand_events(result, mp_id=104)
+    assert len(one) == 8 and all(e['name'] == 'KO Poseł 4' and e['url'].startswith('https://www.sejm.gov.pl/') for e in one)
+    assert expand_events({}) is None and expand_events(None) is None
+
+
+def test_csv_neutralises_spreadsheet_formulas_and_has_bom_and_semicolons():
+    from news.voting_anomalies import events_csv, CSV_HEADER
+    text = events_csv([{'date': '2026-06-01T10:00:00+00:00', 'club': 'KO', 'name': '=HYPERLINK("x")', 'mp_id': 1, 'vote': 'za',
+                        'club_vote': 'przeciw', 'unity': 100, 'title': '+cmd', 'url': 'https://www.sejm.gov.pl/x'}])
+    assert text.startswith('﻿') and text.splitlines()[0].lstrip('﻿').split(';') == CSV_HEADER
+    row = text.splitlines()[1]
+    assert row.startswith('2026-06-01;KO;') and "'=HYPERLINK" in row and ";'+cmd;" in row
+
+
+@pytest.mark.django_db
+def test_api_full_list_and_csv_export(monkeypatch):
+    from news.analysis_models import VotingDeviationSnapshot
+    from django.utils import timezone
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    data = analyse(mirrored(count=40))
+    data.update(term=10, period='term')
+    VotingDeviationSnapshot.objects.create(term=10, period='term', data=data, computed_at=timezone.now())
+    client = APIClient()
+    full = client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&posel=104&zdarzenia=1').json()
+    assert full['total'] == 8 and len(full['events']) == 8 and full['events'][0]['vote'] == 'przeciw'
+    club = client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&klub=PiS&zdarzenia=1').json()
+    assert club['total'] == 8 and {e['club'] for e in club['events']} == {'PiS'}
+    resp = client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&klub=KO&eksport=csv')
+    assert resp.status_code == 200 and resp['Content-Type'].startswith('text/csv')
+    assert 'odstepstwa-klub-term.csv' in resp['Content-Disposition']
+    assert len(resp.content.decode('utf-8').splitlines()) == 9   # nagłówek + 8
+    assert client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&eksport=xls').status_code == 400
+    # bez pola ev (zapis sprzed tej zmiany): komunikat zamiast błędu
+    data.pop('ev')
+    VotingDeviationSnapshot.objects.filter(term=10, period='term').update(data=data)
+    assert client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&zdarzenia=1').status_code == 409
+    assert 'ev' not in client.get('/api/przeszlosc/odstepstwa/?okres=kadencja').json()

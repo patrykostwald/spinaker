@@ -115,14 +115,67 @@ def analyse(votings):
             m['flagged'] = m['excess'] is not None and m['excess'] > EXCESS_PP
         flagged = sorted((m for m in rows if m['flagged']), key=lambda m: (-m['excess'], m['name']))
         events = sorted(club_rebellions.get(club, []), key=lambda e: (e['date'] or '', e['id']), reverse=True)
+        counts = Counter(e['mp_id'] for e in events)
+        rebels = sorted(({'mp_id': m['mp_id'], 'name': m['name'], 'count': counts[m['mp_id']]} for m in rows if counts[m['mp_id']]),
+                        key=lambda r: (-r['count'], r['name']))
         clubs.append({'club': club, 'mps': len(eligible), 'members': len(rows), 'median': club_median,
                       'flagged': [_public(m) for m in flagged], 'rebellions_total': len(events),
-                      'rebellions': events[:CLUB_REBELLIONS]})
+                      'rebellions': events[:CLUB_REBELLIONS], 'rebels': rebels})
     clubs.sort(key=lambda c: (-c['members'], c['club']))
     dates.sort()
-    return {'votings': counted_votings, 'range': {'from': dates[0][:10] if dates else None, 'to': dates[-1][:10] if dates else None},
+    return {'ev': compact_events(club_rebellions), 'votings': counted_votings, 'range': {'from': dates[0][:10] if dates else None, 'to': dates[-1][:10] if dates else None},
             'method': METHOD, 'thresholds': THRESHOLDS, 'clubs': clubs,
             'members': {str(m['mp_id']) + ':' + m['club']: _public(m, events=True) for m in members.values()}}
+
+
+def compact_events(club_rebellions):
+    """Wszystkie odstępstwa w zwartej formie do eksportu i filtra po pośle (6.11.2026): tabela głosowań (id → data, tytuł)
+    i wiersze [id głosowania, id posła, klub, głos, głos klubu, zgodność %]; nazwiska w tabeli posłów."""
+    votings, mps, rows = {}, {}, []
+    for club, events in club_rebellions.items():
+        for e in events:
+            votings.setdefault(e['id'], [e['date'], e['title']])
+            mps[str(e['mp_id'])] = e['name']
+            rows.append([e['id'], e['mp_id'], club, e['vote'], e['club_vote'], e['unity']])
+    return {'votings': votings, 'mps': mps, 'rows': rows}
+
+
+def expand_events(data, club=None, mp_id=None):
+    """Zwarte wiersze z zapisu z powrotem na zdarzenia (najnowsze pierwsze), opcjonalnie dla klubu i/lub posła."""
+    ev = (data or {}).get('ev')
+    if not ev:
+        return None
+    out = []
+    for vid, mp, c, vote, club_vote, unity in ev['rows']:
+        if (club and c != club) or (mp_id is not None and mp != mp_id):
+            continue
+        date_, title = ev['votings'].get(vid, [None, ''])
+        term, sitting, number = vid.split('/')
+        out.append({'id': vid, 'date': date_, 'title': title, 'url': vote_url(term, sitting, number), 'mp_id': mp,
+                    'name': ev['mps'].get(str(mp), ''), 'club': c, 'vote': vote, 'club_vote': club_vote, 'unity': unity})
+    out.sort(key=lambda e: (e['date'] or '', e['id'], e['mp_id']), reverse=True)
+    return out
+
+
+CSV_HEADER = ['data', 'klub', 'poseł', 'id posła w Sejmie', 'głos posła', 'głos większości klubu', 'zgodność klubu %', 'głosowanie', 'adres']
+
+
+def _csv_cell(value):
+    """Komórka bezpieczna dla arkusza: tekst zaczynający się od = + - @ nie może być wykonany jako formuła."""
+    text = str(value if value is not None else '')
+    return "'" + text if text[:1] in ('=', '+', '-', '@', '\t', '\r') else text
+
+
+def events_csv(events):
+    import csv
+    import io
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=';', lineterminator='\r\n')
+    writer.writerow(CSV_HEADER)
+    for e in events:
+        writer.writerow([_csv_cell(x) for x in ((e['date'] or '')[:10], e['club'], e['name'], e['mp_id'], e['vote'], e['club_vote'],
+                                                  e['unity'], e['title'], e['url'])])
+    return '\ufeff' + buf.getvalue()   # BOM: Excel poprawnie czyta polskie znaki
 
 
 def _public(m, events=False):
@@ -205,7 +258,8 @@ PERIODS = {'90d': '90d', '90': '90d', 'kadencja': 'term', 'term': 'term'}
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def deviations_view(request):
-    """GET /api/przeszlosc/odstepstwa/?okres=90d|kadencja[&kadencja=10][&posel=<id Sejmu>]"""
+    """GET /api/przeszlosc/odstepstwa/?okres=90d|kadencja[&kadencja=10][&posel=<id Sejmu>][&klub=<nazwa>]
+    [&zdarzenia=1 (pełna lista JSON)] [&eksport=csv]. Lista i eksport biorą wszystkie odstępstwa z nocnego przeliczenia."""
     from news import przeszlosc
     if not przeszlosc.enabled():
         return Response({'detail': 'Funkcja jeszcze wyłączona.'}, status=404)
@@ -220,6 +274,22 @@ def deviations_view(request):
         mp_id = int(request.query_params['posel']) if request.query_params.get('posel') else None
     except ValueError:
         return Response({'detail': 'Kadencja i poseł to liczby.'}, status=400)
+    club = (request.query_params.get('klub') or '').strip() or None
+    export = request.query_params.get('eksport')
+    if export or request.query_params.get('zdarzenia'):
+        snap = snapshot(term, period)
+        events = expand_events(snap.data if snap else None, club, mp_id)
+        if events is None:
+            return Response({'detail': 'Pełna lista pojawi się po najbliższym nocnym przeliczeniu.'}, status=409)
+        if export:
+            if export != 'csv':
+                return Response({'detail': 'Eksport: csv.'}, status=400)
+            from django.http import HttpResponse
+            name = 'odstepstwa-' + (f'posel-{mp_id}' if mp_id is not None else 'klub' if club else 'wszystkie') + f'-{period}.csv'
+            response = HttpResponse(events_csv(events), content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = f'attachment; filename="{name}"'
+            return response
+        return Response({'period': period, 'mp_id': mp_id, 'club': club, 'total': len(events), 'events': events})
     if mp_id is not None:
         data = member(mp_id, term, period)
         return Response(data or {'detail': 'Brak głosowań tego posła w wyniku.'}, status=200 if data else 404)
@@ -227,7 +297,7 @@ def deviations_view(request):
     if not snap:
         return Response({'term': term, 'period': period, 'computed_at': None, 'votings': 0, 'range': {'from': None, 'to': None},
                          'method': METHOD, 'thresholds': THRESHOLDS, 'clubs': []})
-    data = {k: v for k, v in snap.data.items() if k != 'members'}
+    data = {k: v for k, v in snap.data.items() if k not in ('members', 'ev')}
     data['computed_at'] = snap.computed_at.isoformat()
     return Response(data)
 
