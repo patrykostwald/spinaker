@@ -289,7 +289,12 @@ def deviations_view(request):
             response = HttpResponse(events_csv(events), content_type='text/csv; charset=utf-8')
             response['Content-Disposition'] = f'attachment; filename="{name}"'
             return response
-        return Response({'period': period, 'mp_id': mp_id, 'club': club, 'total': len(events), 'events': events})
+        try:
+            limit = min(500, max(1, int(request.query_params.get('limit') or 100)))
+        except ValueError:
+            return Response({'detail': 'Limit to liczba.'}, status=400)
+        # Odpowiedź JSON ma ograniczony rozmiar (6.11.2026: ok. 330 tys. znaków dla dużego klubu); pełna lista tylko w eksporcie CSV.
+        return Response({'period': period, 'mp_id': mp_id, 'club': club, 'total': len(events), 'limit': limit, 'events': events[:limit]})
     if mp_id is not None:
         data = member(mp_id, term, period)
         return Response(data or {'detail': 'Brak głosowań tego posła w wyniku.'}, status=200 if data else 404)

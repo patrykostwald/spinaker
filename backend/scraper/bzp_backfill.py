@@ -251,6 +251,7 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
 
 
 PAUSE_CACHE_KEY = 'bzp:pause_until'
+RUN_LOCK_KEY = 'bzp:run_lock'
 RUN_BUDGET_SECONDS = 240      # jedno uruchomienie zadania; twardy limit zadania 360 s, harmonogram co 5 min
 MAX_PAGES_PER_RUN = 120
 PAGE_PAUSE_SECONDS = MIN_REQUEST_INTERVAL_SECONDS + 0.2   # 20 zapytań/min to dolna granica bramki (3 s) z zapasem
@@ -265,6 +266,17 @@ def bzp_backfill_run(*, budget_seconds=RUN_BUDGET_SECONDS, sleep=time.sleep, mon
     paused_until = cache.get(PAUSE_CACHE_KEY)
     if paused_until and paused_until > now.timestamp():
         return {'status': 'paused', 'new_records': 0, 'pages': 0}
+    # Jedno uruchomienie naraz (6.11.2026: nakładające się przebiegi walczyły o bramkę hosta i zapisywały host_rate_limited).
+    # Blokada wygasa sama po budżecie z zapasem, więc przerwany przebieg nie blokuje następnych.
+    if not cache.add(RUN_LOCK_KEY, now.timestamp(), timeout=int(budget_seconds) + 90):
+        return {'status': 'busy', 'new_records': 0, 'pages': 0}
+    try:
+        return _run_loop(budget_seconds, sleep, monotonic, now)
+    finally:
+        cache.delete(RUN_LOCK_KEY)
+
+
+def _run_loop(budget_seconds, sleep, monotonic, now):
     deadline = monotonic() + budget_seconds
     pages = created = 0
     result = {'status': 'ok', 'new_records': 0}

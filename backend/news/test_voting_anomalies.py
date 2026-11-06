@@ -161,6 +161,9 @@ def test_api_full_list_and_csv_export(monkeypatch):
     assert resp.status_code == 200 and resp['Content-Type'].startswith('text/csv')
     assert 'odstepstwa-klub-term.csv' in resp['Content-Disposition']
     assert len(resp.content.decode('utf-8').splitlines()) == 9   # nagłówek + 8
+    capped = client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&klub=KO&zdarzenia=1&limit=3').json()
+    assert capped['total'] == 8 and len(capped['events']) == 3 and capped['limit'] == 3   # JSON przycięty, eksport CSV pełny
+    assert client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&zdarzenia=1&limit=abc').status_code == 400
     assert client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&eksport=xls').status_code == 400
     # bez pola ev (zapis sprzed tej zmiany): komunikat zamiast błędu
     data.pop('ev')

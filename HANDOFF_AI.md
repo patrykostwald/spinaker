@@ -214,3 +214,11 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Zrobione, niesprawdzone:** BZP na nowej karcie (kursor miał ruszyć z 26.07 w głąb historii; Stan danych nadal pokazywał 9 rekordów i ostatni zapis 6.10 kilka minut po starcie). Odpowiedź `zdarzenia=1` dla dużego klubu ma ok. 330 tys. znaków; frontend ogranicza widok do 100 pozycji, ale API zwraca całość (do przycięcia, np. stronicowaniem).
 - **Odkryte:** BZP ma 580 artykułów, ale 9 rekordów `PublicRecord`; zapis rekordu połykał błędy (`except: pass`). Kod loguje teraz ostrzeżenie `bzp notice record not saved: ...` (do wdrożenia razem z następną porcją); właściciel dostał polecenie diagnostyczne z próbą zapisu w cofanej transakcji.
 - **Rollback:** poprzedni wdrożony commit `84bdb04`.
+
+
+## BZP działa na produkcji; blokada przebiegów i przycięcie JSON (6.11.2026, kod gotowy, niewdrożone)
+
+- **Zrobione i sprawdzone na produkcji (odczyt 02:16 UTC):** BZP po wdrożeniu `d273d59` nadrabia historię: kursor z 26.07 do 01.02.2026 w ok. 13 min, artykułów 2334 (było 589), rekordów `PublicRecord` 1754 (było 9), `last_error` pusty, zadanie `import_bzp_metadata` kończy się `succeeded` (24-57 stron na przebieg, 98-243 s). Przyczyną zatrzymania było okno UTC (poprawka `4a443b1`); wdrożony kod ma poprawkę, karta v2 (3 s, 5000/dobę) aktywna. Podejrzenie połykanego błędu zapisu rekordu nie potwierdziło się (próba zapisu na Postgresie OK; 9 rekordów to ślad po starym przebiegu).
+- **Zrobione, niesprawdzone (kod, niewdrożone):** `bzp_backfill_run` ma blokadę „jedno uruchomienie naraz” (cache `bzp:run_lock`, wygasa po budżecie + 90 s); w logu produkcji nakładające się przebiegi walczyły o bramkę hosta (`host_rate_limited:149.8` w wyniku zadania, choć dane rosły). Odpowiedź `GET /api/przeszlosc/odstepstwa/?zdarzenia=1` ma `limit` (domyślnie 100, najwyżej 500; pełna lista tylko w `eksport=csv`), bo dla dużego klubu miała ok. 330 tys. znaków.
+- **Testy:** `scraper/test_bzp_backfill.py` + `news/test_voting_anomalies.py`: 24 zaliczone.
+- **Do sprawdzenia po następnym wdrożeniu:** w logach worker brak `host_rate_limited` w wynikach zadania BZP; kursor dochodzi do ok. 22.09.2025 (365 dni przed odcięciem 22.09.2026), potem przejście „do przodu” od 22.09.2026.
