@@ -243,3 +243,60 @@ def test_no_second_round_without_second_datum(monkeypatch):
     by_krs, by_name = db.org_lookup()
     stats, _, outside = db.research_person(f, by_krs, by_name, apply=True)
     assert len(calls) == 1 and stats['outside_db'] == 1 and 'brak numeru KRS' in outside[0]
+
+
+def _light_response(items, urls=('https://portal.example/a',), searches=2, stop='end_turn'):
+    results = [NS(url=u, title='T ' + u) for u in urls]
+    blocks = [NS(type='web_search_tool_result', content=results), NS(type='text', text=json.dumps({'items': items}))]
+    return NS(content=blocks, stop_reason=stop, usage=NS(input_tokens=30000, output_tokens=800, server_tool_use=NS(web_search_requests=searches)), model='claude-haiku-5-5')
+
+
+class _FakeClient:
+    def __init__(self, responses, record):
+        self.responses, self.record = list(responses), record
+        self.messages = NS(create=self._create)
+
+    def _create(self, **kwargs):
+        self.record.append(kwargs)
+        return self.responses.pop(0)
+
+
+def test_light_researcher_uses_cheap_model_basic_search_tool_and_same_safeguards(monkeypatch):
+    f, o = figure(), org('Fundacja Akademia Przyszłości', '0000000111')
+    record = []
+    monkeypatch.setattr(clinic_ai, '_client', lambda: _FakeClient([_light_response([item(), item(source_url='https://wymyslony.example/x')])], record))
+    by_krs, by_name = db.org_lookup()
+    stats, cost, _ = db.research_person_light(f, by_krs, by_name, apply=True)
+    assert record[0]['model'] == 'claude-haiku-5-5' and record[0]['tools'][0]['type'] == 'web_search_20250305' and record[0]['tools'][0]['max_uses'] == 2
+    assert stats['saved'] == 1 and stats['dropped_url'] == 1 and PublicFigureMediaMention.objects.get().organisation_id == o.pk
+    assert 0.02 < cost < 0.05          # 30 tys. tokenów wejścia Haiku + 2 wyszukiwania
+
+
+def test_light_researcher_resumes_pause_turn_and_falls_back_when_structured_output_is_rejected(monkeypatch):
+    import anthropic
+    f, o = figure(), org('Fundacja Akademia Przyszłości', '0000000111')
+    record = []
+    bad = anthropic.BadRequestError.__new__(anthropic.BadRequestError)   # bez budowania odpowiedzi HTTP (zależy od wersji SDK)
+    bad.body, bad.message, bad.status_code = {'error': {'message': 'format nie łączy się z narzędziem'}}, 'x', 400
+
+    class Client(_FakeClient):
+        def _create(self, **kwargs):
+            self.record.append(kwargs)
+            first = self.responses.pop(0)
+            if isinstance(first, Exception):
+                raise first
+            return first
+    monkeypatch.setattr(clinic_ai, '_client', lambda: Client([bad, _light_response([], stop='pause_turn'), _light_response([item()])], record))
+    by_krs, by_name = db.org_lookup()
+    stats, _, _ = db.research_person_light(f, by_krs, by_name, apply=False)
+    assert 'format' in record[0]['output_config'] and 'format' not in record[1]['output_config'] and len(record) == 3 and stats['saved'] == 1
+
+
+def test_light_flag_is_used_by_run_and_logged(monkeypatch):
+    from news.political_models import MediaResearchLog
+    f = figure()
+    monkeypatch.setattr(db, 'research_person_light', lambda *a, **k: ({'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0}, 0.03, []))
+    monkeypatch.setattr(db, 'research_person', lambda *a, **k: (_ for _ in ()).throw(AssertionError('ścieżka ciężka')))
+    out = []
+    db.run(ids=[f.pk], apply=True, pause=0, write=out.append, light=True)
+    assert MediaResearchLog.objects.get().model.startswith('lekki:')

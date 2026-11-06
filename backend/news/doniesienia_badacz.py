@@ -9,6 +9,7 @@ cytat i kategoria doniesienia. Kod NIE ufa modelowi:
  - łączny koszt przebiegu ma twardy limit (USD, wg clinic_ai.cost_usd, wycena zawyżona).
 """
 import contextlib
+import json
 import logging
 import os
 import re
@@ -238,6 +239,66 @@ def store_items(figure, items, found, by_krs, by_name, apply, collected_by='clau
     return stats, cost, outside
 
 
+# --- Wersja lekka: tani model (Haiku) z wyszukiwarką, 2 wyszukiwania; ta sama weryfikacja i zapis co wyżej ------------------------------
+LIGHT_MODEL = 'claude-haiku-5-5'
+LIGHT_TOOL = 'web_search_20250305'      # podstawowa wersja narzędzia; nadpisanie: DONIESIENIA_SEARCH_TOOL
+LIGHT_PRICE_IN, LIGHT_PRICE_OUT, SEARCH_USD = 0.10, 0.50, 0.01
+
+
+def _light_call(system, user):
+    import anthropic
+    client = clinic_ai._client()
+    model = os.environ.get('DONIESIENIA_LIGHT_MODEL', LIGHT_MODEL)
+    tool = {'type': os.environ.get('DONIESIENIA_SEARCH_TOOL', LIGHT_TOOL), 'name': 'web_search',
+            'max_uses': int(os.environ.get('DONIESIENIA_LIGHT_SEARCHES', '2'))}
+    messages = [{'role': 'user', 'content': user}]
+    structured = True
+    response = None
+    for _ in range(5):
+        output_config = {'effort': 'low'}
+        if structured:
+            output_config['format'] = {'type': 'json_schema', 'schema': SCHEMA}
+        try:
+            response = client.messages.create(model=model, max_tokens=4000, system=system, messages=messages, tools=[tool], output_config=output_config)
+        except anthropic.BadRequestError as error:
+            if not structured:
+                raise clinic_ai.ClinicAIError(f'bad_request: {clinic_ai._error_message(error)}'[:240])
+            structured = False     # tryb awaryjny: JSON opisany w instrukcji (np. gdy format nie łączy się z wyszukiwarką)
+            messages = [{'role': 'user', 'content': user + '\n\nOdpowiedz wyłącznie obiektem JSON zgodnym ze schematem:\n' + json.dumps(SCHEMA, ensure_ascii=False)}]
+            continue
+        except anthropic.RateLimitError:
+            raise clinic_ai.ClinicAIError('rate_limited')
+        except anthropic.APIStatusError as error:
+            raise clinic_ai.ClinicAIError(f'api_{error.status_code}: {clinic_ai._error_message(error)}'[:240])
+        except anthropic.APIConnectionError:
+            raise clinic_ai.ClinicAIError('connection')
+        if response.stop_reason == 'pause_turn':
+            messages = [messages[0], {'role': 'assistant', 'content': response.content}]
+            continue
+        break
+    if response is None or response.stop_reason in ('pause_turn', 'max_tokens', 'refusal'):
+        raise clinic_ai.ClinicAIError(response.stop_reason if response is not None else 'unfinished')
+    usage = getattr(response, 'usage', None)
+    server = getattr(usage, 'server_tool_use', None)
+    cost = ((getattr(usage, 'input_tokens', 0) or 0) * LIGHT_PRICE_IN + (getattr(usage, 'output_tokens', 0) or 0) * LIGHT_PRICE_OUT) / 1_000_000 \
+        + (getattr(server, 'web_search_requests', 0) if server else 0) * SEARCH_USD
+    return response, cost
+
+
+def research_person_light(figure, by_krs, by_name, apply=False):
+    """To samo zadanie co research_person, ale tanim modelem i dwoma wyszukiwaniami. (statystyki, koszt USD, poza bazą)."""
+    user = (f'Osoba publiczna: {figure.canonical_name} ({figure.role_title or figure.get_role_category_display()}). '
+            'Znajdź doniesienia mediów o fundacjach, stowarzyszeniach i spółkach powiązanych z tą osobą (także lobbing i udział w przyznawaniu środków). '
+            f'Zwróć najwyżej {PER_PERSON_ITEMS} najlepiej udokumentowanych pozycji, każdą z adresem artykułu z wyników wyszukiwania i dosłownym cytatem. '
+            'Pole krs_number tylko, gdy numer jest w źródle (inaczej pusty ciąg); city i board_member tylko, gdy wynikają ze źródła; '
+            'published_on RRRR-MM-DD albo pusty ciąg.')
+    response, cost = _light_call(SYSTEM, user)
+    data = clinic_ai._json_from_text(response.content)
+    found = clinic_ai._search_results(response.content)
+    stats, extra, outside = store_items(figure, (data.get('items') or [])[:PER_PERSON_ITEMS], found, by_krs, by_name, apply, allow_search=False)
+    return stats, cost + extra, outside
+
+
 ROLE_ORDER = ['government', 'party', 'parliamentary', 'european', 'political', 'local']
 
 
@@ -258,7 +319,7 @@ def pick_figures(names=None, ids=None, skip_days=60, everyone=False, limit=None)
     return figures[:limit] if limit else figures
 
 
-def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=print, skip_days=60, everyone=False, limit=None):
+def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=print, skip_days=60, everyone=False, limit=None, light=False):
     figures = pick_figures(names, ids, skip_days, everyone=everyone, limit=limit)
     by_krs, by_name = org_lookup()
     total, spent = {'persons': 0, 'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0, 'errors': 0}, 0.0
@@ -268,7 +329,7 @@ def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=prin
             break
         write(f'Badam: {figure.canonical_name} ... (do 3 minut)')
         try:
-            stats, cost, outside = research_person(figure, by_krs, by_name, apply=apply)
+            stats, cost, outside = (research_person_light if light else research_person)(figure, by_krs, by_name, apply=apply)
         except clinic_ai.ClinicAIError as error:
             total['errors'] += 1
             write(f'{figure.canonical_name}: błąd {error.code}')
@@ -279,7 +340,7 @@ def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=prin
         total['persons'] += 1
         if apply:
             MediaResearchLog.objects.create(public_figure=figure, items=stats['items'], saved=stats['saved'], cost_usd=round(cost, 3),
-                                            model=clinic_ai.model_name()[:64])
+                                            model=(('lekki:' + os.environ.get('DONIESIENIA_LIGHT_MODEL', LIGHT_MODEL)) if light else clinic_ai.model_name())[:64])
         for key in ('items', 'saved', 'dropped_url', 'outside_db', 'existing', 'org_added'):
             total[key] += stats[key]
         write(f'{figure.canonical_name}: pozycji {stats["items"]}, do kolejki {stats["saved"]}, odrzucone linki {stats["dropped_url"]}, '

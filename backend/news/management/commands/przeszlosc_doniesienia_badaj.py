@@ -21,6 +21,7 @@ class Command(BaseCommand):
         parser.add_argument('--ponow', action='store_true', help='Zbadaj też osoby zbadane w ostatnich 60 dniach (domyślnie pomijane).')
         parser.add_argument('--wszyscy', action='store_true', help='Wszystkie osoby jeszcze niezbadane (rząd, partie, parlament, potem reszta).')
         parser.add_argument('--max-osob', type=int, help='Najwyżej tyle osób w przebiegu (np. z --wszyscy).')
+        parser.add_argument('--lekki', action='store_true', help='Tani model (Haiku) z 2 wyszukiwaniami, ok. 0,03 USD na osobę.')
         parser.add_argument('--limit-usd', type=float, default=5.0, help='Twardy limit kosztu przebiegu w USD (domyślnie 5).')
 
     def handle(self, *args, **o):
@@ -32,5 +33,5 @@ class Command(BaseCommand):
             self.stdout.write('; '.join(f'{f.pk}:{f.canonical_name}' for f in figures))
             self.stdout.write(f'Szacunek kosztu najwyżej ok. {len(figures) * db.ESTIMATE_PER_PERSON_USD:.2f} USD (limit przebiegu {o["limit_usd"]:.2f} USD). Nic nie wysłano.')
             return
-        result = db.run(names=o['nazwisko'], ids=o['osoba'], apply=o['apply'], budget_usd=o['limit_usd'], write=self.stdout.write, skip_days=skip, everyone=o['wszyscy'], limit=o['max_osob'])
+        result = db.run(names=o['nazwisko'], ids=o['osoba'], apply=o['apply'], budget_usd=o['limit_usd'], write=self.stdout.write, skip_days=skip, everyone=o['wszyscy'], limit=o['max_osob'], light=o['lekki'])
         self.stdout.write(f"{'ZAPISANO' if o['apply'] else 'Raport (bez zapisu)'}: {result}")
