@@ -86,6 +86,7 @@ export function Odstepstwa({ standalone = false, compact = false }: { standalone
       </div>
     </div>
     <p className="px-dev__method">Odstępstwo to głos inny niż większość własnego klubu w&nbsp;tym głosowaniu. Te same progi dla każdego klubu; odstępstwo nie jest zarzutem.</p>
+    {standalone && <p className="px-note px-dev__range">Szukasz swojego posła? <a className="px-link" href="/przeszlosc/moj-posel">Wybierz okręg&nbsp;→</a></p>}
     {data && <p className="px-note px-dev__range">{data.range.from ? `${day(data.range.from)} - ${day(data.range.to)}` : ''} · {data.votings.toLocaleString('pl-PL')} głosowań Sejmu
       {data.term ? ` · kadencja ${data.term}` : ''}{windowNote(data.period, data.range.from, data.range.to, day) ? ` · ${windowNote(data.period, data.range.from, data.range.to, day)}` : ''}</p>}
     {data && <div className="px-dev__tabs" role="tablist" aria-label="Klub">

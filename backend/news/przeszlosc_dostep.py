@@ -31,6 +31,8 @@ FEATURES = [
      '„Średni spin” w profilu osoby', 'https://spin.clinic/klinika', 'darmowe'),
     ('odstepstwa', 'vote', 'Odstępstwa od klubu', 'Kto głosuje inaczej niż większość swojego klubu i jak często, z linkiem do każdego głosu.',
      '„Głosy wbrew klubowi” na stronie', '/przeszlosc#odstepstwa', 'Pro'),
+    ('moj-posel', 'person', 'Mój poseł', 'Wybierz okręg wyborczy i zobacz wszystkich posłów z tego okręgu z klubem i odnośnikiem do profilu.',
+     'Okręg „Kraków”', '/przeszlosc/moj-posel', 'darmowe'),
     ('mianowniki', 'people', 'Wspólne mianowniki', 'Z kim osoba występuje w tych samych tematach, w tych samych spółkach i jak zgodnie głosuje.',
      'Dół profilu każdej osoby', '/przeszlosc?tryb=osoba', 'Pro'),
     ('krs', 'organisation', 'Funkcje w KRS', 'Zarządy i rady nadzorcze spółek i fundacji z datami od i do, prosto z urzędowego odpisu.',

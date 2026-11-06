@@ -188,3 +188,13 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Sprawdzone:** pytest `news/test_voting_anomalies.py` 11/11 (3 nowe: zwarta lista i filtry, zabezpieczenie formuł w CSV, API i brak `ev`); `node --test tests/*.test.cjs` 149/149, `pnpm typecheck`, `pnpm build`; pomiar Playwright 1440 i 390 px z atrapą API (lista i CSV zmieniają się po wyborze posła, bez przewijania poziomego, cele 44 px).
 - **Niesprawdzone na produkcji:** rozmiar zapisu `ev` dla całej kadencji (szacunek kilka MB) i czas odpowiedzi eksportu; do zmierzenia po pierwszym przeliczeniu.
 - **Zostaje z pozycji 2:** „Mój poseł” (wejście po nazwisku/okręgu), imienne głosy w profilu osoby, etykiety tematów przy głosowaniach.
+
+
+## Pozycja 2, część b: „Mój poseł” (6.11.2026, niewdrożone)
+
+- **Co to jest:** strona `/przeszlosc/moj-posel`: wybór okręgu wyborczego → posłowie z okręgu (klub, odnośnik do profilu w przeszłość.today; gdy posła nie ma w rejestrze osób, odnośnik do oficjalnej strony Sejmu i adnotacja „brak profilu u nas”).
+- **Backend:** `news/przeszlosc_moj_posel.py`, `GET /api/przeszlosc/moj-posel/` (lista okręgów z liczbą posłów) i `?okreg=Kraków` (posłowie, wielkość liter bez znaczenia, 404 dla nieznanego okręgu). Dane z `ParliamentaryRosterEntry` (źródło `sejm`, aktywni, z okręgiem), powiązane z `PublicFigure`; bez sieci i AI. Wpis „Mój poseł” w rejestrze funkcji (`news/przeszlosc_dostep.py`, strona „Funkcje”).
+- **Frontend:** `app/przeszlosc/MojPosel.tsx`, `moj-posel/page.tsx`, `moj-posel/MojPoselPage.tsx`, `moj-posel.css`; odnośnik „Szukasz swojego posła? Wybierz okręg →” na stronie Odstępstw. Nie dodano szóstej pozycji do menu (menu ma 5, szkoda na pasek), więc strona jest dostępna z Funkcji i Odstępstw; do rozważenia po decyzji właściciela.
+- **Sprawdzone:** pytest `test_przeszlosc_moj_posel.py` (2), `test_pracownia_osint`, `test_przeszlosc_dostep` razem 14 zaliczonych; `node --test` 152/152, typecheck, build; pomiar Playwright 1440 i 390 px (atrapa API): odstęp od menu 32 i 24 px, wiersze 64 px, pole 44 px, bez przewijania poziomego.
+- **Niesprawdzone na produkcji:** czy pole `district` roster ma wartości dla wszystkich posłów i jak wyglądają nazwy okręgów (numer okręgu nie jest zapisywany, tylko nazwa z API Sejmu); ile figur ma powiązanie z rejestrem. Do odczytu po wdrożeniu: `/api/przeszlosc/moj-posel/`.
+- **Zostaje z pozycji 2:** imienne głosy w profilu osoby, etykiety tematów przy głosowaniach.
