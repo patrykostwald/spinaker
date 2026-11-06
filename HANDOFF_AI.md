@@ -299,3 +299,11 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - **Sprawdzone po wdrożeniu (w Django test client z serwera):** `/api/przeszlosc/pkw/`, `/podmiot/5771960580/`, `/podmiot/7962958767/`, `/glosowania/`, `/stan-danych/` zwracają 200. Właściciel obejrzał stronę `/przeszlosc/podmiot/5771960580` (Gmina Niegowa): 1 zamówienie BZP (Orlik 2012, 27.07.2026), 0 dotacji FTS, opis „podmiot bez wpisu KRS”.
 - **Niesprawdzone:** filtr komisji i „Mój poseł” na ekranie, strona Finanse partii z danymi (zależy od odczytu kolejki), pierwszy przebieg Białej listy (noc 2:33), pomiary wyglądu strony podmiotu na produkcji (uwagi niżej).
 - **Do poprawy (z zrzutu właściciela, telefon/tablet):** na stronie podmiotu napis BETA dotyka logo w nagłówku; w boksie „Zamówienia publiczne” zostaje pusta przestrzeń pod jedną pozycją, a przypis źródeł ma nierówne odstępy między wierszami. Podmiot z jednym ogłoszeniem potwierdza niski wolumen BZP (3513 rekordów/rok), do zbadania.
+
+
+## Szybki start dla innej sesji (np. iApply) - stan na 6.11.2026
+
+- **Gdzie:** repozytorium `patrykostwald/spinaker`, gałąź `claude/upbeat-noether-7k08ac`, PR #29 (szkic). Na produkcji (VPS `/srv/spin-clinic`) działa commit `eba10bd`.
+- **Co czytać:** sekcje powyżej (od końca: wdrożenie 6.11 wieczór, podmiot po NIP, PKW, runda person 2) oraz `docs/PLAN_PRZESZLOSC_OSINT.md` i `docs/PRZESZLOSC_ZRODLA_DANYCH.md`.
+- **Czeka:** odczyt 969 PDF-ów PKW (ok. 5 dni, limit 200/dobę), pierwszy przebieg Białej listy VAT (noc 2:33), niski wolumen BZP (3513 rekordów/rok) do zbadania, trzy poprawki układu strony podmiotu (BETA przy logo, pusta przestrzeń w boksie, odstępy przypisu), pismo do MS w sprawie KRS po nazwie (niewysłane, wymaga zgody właściciela).
+- **Zasady twarde:** nie ruszać kodu spin.clinic; nie zapisywać klucza strony wyszukiwarki KRS; bez OCR; bez danych osób prywatnych; łączenie podmiotów tylko po NIP/KRS; wdrożenie wyłącznie `sh deploy/wdroz.sh` z `/srv/spin-clinic` i tylko za zgodą właściciela; odpowiedzi po polsku.
