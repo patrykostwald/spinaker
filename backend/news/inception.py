@@ -307,6 +307,11 @@ def chat(system: str, user: str, schema: dict | None = None, *, max_tokens: int 
         except (KeyError, IndexError, TypeError):
             _note_error('inception_empty')
             raise InceptionError('inception_empty') from None
+        if not isinstance(content, str):
+            # pole "content" bywa null (np. finish_reason inny niż "stop") - traktujemy jak brak treści,
+            # nie jak "niepoprawny JSON", i nie próbujemy go dalej parsować/wycinać.
+            _note_error('inception_empty')
+            raise InceptionError('inception_empty')
         try:
             return _json(content), str(data.get('model') or payload['model'])
         except InceptionError:
