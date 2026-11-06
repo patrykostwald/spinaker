@@ -26,7 +26,12 @@ for i in range(0, len(d), 500):
 PY
 errors=0
 for f in "$tmp"/b*.json; do
+  rm -f "$tmp/out.json"; : > "$tmp/out.json"
   aws s3api delete-objects --bucket "$BUCKET" --delete "file:///w/$(basename "$f")" --output json > "$tmp/out.json" || errors=$((errors + 1))
-  python3 -c "import json;d=json.load(open('$tmp/out.json'));e=d.get('Errors') or [];print('błędy:',len(e),(e[0]['Code'] if e else ''))"
+  python3 -c "
+import json
+t = open('$tmp/out.json').read().strip()
+e = (json.loads(t).get('Errors') or []) if t else []   # tryb cichy: pusta odpowiedź = bez błędów
+print('błędy:', len(e), (e[0]['Code'] if e else ''))"
 done
 echo "GOTOWE. Partie z błędem: $errors. Sprawdź koszyk w panelu Backblaze (Buckets: Current Size)."
