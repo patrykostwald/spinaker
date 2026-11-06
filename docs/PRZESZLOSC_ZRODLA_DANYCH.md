@@ -206,3 +206,14 @@ Po każdym miesiącu: Prawnik (LEGAL), Dziennikarz testowy (Pracownia OSINT), po
 - CEIDG hurtownia: https://poradnikprzedsiebiorcy.pl/-hurtownia-danych-ceidg-do-czego-sluzy
 - SAOS API: https://saos.org.pl/help/index.php/dokumentacja-api
 - Repo: backend/scraper/public_records.py, backend/scraper/nowe_zrodla.py, backend/news/krs.py, backend/news/drzewo_pieniedzy.py, backend/scraper/bzp_backfill.py
+
+
+## Zasada dopasowania podmiotów po nazwie z drugim, niezależnym danym (decyzja właściciela 6.11.2026)
+
+Gdy źródło nie podaje NIP ani KRS (np. lista projektów UE 2021-2027 ma tylko nazwę beneficjenta), szukamy podmiotu **krzyżowo, po dwóch danych**:
+- **wysoka pewność:** identyfikator (NIP, KRS; REGON tylko razem z jednym z nich) - tylko ta klasa wchodzi do sum;
+- **średnia pewność („dwa dane”):** nazwa identyczna po normalizacji **razem z formą prawną** oraz zgodne drugie dane o siedzibie (miejscowość, kod pocztowy albo województwo) i dokładnie jeden kandydat; pokazujemy jako „dopasowanie po nazwie i adresie”, bez wliczania do sum;
+- **niska pewność:** sama nazwa i dokładnie jeden kandydat - tylko „niepowiązane (zgodność nazwy)”; przy dwóch i więcej kandydatach nie łączymy;
+- **drugie dane nie przeczą nigdy po cichu:** gdy siedziba z KRS jest sprzeczna z danymi źródła, dopasowanie nie rośnie w klasie (miejsce realizacji projektu bywa inne niż siedziba, więc to wskazówka, nie dowód).
+Reprezentanci i inne osoby fizyczne **nie służą do dopasowania podmiotów** (to dane osób; łączymy tylko osoby publiczne z potwierdzoną funkcją w KRS).
+**Luka w danych:** `RegisteredOrganisation` nie ma dziś siedziby (parser odpisu KRS `news/krs.py::Extract` czyta nazwę, formę, wspólników, osoby, NIP i REGON, bez adresu). Wymaga pól `seat_city`, `seat_postal_code`, `seat_voivodeship` (migracja) i odświeżenia odpisów (kolejka KRS, `STALE_DAYS` 90) albo uzupełnienia z odpowiedzi Białej listy (`residenceAddress`/`workingAddress` tylko dla podmiotów z KRS, bez ulicy).
