@@ -124,20 +124,20 @@ FIND_SCHEMA = {'type': 'object', 'additionalProperties': False, 'required': ['kr
 
 
 def find_krs_candidate(item):
-    """Druga runda dla podmiotu bez numeru KRS: model szuka numeru po nazwie i drugiej danej (miejscowość, osoba z zarządu).
-    Zwraca (numer lub '', koszt USD). Numer to tylko kandydat: wiążąca jest weryfikacja w urzędowym KRS (verify_candidate)."""
+    """Druga runda dla podmiotu bez numeru KRS: tani model (Haiku) z wyszukiwarką szuka numeru po nazwie i drugiej danej (miejscowość,
+    osoba z zarządu). Zwraca (numer lub '', koszt USD). Numer to tylko kandydat: wiążąca jest weryfikacja w urzędowym KRS (verify_candidate).
+    Bez drugiej danej nie szukamy (zasada dwóch danych)."""
     hints = '; '.join(x for x in (f"miejscowość: {item.get('city')}" if item.get('city') else '',
                                   f"osoba z zarządu lub członek: {item.get('board_member')}" if item.get('board_member') else '') if x)
     if not hints:
-        return '', 0.0          # bez drugiej danej nie szukamy (zasada dwóch danych)
+        return '', 0.0
     user = f"Podmiot: {item.get('organisation_name')}. Dodatkowa dana: {hints}. Podaj jego numer KRS (10 cyfr) albo pusty ciąg."
     try:
-        with _light_settings():
-            response = clinic_ai._call_claude(FIND_SYSTEM, user, FIND_SCHEMA, web_search=True, max_tokens=2000)
+        response, cost = _light_call(FIND_SYSTEM, user, schema=FIND_SCHEMA, searches=2, max_tokens=1500)
         data = clinic_ai._json_from_text(response.content)
     except clinic_ai.ClinicAIError:
         return '', 0.0
-    return krs.normalize_krs(data.get('krs_number') or ''), clinic_ai.cost_usd(clinic_ai._usage(response))
+    return krs.normalize_krs(data.get('krs_number') or ''), cost
 
 
 def verify_candidate(number, item):
@@ -159,13 +159,18 @@ def verify_candidate(number, item):
     return extract, 'ok'
 
 
-def adopt_from_krs(item, apply, allow_search=True):
+def adopt_from_krs(item, apply, allow_search=True, cache=None):
     """Podmiot spoza bazy: numer KRS (z odpowiedzi albo z drugiej rundy) przechodzi weryfikację w urzędowym API KRS: nazwa i druga
     niezależna dana muszą się zgadzać z odpisem. Dopiero wtedy dodajemy podmiot (dane z odpisu, nie od modelu).
     Zwraca (id | 'NOWY' | None, podstawa lub powód, koszt drugiej rundy USD). Bez --apply nic nie zapisujemy ('NOWY' w raporcie)."""
     number, cost = krs.normalize_krs(item.get('krs_number') or ''), 0.0
-    if not number and allow_search:
+    key = _fold(item.get('organisation_name'))
+    if not number and cache is not None and key in cache:
+        number = cache[key]                 # ten sam podmiot z innego artykułu: bez ponownego szukania i kosztu
+    elif not number and allow_search:
         number, cost = find_krs_candidate(item)
+        if cache is not None:
+            cache[key] = number
     if not number:
         return None, 'brak numeru KRS', cost
     extract, reason = verify_candidate(number, item)
@@ -204,6 +209,7 @@ def store_items(figure, items, found, by_krs, by_name, apply, collected_by='clau
     """Wspólny etap po zebraniu pozycji (badacz z wyszukiwarką i lejek): link musi być w `found` ({url: tytuł}), podmiot z bazy albo
     zweryfikowany w KRS (nazwa + druga dana), zapis tylko do kolejki przeglądu. Zwraca (statystyki, koszt dodatkowy USD, poza bazą)."""
     cost = 0.0
+    krs_cache = {}
     stats = {'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0}
     outside = []
     for item in items:
@@ -214,7 +220,7 @@ def store_items(figure, items, found, by_krs, by_name, apply, collected_by='clau
             continue
         org_id, basis = resolve_org(item, by_krs, by_name)
         if org_id is None:
-            org_id, basis, extra = adopt_from_krs(item, apply, allow_search)
+            org_id, basis, extra = adopt_from_krs(item, apply, allow_search, krs_cache)
             cost += extra
             if org_id is None:
                 stats['outside_db'] += 1
@@ -245,26 +251,27 @@ LIGHT_TOOL = 'web_search_20250305'      # podstawowa wersja narzędzia; nadpisan
 LIGHT_PRICE_IN, LIGHT_PRICE_OUT, SEARCH_USD = 0.10, 0.50, 0.01
 
 
-def _light_call(system, user):
+def _light_call(system, user, schema=None, searches=None, max_tokens=4000):
     import anthropic
+    schema = schema or SCHEMA
     client = clinic_ai._client()
     model = os.environ.get('DONIESIENIA_LIGHT_MODEL', LIGHT_MODEL)
     tool = {'type': os.environ.get('DONIESIENIA_SEARCH_TOOL', LIGHT_TOOL), 'name': 'web_search',
-            'max_uses': int(os.environ.get('DONIESIENIA_LIGHT_SEARCHES', '2'))}
+            'max_uses': searches or int(os.environ.get('DONIESIENIA_LIGHT_SEARCHES', '2'))}
     messages = [{'role': 'user', 'content': user}]
     structured = True
     response = None
     for _ in range(5):
         output_config = {'effort': 'low'}
         if structured:
-            output_config['format'] = {'type': 'json_schema', 'schema': SCHEMA}
+            output_config['format'] = {'type': 'json_schema', 'schema': schema}
         try:
-            response = client.messages.create(model=model, max_tokens=4000, system=system, messages=messages, tools=[tool], output_config=output_config)
+            response = client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages, tools=[tool], output_config=output_config)
         except anthropic.BadRequestError as error:
             if not structured:
                 raise clinic_ai.ClinicAIError(f'bad_request: {clinic_ai._error_message(error)}'[:240])
             structured = False     # tryb awaryjny: JSON opisany w instrukcji (np. gdy format nie łączy się z wyszukiwarką)
-            messages = [{'role': 'user', 'content': user + '\n\nOdpowiedz wyłącznie obiektem JSON zgodnym ze schematem:\n' + json.dumps(SCHEMA, ensure_ascii=False)}]
+            messages = [{'role': 'user', 'content': user + '\n\nOdpowiedz wyłącznie obiektem JSON zgodnym ze schematem:\n' + json.dumps(schema, ensure_ascii=False)}]
             continue
         except anthropic.RateLimitError:
             raise clinic_ai.ClinicAIError('rate_limited')
@@ -295,7 +302,7 @@ def research_person_light(figure, by_krs, by_name, apply=False):
     response, cost = _light_call(SYSTEM, user)
     data = clinic_ai._json_from_text(response.content)
     found = clinic_ai._search_results(response.content)
-    stats, extra, outside = store_items(figure, (data.get('items') or [])[:PER_PERSON_ITEMS], found, by_krs, by_name, apply, allow_search=False)
+    stats, extra, outside = store_items(figure, (data.get('items') or [])[:PER_PERSON_ITEMS], found, by_krs, by_name, apply, allow_search=True)
     return stats, cost + extra, outside
 
 

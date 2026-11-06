@@ -222,18 +222,33 @@ def test_second_round_finds_number_for_org_without_krs_and_verifies_it(monkeypat
     f = figure()
     monkeypatch.setattr(db.time, 'sleep', lambda s: None)
     calls = []
-    def fake_call(system, user, schema, **k):
+    def fake_light(system, user, schema=None, searches=None, max_tokens=0):
         calls.append(schema is db.FIND_SCHEMA)
-        if schema is db.FIND_SCHEMA:
-            return NS(content=[NS(type='text', text=json.dumps({'krs_number': '0000012345'}))], usage=NS(input_tokens=5000, output_tokens=100, server_tool_use=NS(web_search_requests=2)), model='claude-sonnet-5')
-        return fake_response([item(organisation_name='Fundacja Profeto', krs_number='', city='Warszawa')])
-    monkeypatch.setattr(clinic_ai, '_call_claude', fake_call)
+        return NS(content=[NS(type='text', text=json.dumps({'krs_number': '0000012345'}))]), 0.02
+    monkeypatch.setattr(db, '_light_call', fake_light)
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item(organisation_name='Fundacja Profeto', krs_number='', city='Warszawa')]))
     monkeypatch.setattr(krs, 'fetch_status', lambda number, full=False, timeout=30: (_extract('FUNDACJA PROFETO', number, 'WARSZAWA'), 'ok'))
     monkeypatch.setattr(krs_pokrycie, 'save_extract', lambda extract: org('Fundacja Profeto', extract.krs))
     by_krs, by_name = db.org_lookup()
     stats, cost, _ = db.research_person(f, by_krs, by_name, apply=True)
-    assert calls == [False, True] and stats['org_added'] == 1 and stats['saved'] == 1 and cost > 0
+    assert calls == [True] and stats['org_added'] == 1 and stats['saved'] == 1 and cost > 0
     assert PublicFigureMediaMention.objects.get().organisation.krs_number == '0000012345'
+
+
+def test_same_org_from_two_articles_is_resolved_once(monkeypatch):
+    from news import krs, krs_pokrycie
+    f = figure()
+    monkeypatch.setattr(db.time, 'sleep', lambda s: None)
+    calls = []
+    monkeypatch.setattr(db, '_light_call', lambda *a, **k: (calls.append(1), (NS(content=[NS(type='text', text=json.dumps({'krs_number': '0000012345'}))]), 0.02))[1])
+    two = [item(organisation_name='Fundacja Profeto', krs_number='', city='Warszawa', source_url='https://portal.example/a'),
+           item(organisation_name='Fundacja Profeto', krs_number='', city='Warszawa', source_url='https://portal.example/b')]
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response(two, urls=('https://portal.example/a', 'https://portal.example/b')))
+    monkeypatch.setattr(krs, 'fetch_status', lambda number, full=False, timeout=30: (_extract('FUNDACJA PROFETO', number, 'WARSZAWA'), 'ok'))
+    monkeypatch.setattr(krs_pokrycie, 'save_extract', lambda extract: RegisteredOrganisation.objects.get_or_create(krs_number=extract.krs, defaults={'name': 'Fundacja Profeto', 'kind': 'foundation', 'official_register_url': 'https://ekrs.ms.gov.pl/x'})[0])
+    by_krs, by_name = db.org_lookup()
+    stats, _, _ = db.research_person(f, by_krs, by_name, apply=True)
+    assert len(calls) == 1 and stats['saved'] == 2 and PublicFigureMediaMention.objects.count() == 2
 
 
 def test_no_second_round_without_second_datum(monkeypatch):
