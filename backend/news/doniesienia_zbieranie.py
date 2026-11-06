@@ -20,8 +20,12 @@ GENERIC = {'polska', 'polskie', 'polski', 'polskiego', 'polskich', 'krajowa', 'k
            'pomocy', 'rozwoju', 'wspierania', 'dzieciom', 'dzieci', 'młodzieży', 'rodzina', 'rodzin', 'zdrowia', 'edukacji', 'kultury',
            'sportu', 'ochrony', 'wsi', 'miasta', 'gminy', 'powiatu', 'regionu', 'obywatelskie', 'społeczna', 'społeczne', 'inicjatyw'}
 MIN_DISTINCT_CHARS = 8
+# Kategoria tylko z MOCNYCH słów tuż przy podmiocie (okno CUE_WINDOW znaków); zwykłe słowa („założyliśmy”, „współpracuj”) nic nie znaczą.
 CUES = (('denied', re.compile(r'dementuj|zaprzecz|sprostowa|nieprawd', re.I)),
-        ('alleged', re.compile(r'powiązan|związan|założy|fundator|zasiad|współpracuj', re.I)))
+        ('alleged', re.compile(r'powiązan\w* (?:z|ze)\b|związan\w* (?:z|ze)\b|fundator\w*|założyciel\w*|współzałożyciel\w*|prezes\w* (?:fundacji|stowarzyszenia)|rad[aęy] fundacji', re.I)))
+PROXIMITY = 100        # osoba i podmiot najwyżej tyle znaków od siebie (inaczej to tylko dwa nazwiska w jednym opisie)
+MAX_ORGS_IN_TEXT = 3   # tekst z większą liczbą różnych podmiotów z bazy to lista gości/partnerów/komunikat o grupie spółek: pomijamy
+CUE_WINDOW = 120
 WIDTH = 80
 
 
@@ -61,13 +65,26 @@ def category_for(text):
     return 'mention'
 
 
-def snippet(text, start, end):
-    a, b = max(0, start - WIDTH), min(len(text), end + WIDTH)
+def snippet(text, start, end, margin=40):
+    a, b = max(0, start - margin), min(len(text), end + margin)
     return ('…' if a else '') + ' '.join(text[a:b].split()) + ('…' if b < len(text) else '')
 
 
+def category_near(text, start, end):
+    """Kategoria z mocnych słów tylko w oknie wokół podmiotu (nie z całego opisu)."""
+    return category_for(text[max(0, start - CUE_WINDOW): end + CUE_WINDOW])
+
+
+def _distance(a, b):
+    """Odstęp w znakach między dwoma przedziałami (0 przy nakładaniu)."""
+    return max(0, max(a[0], b[0]) - min(a[1], b[1]))
+
+
 def candidates_for(figure, pattern, index, known_orgs=frozenset()):
-    """Lista słowników-kandydatów dla osoby (bez zapisu)."""
+    """Lista słowników-kandydatów dla osoby (bez zapisu).
+
+    Warunki: pełne imię i nazwisko osoby oraz pełna nazwa podmiotu w tym samym artykule, najwyżej PROXIMITY znaków od siebie;
+    teksty z więcej niż MAX_ORGS_IN_TEXT różnych podmiotów z bazy (listy gości, komunikaty o grupie spółek) pomijamy."""
     person = name_pattern(figure.canonical_name)
     if person is None or figure.archived or figure.merged_into_id or namesakes(figure, normalize_name(figure.canonical_name)):
         return []
@@ -76,16 +93,29 @@ def candidates_for(figure, pattern, index, known_orgs=frozenset()):
     out = []
     for article in rows:
         text = ' '.join(filter(None, (article.title, article.description)))
-        if not person.search(unicodedata.normalize('NFC', text)):
-            continue
         normalized = _norm(text)
-        for hit in pattern.finditer(normalized):
-            org_id = index[hit.group(0)]
+        person_spans = [m.span() for m in person.finditer(normalized)]
+        if not person_spans:
+            continue
+        hits = [(m.span(), index[m.group(0)]) for m in pattern.finditer(normalized)]
+        if len({org_id for _, org_id in hits}) > MAX_ORGS_IN_TEXT:
+            continue
+        for span, org_id in hits:
             if org_id in known_orgs:
                 continue
-            out.append({'figure': figure, 'org_id': org_id, 'article': article, 'category': category_for(normalized),
-                        'quote': snippet(normalized, hit.start(), hit.end())[:300]})
+            nearest = min(person_spans, key=lambda p: _distance(p, span))
+            if _distance(nearest, span) > PROXIMITY:
+                continue
+            start, end = min(nearest[0], span[0]), max(nearest[1], span[1])
+            out.append({'figure': figure, 'org_id': org_id, 'article': article, 'category': category_near(normalized, *span),
+                        'quote': snippet(normalized, start, end)[:300]})
     return out
+
+
+def clear_agent_queue():
+    """Usuwa z kolejki wyłącznie niepublikowane pozycje zebrane automatycznie (status do przeglądu, zbierał agent)."""
+    deleted, _ = PublicFigureMediaMention.objects.filter(status='pending_review', collected_by='agent').delete()
+    return deleted
 
 
 def collect(apply=False, per_person=5, total=2000, with_known=False, figure_ids=None):

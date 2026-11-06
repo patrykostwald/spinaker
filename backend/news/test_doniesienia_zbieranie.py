@@ -59,3 +59,36 @@ def test_collect_dry_run_then_apply_goes_to_review_queue_without_duplicates():
     m = PublicFigureMediaMention.objects.get()
     assert m.status == 'pending_review' and m.match_basis == 'name_only' and m.collected_by == 'agent' and m.public_figure_id == f.pk
     assert dz.collect(apply=True)['skipped_existing'] == 1 and PublicFigureMediaMention.objects.count() == 1
+
+
+def test_far_apart_names_and_guest_lists_are_not_candidates():
+    f = fig()
+    org('Fundacja Akademia Przyszłości', '0000000111')
+    org('Fundacja Zielone Pola Mazowsza', '0000000112')
+    org('Stowarzyszenie Rzeka Nadziei Polskiej', '0000000113')
+    org('Fundacja Błękitny Horyzont Północy', '0000000114')
+    filler = ' tekst zapełniający opis wydarzenia i zaproszeni goście ' * 4
+    art('Opis', 'Jan Kowalski wystąpił na konferencji.' + filler + 'Partnerem była Fundacja Akademia Przyszłości.')          # daleko
+    art('Lista', 'Goście: Jan Kowalski, Fundacja Akademia Przyszłości, Fundacja Zielone Pola Mazowsza, Stowarzyszenie Rzeka Nadziei Polskiej, Fundacja Błękitny Horyzont Północy')   # lista
+    pattern, index = dz.org_index()
+    assert dz.candidates_for(f, pattern, index) == []
+
+
+def test_category_needs_strong_cue_near_the_organisation_not_anywhere_in_text():
+    f = fig()
+    org('Fundacja Akademia Przyszłości', '0000000111')
+    art('Jan Kowalski o planach', 'Założyliśmy cel, mówi Jan Kowalski o Fundacja Akademia Przyszłości. ' + 'Inne zdanie. ' * 30 + 'Powiązane z tym sprawy.')
+    pattern, index = dz.org_index()
+    found = dz.candidates_for(f, pattern, index)
+    assert len(found) == 1 and found[0]['category'] == 'mention'
+    art('Fundator', 'Jan Kowalski jest fundatorem Fundacja Akademia Przyszłości.')
+    assert 'alleged' in {c['category'] for c in dz.candidates_for(f, pattern, index)}
+
+
+def test_clear_agent_queue_removes_only_unpublished_agent_rows():
+    f, o = fig(), org('Fundacja Akademia Przyszłości', '0000000111')
+    base = dict(public_figure=f, organisation=o, source_title='T')
+    PublicFigureMediaMention.objects.create(source_url='https://x.example/1', collected_by='agent', **base)
+    PublicFigureMediaMention.objects.create(source_url='https://x.example/2', collected_by='import', **base)
+    PublicFigureMediaMention.objects.create(source_url='https://x.example/3', collected_by='agent', status='published', **base)
+    assert dz.clear_agent_queue() == 1 and PublicFigureMediaMention.objects.count() == 2
