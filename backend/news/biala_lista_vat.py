@@ -179,12 +179,16 @@ def status_for(org):
     """Blok „vat” w profilu podmiotu albo None, gdy jeszcze nie sprawdzaliśmy."""
     from news.public_records_models import PublicRecord
     if not org.nip:
-        return None
+        return {'found': None, 'status': None, 'pending': False, 'changes': [], 'source': 'Wykaz podatników VAT (Ministerstwo Finansów)',
+                'url': 'https://wykazpodatnikowvat.mf.gov.pl/', 'checked_at': None,
+                'note': 'Brak numeru NIP w naszych danych, więc nie sprawdzamy statusu VAT tego podmiotu.'}
     record = PublicRecord.objects.filter(source=SOURCE, kind=KIND, external_id=org.nip).first()
     if record is None:
-        return None
+        return {'found': None, 'status': None, 'pending': True, 'changes': [], 'source': 'Wykaz podatników VAT (Ministerstwo Finansów)',
+                'url': 'https://wykazpodatnikowvat.mf.gov.pl/', 'checked_at': None,
+                'note': 'Status VAT sprawdzamy co noc (źródło: Biała lista MF); dla tego podmiotu jeszcze go nie pobraliśmy.'}
     d = record.data or {}
-    return {'found': bool(d.get('found')), 'status': d.get('status_vat'), 'registration_date': d.get('registration_date'),
+    return {'found': bool(d.get('found')), 'pending': False, 'status': d.get('status_vat'), 'registration_date': d.get('registration_date'),
             'removal_date': d.get('removal_date'), 'removal_basis': d.get('removal_basis'), 'restoration_date': d.get('restoration_date'),
             'denial_date': d.get('denial_date'), 'virtual_accounts': d.get('has_virtual_accounts'), 'accounts': d.get('accounts'),
             'changes': d.get('changes') or [], 'checked_at': record.fetched_at.isoformat(timespec='minutes'),

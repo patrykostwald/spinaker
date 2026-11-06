@@ -20,12 +20,13 @@ type Grant = { id: string; source: 'fts' | 'niw'; title: string; programme: stri
 type Person = { id: string; figure_id: number; name: string; slug: string; profile_url: string; role: string; function: string; status: string; since: string | null; until: string | null; method: string; url: string };
 type Unlinked = { id: string; source: string; title: string; amount: number | null; currency: string; date: string | null; url: string; reason: string };
 /** Status VAT z Białej listy MF (news/biala_lista_vat.py): null = jeszcze nie sprawdzaliśmy; found false = brak podmiotu w wykazie. */
-type Vat = { found: boolean; status: string | null; registration_date: string | null; removal_date: string | null; removal_basis: string | null;
+type Vat = { found: boolean | null; pending?: boolean; status: string | null; registration_date: string | null; removal_date: string | null; removal_basis: string | null;
   restoration_date: string | null; denial_date: string | null; virtual_accounts: boolean | null; accounts: number | null;
-  changes: { date: string; from: string | null; to: string | null }[]; checked_at: string; source: string; url: string; note: string };
+  changes: { date: string; from: string | null; to: string | null }[]; checked_at: string | null; source: string; url: string; note: string };
 export function vatLine(v?: Vat | null): string {
   if (!v) return '';
-  const day = v.checked_at.slice(0, 10);
+  if (v.found === null) return `Status VAT: ${v.note}`;   // jeszcze niesprawdzony albo brak NIP: powód zamiast pustki
+  const day = (v.checked_at ?? '').slice(0, 10);
   if (!v.found) return `Status VAT: brak w wykazie podatników VAT (stan na ${day}).`;
   const parts = [`Status VAT: ${(v.status || 'nieznany').toLowerCase()}`];
   if (v.registration_date) parts.push(`zarejestrowany ${v.registration_date}`);

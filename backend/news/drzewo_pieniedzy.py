@@ -222,10 +222,15 @@ def grants_note(rows):
     return note + (f" Kwoty z listy dotacji NIW-CRSO (umowy), stan na {', '.join(dates)}. {niw.SUMS_NOTE}" if dates else '')
 
 
+PEOPLE_SCOPE = ('Pokazujemy tylko osoby publiczne z potwierdzoną funkcją w tym podmiocie (według odpisu KRS). To nie jest pełny skład '
+                'organów: dane pozostałych członków zarządu i rad nie są u nas zbierane. Pełny skład: odpis w rejestrze KRS (odnośnik wyżej).')
+
+
 def people_note(org, grant_rows, people_rows):
-    """Warunek 5: zastrzeżenie, gdy podmiot ma dotację krajową i potwierdzoną osobę publiczną w KRS."""
+    """Warunek 5: zastrzeżenie, gdy podmiot ma dotację krajową i potwierdzoną osobę publiczną w KRS.
+    Bez niego (6.11.2026, persona compliance): wyjaśnienie zakresu listy, żeby pustka nie wyglądała na pusty KRS."""
     if not people_rows or not any(r['source'] == 'niw' for r in grant_rows):
-        return ''
+        return PEOPLE_SCOPE
     checked = org.source_checked_at
     stan = (timezone.localtime(checked) if timezone.is_aware(checked) else checked).date() if checked else timezone.localdate()
     return niw.people_note(stan.isoformat())

@@ -154,3 +154,7 @@ zapytań i ładowanie przez narzędzie bez przeglądarki; nie używać jako wska
 
 Zasady bez zmian: tylko osoby publiczne, łączenie po identyfikatorach (nigdy po nazwie, PESEL nigdy), jawne braki („brak w naszych danych" z zakresem i datą),
 nieobchodzenie zabezpieczeń, ta sama miara dla rządzących i opozycji, wysyłka próśb o licencje tylko po zatwierdzeniu właściciela.
+
+
+## Runda person 2 (6.11.2026) i kolejne kroki
+Wyniki: `docs/PERSONY_PRZESZLOSC_RUNDA2.md` (obywatel 7, compliance 5, radny 3; średnia 5,0, próg 7). Następne: widok „podmiot po NIP” dla jednostek bez KRS (wniosek 1), domyślny widok „całość projektu ustawy” w głosowaniach posła, widok finansów partii (PKW; czeka na odczyt danych z serwera), pełna runda 10 person po wdrożeniu poprawek.

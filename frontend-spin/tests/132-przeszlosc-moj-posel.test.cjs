@@ -28,3 +28,9 @@ test('styl: cele 44 px i stała wysokość wiersza', () => {
   assert.match(css, /--mp-row: 64px/);
   assert.match(css, /\.px-mp__list a \{[^}]*min-height: var\(--mp-row\)/);
 });
+
+test('przy pośle: skrót odstępstw od klubu z 90 dni, gdy nocne przeliczenie go zna', () => {
+  assert.match(c, /odstępstwa od klubu \(90 dni\)/);
+  assert.match(c, /deviation_share/);
+  assert.match(c, /sejm_id/);
+});

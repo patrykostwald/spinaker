@@ -170,3 +170,11 @@ def test_api_full_list_and_csv_export(monkeypatch):
     VotingDeviationSnapshot.objects.filter(term=10, period='term').update(data=data)
     assert client.get('/api/przeszlosc/odstepstwa/?okres=kadencja&zdarzenia=1').status_code == 409
     assert 'ev' not in client.get('/api/przeszlosc/odstepstwa/?okres=kadencja').json()
+
+
+def test_short_title_cuts_on_word_boundary_and_legend_explains_two_counts():
+    from news.voting_anomalies import LEGEND, short_title
+    long = ('Sprawozdanie Komisji o uchwale Senatu w sprawie ustawy ' * 6).strip()
+    cut = short_title(long, 100)
+    assert len(cut) <= 101 and cut.endswith('…') and not cut[:-1].endswith(' ') and long.startswith(cut[:-1])
+    assert short_title('krótki') == 'krótki' and 'deviations' in LEGEND and 'rebellions_total' in LEGEND

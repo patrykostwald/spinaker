@@ -163,7 +163,9 @@ def person_payload(figure, p):
     pages = max(1, -(-len(rows) // PER_PAGE))
     page = min(p['strona'], pages)
     terms = sorted({r['term'] for r in data['sejm'] if r['term']}, reverse=True)
-    return {'kinds': kinds({k: len(v) for k, v in data.items()}), 'filters': p, 'terms': terms,
+    # klucz „klub” w parametrach to zgodność z klubem (zgodnie/inaczej): w odpowiedzi nazywa się tak, jak w zapytaniu (zgodnosc)
+    echo = {**{k: v for k, v in p.items() if k != 'klub'}, 'zgodnosc': p['klub']}
+    return {'kinds': kinds({k: len(v) for k, v in data.items()}), 'filters': echo, 'terms': terms,
             'club_filter': p['rodzaj'] == 'sejm',
             # liczone po kadencji i datach, bez filtrów wyniku i klubu: to ogólny obraz obecności, nie wynik filtra
             'attendance': attendance(filtered(data['sejm'], {**p, 'wynik': None, 'klub': None})) if p['rodzaj'] == 'sejm' else None,

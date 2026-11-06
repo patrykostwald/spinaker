@@ -31,3 +31,8 @@ test('komponent pokazuje wiersz tylko gdy jest status i podaje źródło', () =>
   assert.match(src, /\{data\.vat && <p className="px-note px-mt__vat">\{vatLine\(data\.vat\)\}/);
   assert.match(src, /Wykaz MF ↗/);
 });
+
+test('status VAT jeszcze niepobrany albo brak NIP: pokazujemy powód, a nie pustkę', () => {
+  assert.equal(ctx.vatLine({ ...base, found: null, status: null, checked_at: null, pending: true, note: 'Status VAT sprawdzamy co noc; jeszcze go nie pobraliśmy.' }),
+    'Status VAT: Status VAT sprawdzamy co noc; jeszcze go nie pobraliśmy.');
+});

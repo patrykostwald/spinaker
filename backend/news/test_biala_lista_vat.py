@@ -78,7 +78,7 @@ def test_refresh_saves_status_marks_unknown_nip_and_tracks_changes():
     assert out['zmiana_statusu'] == 1
     view = bl.status_for(a)
     assert view['status'] == 'Wykreślony' and view['changes'][-1]['from'] == 'Czynny' and view['changes'][-1]['to'] == 'Wykreślony'
-    assert bl.status_for(org(nip='', krs='0000111111', name='Bez NIP')) is None
+    assert bl.status_for(org(nip='', krs='0000111111', name='Bez NIP'))['found'] is None   # brak NIP: opis powodu, nie null
 
 
 def test_errors_and_disabled_do_not_write(monkeypatch):
@@ -98,3 +98,11 @@ def test_company_api_exposes_vat_block(monkeypatch):
         bl.refresh()
     body = APIClient().get(f'/api/przeszlosc/spolka/{o.krs_number}/').json()
     assert body['vat']['status'] == 'Czynny' and body['vat']['accounts'] == 2 and 'wykazpodatnikowvat' in body['vat']['url']
+
+
+def test_status_for_explains_missing_status_instead_of_null():
+    o = org()
+    pending = bl.status_for(o)
+    assert pending['found'] is None and pending['pending'] is True and 'jeszcze go nie pobraliśmy' in pending['note']
+    no_nip = bl.status_for(org(nip='', krs='0000222222', name='Bez NIP'))
+    assert no_nip['found'] is None and 'Brak numeru NIP' in no_nip['note']

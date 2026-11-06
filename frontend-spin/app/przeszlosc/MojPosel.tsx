@@ -7,7 +7,7 @@ import './moj-posel.css';
  * Brak posła w wyniku znaczy „brak w naszych danych”; poseł bez profilu w rejestrze ma odnośnik do oficjalnej strony Sejmu.
  */
 type District = { name: string; mps: number };
-type Member = { name: string; club: string; slug: string | null; id: number | null; sejm_url: string };
+type Member = { name: string; club: string; slug: string | null; id: number | null; sejm_id?: number | null; sejm_url: string; deviation_share?: number | null; deviation_votes?: number | null };
 type Result = { district: string; total: number; members: Member[] };
 const API = '/api/przeszlosc/moj-posel/';
 
@@ -44,7 +44,8 @@ export function MojPosel() {
         {result.members.map(m => <li key={m.name}>
           <a href={m.slug ? `/przeszlosc/osoba/${m.slug}` : m.sejm_url} {...(m.slug ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>
             <b>{m.name}</b><span className="px-mp__club">{m.club || 'bez klubu'}</span>
-            <small>{m.slug ? 'Profil: głosowania, wypowiedzi, odstępstwa' : 'Brak profilu u nas: strona Sejmu ↗'}</small></a>
+            <small>{m.slug ? 'Profil: głosowania, wypowiedzi, odstępstwa' : 'Brak profilu u nas: strona Sejmu ↗'}
+              {m.deviation_share != null && m.deviation_votes ? ` · odstępstwa od klubu (90 dni): ${m.deviation_share.toLocaleString('pl-PL', { maximumFractionDigits: 1 })}% z ${m.deviation_votes} głosów` : ''}</small></a>
         </li>)}
       </ul>
       <p className="px-card__foot">Źródło: oficjalna lista aktywnych posłów (API Sejmu). Brak posła w wyniku znaczy „brak w naszych danych”.</p>

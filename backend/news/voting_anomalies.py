@@ -38,6 +38,19 @@ THRESHOLDS = {'excess_pp': EXCESS_PP, 'unity': UNITY, 'min_votes': MIN_VOTES, 'm
               'min_club_mps': MIN_CLUB_MPS, 'window_days': WINDOW_DAYS}
 
 
+LEGEND = ('„Odstępstwa” (deviations) to wszystkie głosy inne niż większość klubu, także gdy klub był podzielony; udział liczymy z oddanych głosów. '
+          '„Głosy wbrew klubowi” (rebellions_total) to tylko te, gdy co najmniej 80% klubu głosowało tak samo: to dlatego jest ich mniej.')
+
+
+def short_title(text, limit=200):
+    """Tytuł skrócony po całym słowie z wielokropkiem (a nie w środku słowa)."""
+    text = (text or '').strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(' ', 1)[0].rstrip(' ,;:-')
+    return (cut or text[:limit]) + '…'
+
+
 def vote_url(term, sitting, number):
     return (f'https://www.sejm.gov.pl/sejm{term}.nsf/agent.xsp?symbol=glosowania&NrKadencji={term}'
             f'&NrPosiedzenia={sitting}&NrGlosowania={number}')
@@ -88,7 +101,7 @@ def analyse(votings):
                 m['deviations'] += 1
                 if unity >= UNITY:
                     m['rebellions_total'] += 1
-                    event = {'date': voting.get('date'), 'title': (voting.get('title') or '')[:200],
+                    event = {'date': voting.get('date'), 'title': short_title(voting.get('title')),
                              'id': f"{voting['term']}/{voting['sitting']}/{voting['number']}",
                              'url': vote_url(voting['term'], voting['sitting'], voting['number']),
                              'mp_id': mp_id, 'name': name, 'club': club, 'vote': CAST[vote], 'club_vote': CAST[majority],
@@ -249,7 +262,7 @@ def member(mp_id, term=None, period='term'):
         return None
     rows.sort(key=lambda m: -m['counted'])
     return {'term': snap.term, 'period': period, 'computed_at': snap.computed_at.isoformat(), 'method': snap.data.get('method'),
-            'clubs': rows}
+            'legend': LEGEND, 'clubs': rows}
 
 
 PERIODS = {'90d': '90d', '90': '90d', 'kadencja': 'term', 'term': 'term'}

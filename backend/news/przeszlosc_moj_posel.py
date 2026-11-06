@@ -34,11 +34,17 @@ def district_members(name):
         return None
     figures = {f.parliamentary_roster_entry_id: f for f in
                PublicFigure.objects.filter(parliamentary_roster_entry__in=entries, archived=False, merged_into__isnull=True)}
+    from news import voting_anomalies
+    snap = voting_anomalies.snapshot(None, '90d')
+    stats = (snap.data.get('members') if snap else None) or {}
     members = []
     for e in entries:
         f = figures.get(e.pk)
+        row = stats.get(f'{e.external_id}:{e.club}') or {}
         members.append({'name': display_name(e.full_name), 'club': e.club, 'slug': slug(f) if f else None, 'id': f.pk if f else None,
-                        'sejm_url': e.profile_url})
+                        'sejm_id': int(e.external_id) if str(e.external_id).isdigit() else None, 'sejm_url': e.profile_url,
+                        # odstępstwa od klubu w ostatnich 90 dniach (nocne przeliczenie): udział głosów innych niż większość klubu
+                        'deviation_share': row.get('share'), 'deviation_votes': row.get('counted')})
     return {'district': entries[0].district, 'total': len(members), 'members': members}
 
 
