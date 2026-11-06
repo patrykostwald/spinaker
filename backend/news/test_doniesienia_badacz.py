@@ -152,3 +152,26 @@ def test_no_krs_number_means_outside_db_without_registry_call(monkeypatch):
     by_krs, by_name = db.org_lookup()
     stats, _, outside = db.research_person(f, by_krs, by_name, apply=True)
     assert stats['outside_db'] == 1 and 'brak numeru KRS' in outside[0]
+
+
+def test_researched_person_is_logged_and_skipped_next_time(monkeypatch):
+    from news.political_models import MediaResearchLog
+    f = figure()
+    org('Fundacja Akademia Przyszłości', '0000000111')
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([item()]))
+    out = []
+    db.run(ids=[f.pk], apply=True, pause=0, write=out.append)
+    log = MediaResearchLog.objects.get()
+    assert log.public_figure_id == f.pk and log.saved == 1 and log.cost_usd > 0
+    assert db.pick_figures(ids=[f.pk]) == []                         # zbadana: pomijana
+    assert [x.pk for x in db.pick_figures(ids=[f.pk], skip_days=0)] == [f.pk]   # --ponow
+    db.run(ids=[f.pk], apply=False, pause=0, write=out.append)
+    assert MediaResearchLog.objects.count() == 1                      # raport bez zapisu nie loguje
+
+
+def test_dry_run_does_not_mark_person_as_researched(monkeypatch):
+    from news.political_models import MediaResearchLog
+    f = figure()
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: fake_response([]))
+    db.run(ids=[f.pk], apply=False, pause=0, write=lambda x: None)
+    assert MediaResearchLog.objects.count() == 0 and [x.pk for x in db.pick_figures(ids=[f.pk])] == [f.pk]

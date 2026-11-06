@@ -1000,7 +1000,7 @@ from .social_models import SocialMaterial, SocialTask, SocialAssistantUsage  # n
 from .clinic_discussion_models import ClinicComment, ClinicCommentReport, InterviewOpinion, DailyMessageOpinion, ClinicCommentAppeal  # noqa: E402,F401
 from .newsletter_models import NewsletterSubscriber  # noqa: E402,F401
 from .push_models import PushSubscription, PushEvent, PushDelivery  # noqa: E402,F401
-from .political_models import AccountWardenRun, PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, PublicFigureMediaMention, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
+from .political_models import AccountWardenRun, PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, PublicFigureMediaMention, MediaResearchLog, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead  # noqa: E402,F401
 from .evidence_snapshot import (  # noqa: E402,F401
     EvidenceSnapshot,
     SnapshotArtifactType,

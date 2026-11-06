@@ -585,6 +585,19 @@ class PublicFigureMediaMention(models.Model):
         self.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'updated_at'])
 
 
+class MediaResearchLog(models.Model):
+    """Zapis zbadania osoby badaczem doniesień (6.11.2026): żeby nie płacić dwa razy za tę samą osobę i znać koszt/wynik każdego przebiegu."""
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.CASCADE, related_name='media_research_logs')
+    researched_at = models.DateTimeField(default=timezone.now, db_index=True)
+    items = models.PositiveSmallIntegerField(default=0, help_text='Pozycje zwrócone przez badacza.')
+    saved = models.PositiveSmallIntegerField(default=0, help_text='Pozycje zapisane do kolejki przeglądu.')
+    cost_usd = models.DecimalField(max_digits=7, decimal_places=3, default=0, help_text='Szacowany koszt (wycena zawyżona).')
+    model = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ['-researched_at']
+
+
 SOCIAL_EVIDENCE_STATUSES = [
     ('pending_review', 'Do przeglądu'),
     ('candidate_created', 'Przekazano do kandydatur'),

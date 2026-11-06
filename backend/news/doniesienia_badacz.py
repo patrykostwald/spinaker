@@ -18,7 +18,12 @@ from datetime import date
 
 from news import clinic_ai, krs
 from news.media_mentions import namesakes, normalize_name
-from news.political_models import MEDIA_MENTION_CATEGORIES, MEDIA_QUOTE_LIMIT, PublicFigure, PublicFigureMediaMention, RegisteredOrganisation
+from datetime import timedelta
+
+from django.utils import timezone
+
+from news.political_models import (MEDIA_MENTION_CATEGORIES, MEDIA_QUOTE_LIMIT, MediaResearchLog, PublicFigure, PublicFigureMediaMention,
+                                   RegisteredOrganisation)
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +39,7 @@ DEFAULT_NAMES = [
     'Borys Budka', 'Waldemar Żurek', 'Adam Bodnar', 'Paulina Henning-Kloska', 'Paulina Hennig-Kloska', 'Dariusz Klimczak',
     'Sławomir Nitras', 'Marcin Horała', 'Patryk Jaki', 'Jacek Sasin', 'Daniel Obajtek', 'Anna Moskwa', 'Michał Dworczyk',
     'Przemysław Wipler', 'Konrad Berkowicz', 'Włodzimierz Czarzasty', 'Robert Biedroń', 'Adrian Zandberg', 'Magdalena Biejat',
-    'Michał Kołodziejczak', 'Janusz Korwin-Mikke', 'Waldemar Buda', 'Piotr Gliński', 'Elżbieta Witek', 'Marek Sawicki',
+    'Michał Kołodziejczak', 'Dariusz Matecki', 'Janusz Korwin-Mikke', 'Waldemar Buda', 'Piotr Gliński', 'Elżbieta Witek', 'Marek Sawicki',
 ]
 
 SYSTEM = (
@@ -66,6 +71,8 @@ def _light_settings():
     """Badanie ma być szybkie i tanie: niski wysiłek myślenia i mniej wyszukiwań niż domyślne ustawienia Kliniki (high, 6), bo przy
     domyślnych jedno zapytanie przekraczało limit 5 minut klienta. Ustawienia tylko na czas wywołania; nie zmieniamy clinic_ai."""
     keys = {'CLINIC_EFFORT': os.environ.get('DONIESIENIA_EFFORT', 'low'), 'CLINIC_WEB_SEARCH_MAX_USES': os.environ.get('DONIESIENIA_MAX_SEARCHES', '4')}
+    if os.environ.get('DONIESIENIA_MODEL'):   # np. tańszy model dla dalszych partii
+        keys['CLINIC_MODEL'] = os.environ['DONIESIENIA_MODEL']
     old = {k: os.environ.get(k) for k in keys}
     os.environ.update(keys)
     try:
@@ -178,8 +185,11 @@ def research_person(figure, by_krs, by_name, apply=False):
     return stats, cost, outside
 
 
-def pick_figures(names=None, ids=None):
+def pick_figures(names=None, ids=None, skip_days=60):
     qs = PublicFigure.objects.filter(archived=False, merged_into__isnull=True).exclude(role_category='party')
+    if skip_days:
+        recent = MediaResearchLog.objects.filter(researched_at__gte=timezone.now() - timedelta(days=skip_days)).values_list('public_figure_id', flat=True)
+        qs = qs.exclude(pk__in=list(recent))
     if ids:
         return list(qs.filter(pk__in=ids))
     wanted = {_fold(n): n for n in (names or DEFAULT_NAMES)}
@@ -187,8 +197,8 @@ def pick_figures(names=None, ids=None):
     return [f for f in figures if not namesakes(f, normalize_name(f.canonical_name))]
 
 
-def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=print):
-    figures = pick_figures(names, ids)
+def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=print, skip_days=60):
+    figures = pick_figures(names, ids, skip_days)
     by_krs, by_name = org_lookup()
     total, spent = {'persons': 0, 'items': 0, 'saved': 0, 'dropped_url': 0, 'outside_db': 0, 'existing': 0, 'org_added': 0, 'errors': 0}, 0.0
     for figure in figures:
@@ -206,6 +216,9 @@ def run(names=None, ids=None, apply=False, budget_usd=5.0, pause=1.0, write=prin
             continue
         spent += cost
         total['persons'] += 1
+        if apply:
+            MediaResearchLog.objects.create(public_figure=figure, items=stats['items'], saved=stats['saved'], cost_usd=round(cost, 3),
+                                            model=clinic_ai.model_name()[:64])
         for key in ('items', 'saved', 'dropped_url', 'outside_db', 'existing', 'org_added'):
             total[key] += stats[key]
         write(f'{figure.canonical_name}: pozycji {stats["items"]}, do kolejki {stats["saved"]}, odrzucone linki {stats["dropped_url"]}, '
