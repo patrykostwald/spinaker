@@ -31,6 +31,9 @@ MAX_BYTES = 1_500_000
 WINDOW = 350
 MAX_EXCERPT_CHARS = 2500
 FETCH_PAUSE = 0.7
+VIDEO_HOSTS = ('youtube.com', 'youtu.be', 'm.youtube.com', 'facebook.com', 'x.com', 'twitter.com', 'tiktok.com')
+MIN_PAGE_TEXT = 600        # krótszy tekst strony to zwykle powłoka JS/okno zgody: bierzemy zapisany opis z korpusu
+GDELT_RETRIES = (7, 15)    # odczekanie w sekundach przed kolejną próbą po HTTP 429
 TRIGGER = re.compile(r'fundacj|stowarzyszeni|sp[oó]łk|sp\.\s*z\s*o\.\s*o|\bs\.a\.|lobb|dotacj|instytut|towarzystw|firm[aąęy]|sp[oó]łdziel', re.I)
 BLOCKS = {'p', 'div', 'br', 'li', 'h1', 'h2', 'h3', 'h4', 'tr', 'section', 'article'}
 SKIP = {'script', 'style', 'noscript', 'svg', 'nav', 'footer', 'header', 'aside', 'form'}
@@ -99,18 +102,29 @@ def excerpts(text, person):
     return ' … '.join(parts)[:MAX_EXCERPT_CHARS]
 
 
-def gdelt_articles(name, limit=15, get=requests.get, diag=None):
+def gdelt_articles(name, limit=15, get=requests.get, diag=None, sleep=time.sleep):
     query = '"%s" (fundacja OR stowarzyszenie OR spółka OR lobbing OR lobbysta OR dotacja) sourcelang:polish' % name
-    try:
-        response = get(GDELT_URL, params={'query': query, 'mode': 'artlist', 'maxrecords': limit, 'format': 'json', 'sort': 'datedesc'},
-                       headers={'User-Agent': 'przeszlosc.today (iapply sp. z o.o.)'}, timeout=25)
-        if diag is not None:
-            diag['status'] = getattr(response, 'status_code', '?')
-        rows = response.json().get('articles') or []
-    except (requests.RequestException, ValueError, AttributeError) as error:
-        if diag is not None:
-            diag['error'] = type(error).__name__
-        return []
+    params = {'query': query, 'mode': 'artlist', 'maxrecords': limit, 'format': 'json', 'sort': 'datedesc'}
+    rows = []
+    for wait in (0, *GDELT_RETRIES):
+        if wait:
+            sleep(wait)
+        try:
+            response = get(GDELT_URL, params=params, headers={'User-Agent': 'przeszlosc.today (iapply sp. z o.o.)'}, timeout=25)
+            if diag is not None:
+                diag['status'] = getattr(response, 'status_code', '?')
+            if getattr(response, 'status_code', 200) == 429:
+                if diag is not None:
+                    diag['error'] = 'HTTP 429 (za dużo zapytań)'
+                continue
+            rows = response.json().get('articles') or []
+            if diag is not None:
+                diag.pop('error', None)
+            break
+        except (requests.RequestException, ValueError, AttributeError) as error:
+            if diag is not None:
+                diag['error'] = type(error).__name__
+            continue
     out = []
     for row in rows:
         seen = str(row.get('seendate') or '')
@@ -131,11 +145,16 @@ def corpus_articles(figure, limit=10):
     for a in rows:
         head = ' '.join(filter(None, (a.title, a.description)))
         if person.search(head) and TRIGGER.search(head):
-            out.append({'url': a.url, 'title': a.title[:300], 'outlet': a.source.name if a.source_id else '',
+            out.append({'url': a.url, 'title': a.title[:300], 'description': (a.description or '')[:4000], 'outlet': a.source.name if a.source_id else '',
                         'date': a.published_date.date().isoformat() if a.published_date else ''})
             if len(out) >= limit:
                 break
     return out
+
+
+def media_host(url):
+    from urllib.parse import urlsplit
+    return (urlsplit(url or '').hostname or '').lower().removeprefix('www.')
 
 
 def fetch_text(url, get=requests.get):
@@ -244,8 +263,15 @@ def research_person_funnel(figure, by_krs, by_name, apply=False, allow_search=Fa
     for c in candidates:
         if len(articles) >= MAX_ARTICLES:
             break
-        text, reason = fetch_text(c['url'])
-        time.sleep(pause)
+        host = media_host(c['url'])
+        stored = ' '.join(filter(None, (c.get('title'), c.get('description'))))
+        if any(host == h or host.endswith('.' + h) for h in VIDEO_HOSTS):
+            text, reason = stored, ''             # strona filmu nie ma tekstu: zapisany opis z korpusu (bez pobierania)
+        else:
+            text, reason = fetch_text(c['url'])
+            time.sleep(pause)
+            if text is not None and len(text) < MIN_PAGE_TEXT and len(stored) > len(text):
+                text = stored                     # powłoka JS / okno zgody: zapisany opis z korpusu
         if text is None:
             stats['refused'] += 1
             if trace is not None:

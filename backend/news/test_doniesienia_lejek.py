@@ -109,7 +109,8 @@ def test_corpus_requires_trigger_word_in_title_or_description_and_diag_reports_g
     assert [a['url'] for a in lj.corpus_articles(f)] == ['https://portal.example/1']
     diag = {}
     bad = NS(status_code=429, json=lambda: (_ for _ in ()).throw(ValueError('limit')))
-    assert lj.gdelt_articles('Jan Kowalski', get=lambda *a, **k: bad, diag=diag) == [] and diag == {'status': 429, 'error': 'ValueError'}
+    assert lj.gdelt_articles('Jan Kowalski', get=lambda *a, **k: bad, diag=diag, sleep=lambda s: None) == []
+    assert diag['status'] == 429 and diag['error'].startswith('HTTP 429')
 
 
 def test_trace_lists_what_was_found_and_fetched(monkeypatch):
@@ -122,3 +123,48 @@ def test_trace_lists_what_was_found_and_fetched(monkeypatch):
     lines = []
     lj.research_person_funnel(f, {}, {}, trace=lines)
     assert any('GDELT: 1 artykułów (http 200' in l for l in lines) and any('nazwisko 0x' in l for l in lines)
+
+
+def test_gdelt_retries_after_429_and_succeeds():
+    calls, waits = [], []
+    def get(*a, **k):
+        calls.append(1)
+        if len(calls) == 1:
+            return NS(status_code=429, json=lambda: (_ for _ in ()).throw(ValueError('limit')))
+        return NS(status_code=200, json=lambda: {'articles': [{'url': 'https://m.example/a', 'title': 'T', 'domain': 'm.example', 'seendate': '20261105T123000Z'}]})
+    diag = {}
+    out = lj.gdelt_articles('Jan Kowalski', get=get, diag=diag, sleep=waits.append)
+    assert len(out) == 1 and len(calls) == 2 and waits == [7] and 'error' not in diag and diag['status'] == 200
+
+
+def test_gdelt_gives_up_after_all_retries():
+    waits = []
+    diag = {}
+    bad = NS(status_code=429, json=lambda: (_ for _ in ()).throw(ValueError('limit')))
+    assert lj.gdelt_articles('Jan Kowalski', get=lambda *a, **k: bad, diag=diag, sleep=waits.append) == []
+    assert waits == [7, 15] and diag['error'].startswith('HTTP 429')
+
+
+def test_video_host_uses_stored_description_without_fetching(monkeypatch):
+    f = figure()
+    monkeypatch.setattr(lj.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(lj, 'gdelt_articles', lambda *a, **k: [])
+    monkeypatch.setattr(lj, 'corpus_articles', lambda figure_: [{'url': 'https://www.youtube.com/watch?v=1', 'title': 'Rozmowa z Janem Kowalskim', 'outlet': 'wPolsce24', 'date': '2026-10-01',
+        'description': 'W programie Jan Kowalski opowiada o współpracy z Fundacją Akademia Przyszłości i dotacji dla niej.'}])
+    monkeypatch.setattr(lj, 'fetch_text', lambda *a, **k: (_ for _ in ()).throw(AssertionError('YouTube nie jest pobierany')))
+    seen = {}
+    monkeypatch.setattr(lj, 'extract', lambda figure_, articles: (seen.update(n=len(articles), ex=articles[0]['excerpt']) or [], 0.0))
+    lj.research_person_funnel(f, {}, {}, use_gdelt=False)
+    assert seen['n'] == 1 and 'Fundacją Akademia Przyszłości' in seen['ex']
+
+
+def test_short_page_text_falls_back_to_stored_description(monkeypatch):
+    f = figure()
+    monkeypatch.setattr(lj.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(lj, 'corpus_articles', lambda figure_: [{'url': 'https://m.example/a', 'title': 'Jan Kowalski i fundacja', 'outlet': 'm', 'date': '',
+        'description': 'Jan Kowalski był członkiem rady fundacji, o której pisały media w ostatnich tygodniach.'}])
+    monkeypatch.setattr(lj, 'fetch_text', lambda *a, **k: ('Włącz JavaScript.', ''))
+    seen = {}
+    monkeypatch.setattr(lj, 'extract', lambda figure_, articles: (seen.update(n=len(articles)) or [], 0.0))
+    lj.research_person_funnel(f, {}, {}, use_gdelt=False)
+    assert seen['n'] == 1
