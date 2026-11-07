@@ -33,7 +33,9 @@ test('układ: wiersze o stałej wysokości, tytuły w jednej linii, cele 44 px p
   assert.match(css, /-webkit-line-clamp: 1/);
 });
 
-test('podmiot ma link do urzędowego rejestru (KRS) w nowej karcie', () => {
-  assert.match(c, /register_url\?: string/);
+test('podmiot ma link do urzędowego odpisu KRS i do rejestr.io w nowej karcie', () => {
+  assert.match(c, /register_url\?: string; extra_url\?: string/);
   assert.match(c, /href=\{m\.organisation\.register_url\} target="_blank" rel="noopener noreferrer"/);
+  assert.match(c, /href=\{m\.organisation\.extra_url\} target="_blank" rel="noopener noreferrer"/);
+  assert.match(c, /Urzędowy odpis z KRS/); assert.match(c, />odpis ↗</);
 });

@@ -9,7 +9,7 @@ import './podmioty-media.css';
  * dowodem powiązania. Pozycje po przeglądzie zespołu (backend: news/przeszlosc_doniesienia.py).
  */
 export type OrgMention = { id: number; category: string; category_label: string; unconfirmed: boolean; quote: string;
-  organisation: { name: string; krs_number: string; kind: string; url: string; register_url?: string };
+  organisation: { name: string; krs_number: string; kind: string; url: string; register_url?: string; extra_url?: string };
   source: { url: string; title: string; outlet: string; date: string | null } };
 export type OrgMentions = { count: number; notice: string; by_category: Record<string, number>; results: OrgMention[] };
 
@@ -37,8 +37,11 @@ export function PodmiotyZMediow({ data, id = 'pp-om-h' }: { data?: OrgMentions; 
         <a className="px-om__org" href={m.organisation.url} title={m.organisation.name}>{m.organisation.name}</a>
         <small className="px-om__cat">{m.category_label}{m.unconfirmed ? ' · niepotwierdzone' : ''}</small>
       </div>
-      {m.organisation.register_url && <a className="px-om__reg" href={m.organisation.register_url} target="_blank" rel="noopener noreferrer"
-        aria-label={`Wpis w urzędowym rejestrze: ${m.organisation.name} (KRS ${m.organisation.krs_number}; otwiera się w nowej karcie)`}>KRS {m.organisation.krs_number} ↗</a>}
+      {m.organisation.register_url && <p className="px-om__reg">KRS {m.organisation.krs_number}:{' '}
+        <a href={m.organisation.register_url} target="_blank" rel="noopener noreferrer"
+          aria-label={`Urzędowy odpis z KRS: ${m.organisation.name} (otwiera się w nowej karcie)`}>odpis ↗</a>
+        {m.organisation.extra_url && <> · <a href={m.organisation.extra_url} target="_blank" rel="noopener noreferrer"
+          aria-label={`rejestr.io: ${m.organisation.name} (serwis nieurzędowy; otwiera się w nowej karcie)`}>rejestr.io ↗</a></>}</p>}
       <a className="px-om__src" href={m.source.url} target="_blank" rel="noopener noreferrer" title={m.source.title}
         aria-label={`${m.source.title} (${m.source.outlet || 'media'}, ${short(m.source.date) || 'bez daty'}; otwiera się w nowej karcie)`}>
         <b>{m.source.outlet || 'Media'}</b><time dateTime={m.source.date ?? undefined}>{short(m.source.date) || '–'}</time><span>{m.source.title}</span><i aria-hidden="true">↗</i>

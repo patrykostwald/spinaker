@@ -8,6 +8,13 @@ from news import clinic_ai, doniesienia_badacz as db
 from news.political_models import PublicFigure, PublicFigureMediaMention, RegisteredOrganisation
 
 pytestmark = pytest.mark.django_db
+_REAL_PAGE_DATE = db.page_date          # prawdziwa funkcja, zanim fixture ją podmieni na brak sieci
+
+
+@pytest.fixture(autouse=True)
+def _no_page_date(monkeypatch):
+    from news import doniesienia_badacz
+    monkeypatch.setattr(doniesienia_badacz, 'page_date', lambda url, get=None: None)
 
 
 def figure(name='Jan Kowalski', **kw):
@@ -351,3 +358,15 @@ def test_adoption_refuses_org_whose_name_only_half_matches(monkeypatch):
     monkeypatch.setattr(krs, 'fetch_status', lambda number, full=False, timeout=30: (_extract('STOWARZYSZENIE PRZYJACIÓŁ MEDIÓW', number, 'SZCZECIN'), 'ok'))
     wrong = dict(organisation_name='Stowarzyszenie Przyjaciół Zdrowia', krs_number='0000422794', city='Szczecin', board_member='')
     assert db.verify_candidate('0000422794', wrong)[1] == 'nazwa niezgodna z odpisem KRS'
+
+
+def test_page_date_reads_metadata_and_respects_guards(monkeypatch):
+    from scraper import media_metadata
+    monkeypatch.setattr(media_metadata, '_known', lambda url: '')
+    monkeypatch.setattr(media_metadata, 'tdm_allows', lambda url, network=None: {'ok': True})
+    page = NS(status_code=200, headers={'content-type': 'text/html; charset=utf-8'}, encoding='utf-8',
+              iter_content=lambda n: iter([b'<html><head><script type="application/ld+json">{"datePublished":"2026-10-02T09:30:00+02:00"}</script></head></html>']))
+    real = _REAL_PAGE_DATE
+    assert real('https://m.example/a', get=lambda *a, **k: page).isoformat() == '2026-10-02'
+    monkeypatch.setattr(media_metadata, 'tdm_allows', lambda url, network=None: {'ok': False})
+    assert real('https://m.example/a', get=lambda *a, **k: (_ for _ in ()).throw(AssertionError('bez pobrania'))) is None

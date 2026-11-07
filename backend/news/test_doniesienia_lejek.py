@@ -11,6 +11,12 @@ from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 
+
+@pytest.fixture(autouse=True)
+def _no_page_date(monkeypatch):
+    from news import doniesienia_badacz
+    monkeypatch.setattr(doniesienia_badacz, 'page_date', lambda url, get=None: None)
+
 HTML = ('<html><head><title>x</title><script>var a=1;</script></head><body><nav>Menu Fundacja Menu</nav><article>'
         '<p>Poseł Jan Kowalski był gościem programu.</p><p>Według doniesień Jan Kowalski współpracuje z Fundacją Akademia Przyszłości, '
         'która otrzymała dotację z ministerstwa.</p></article><footer>stopka</footer></body></html>')

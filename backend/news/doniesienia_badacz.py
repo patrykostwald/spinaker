@@ -212,6 +212,49 @@ def adopt_from_krs(item, apply, allow_search=True, cache=None):
     return krs_pokrycie.save_extract(extract).pk, 'identifier', cost
 
 
+DATE_PATTERNS = (re.compile(r'"datePublished"\s*:\s*"(\d{4}-\d{2}-\d{2})'),
+                 re.compile(r'<meta[^>]+(?:article:published_time|og:published_time|datePublished)[^>]+content="(\d{4}-\d{2}-\d{2})', re.I),
+                 re.compile(r'<meta[^>]+content="(\d{4}-\d{2}-\d{2})[^"]*"[^>]+(?:article:published_time|og:published_time)', re.I),
+                 re.compile(r'<time[^>]+datetime="(\d{4}-\d{2}-\d{2})', re.I))
+
+
+def page_date(url, get=None):
+    """Data publikacji artykułu z metadanych strony (JSON-LD, og/article, <time>) albo None. Pobranie tylko przy zgodzie robots.txt/TDM i bez
+    wydawców z rejestru odmów; do 400 kB, bez zapisu treści."""
+    import requests
+    from scraper import media_metadata
+    from scraper.source_probe import USER_AGENT
+    try:
+        if media_metadata._known(url) or not media_metadata.tdm_allows(url).get('ok'):
+            return None
+        response = (get or requests.get)(url, headers={'User-Agent': USER_AGENT, 'Accept': 'text/html'}, timeout=(5, 12), stream=True)
+        if response.status_code != 200 or 'html' not in response.headers.get('content-type', '').lower():
+            return None
+        raw = b''
+        for chunk in response.iter_content(65536):
+            raw += chunk
+            if len(raw) > 400_000:
+                break
+        html = raw.decode(response.encoding or 'utf-8', errors='replace')
+    except Exception:   # noqa: BLE001 - brak daty nie może zatrzymać przebiegu
+        return None
+    for pattern in DATE_PATTERNS:
+        found = pattern.search(html)
+        if found:
+            try:
+                value = date.fromisoformat(found.group(1))
+            except ValueError:
+                continue
+            if date(2000, 1, 1) <= value <= timezone_today():
+                return value
+    return None
+
+
+def timezone_today():
+    from django.utils import timezone
+    return timezone.now().date()
+
+
 def _parse_date(value):
     try:
         return date.fromisoformat((value or '').strip()[:10])
@@ -270,7 +313,7 @@ def store_items(figure, items, found, by_krs, by_name, apply, collected_by='clau
             PublicFigureMediaMention.objects.create(
                 public_figure=figure, organisation_id=org_id, category=category, match_basis=basis, source_url=url[:1024],
                 source_title=(item.get('source_title') or found[url])[:300], source_outlet=(item.get('outlet') or '')[:120],
-                published_on=_parse_date(item.get('published_on')), quote=(item.get('quote') or '')[:MEDIA_QUOTE_LIMIT], collected_by=collected_by)
+                published_on=_parse_date(item.get('published_on')) or page_date(url), quote=(item.get('quote') or '')[:MEDIA_QUOTE_LIMIT], collected_by=collected_by)
         stats['saved'] += 1
     return stats, cost, outside
 

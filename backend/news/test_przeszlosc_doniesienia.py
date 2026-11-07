@@ -103,3 +103,12 @@ def test_import_goes_to_review_queue_and_rejects_bad_rows(figure, org, tmp_path)
 def test_organisation_carries_link_to_official_register(figure, org):
     mention(figure, org).publish(staff())
     assert pd.mentions_for(figure)['results'][0]['organisation']['register_url'] == 'https://ekrs.ms.gov.pl/x'
+
+
+def test_register_links_point_to_the_official_extract_and_rejestr_io(figure, org):
+    org.register = 'S'
+    org.save()
+    mention(figure, org).publish(staff())
+    o = pd.mentions_for(figure)['results'][0]['organisation']
+    assert o['register_url'] == 'https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/0000012345?rejestr=S&format=json'
+    assert o['extra_url'] == 'https://rejestr.io/krs/12345'

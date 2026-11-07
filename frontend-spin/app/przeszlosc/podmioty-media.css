@@ -20,6 +20,7 @@ html body .pt-v3 .px .px-om__heading .px-h3 { margin: 0; white-space: nowrap; ov
 .px-om__src i { font-style: normal; color: var(--sc-text-3); }
 .px-om__quote { margin: 0; font-size: 14px; line-height: 1.45; color: var(--sc-text-3); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-height: 20px; }
 .px-om__foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-@media (max-width: 760px) { .px-om__status { display: none; } .px-om__cat { font-size: 12px; } .px-om__src { grid-template-columns: auto minmax(0, 1fr) auto; } .px-om__src time { display: none; } }
-.px-om__reg { justify-self: start; font-size: 13px; line-height: 1.4; color: var(--sc-text-3); text-decoration: none; min-height: 24px; }
-.px-om__reg:hover, .px-om__reg:focus-visible { color: var(--sc-accent); }
+@media (max-width: 760px) { .px-om__list li { --om-row: 142px; } .px-om__top { flex-direction: column; gap: 0; align-items: stretch; } .px-om__cat { white-space: normal; } .px-om__status { display: none; } .px-om__cat { font-size: 12px; } .px-om__src { grid-template-columns: auto minmax(0, 1fr) auto; } .px-om__src time { display: none; } }
+.px-om__reg { margin: 0; font-size: 13px; line-height: 1.4; color: var(--sc-text-3); min-height: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-om__reg a { color: var(--sc-text-3); text-decoration: none; }
+.px-om__reg a:hover, .px-om__reg a:focus-visible { color: var(--sc-accent); }
