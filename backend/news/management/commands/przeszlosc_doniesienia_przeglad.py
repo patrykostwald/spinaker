@@ -3,6 +3,7 @@
   python manage.py przeszlosc_doniesienia_przeglad                    # lista oczekujących (numer, osoba, podmiot, KRS, link, cytat)
   python manage.py przeszlosc_doniesienia_przeglad --odrzuc 227 225   # odrzuca wskazane numery
   python manage.py przeszlosc_doniesienia_przeglad --publikuj 226     # publikuje wskazane numery (PO sprawdzeniu linku przez człowieka)
+  python manage.py przeszlosc_doniesienia_przeglad --uzupelnij-daty   # dopisuje brakujące daty artykułów z metadanych stron (robots.txt/TDM respektowane)
 Publikacja i odrzucenie są zapisane z użytkownikiem zespołu (domyślnie pierwszy aktywny superużytkownik, albo --uzytkownik nazwa).
 """
 from django.contrib.auth import get_user_model
@@ -20,6 +21,7 @@ class Command(BaseCommand):
         parser.add_argument('--odrzuc', type=int, nargs='*', default=[])
         parser.add_argument('--publikuj', type=int, nargs='*', default=[])
         parser.add_argument('--uzytkownik')
+        parser.add_argument('--uzupelnij-daty', action='store_true')
         parser.add_argument('--wszystkie', action='store_true', help='Na liście także opublikowane i odrzucone (ostatnie 50).')
 
     def _staff(self, name):
@@ -30,6 +32,17 @@ class Command(BaseCommand):
         return user
 
     def handle(self, *args, **o):
+        if o['uzupelnij_daty']:
+            from news.doniesienia_badacz import page_date
+            filled = 0
+            for m in PublicFigureMediaMention.objects.filter(published_on__isnull=True).exclude(status='rejected'):
+                found = page_date(m.source_url)
+                if found:
+                    PublicFigureMediaMention.objects.filter(pk=m.pk).update(published_on=found)
+                    filled += 1
+                    self.stdout.write(f'#{m.pk}: data {found.isoformat()}')
+            self.stdout.write(f'Uzupełniono dat: {filled}')
+            return
         if o['odrzuc'] or o['publikuj']:
             staff = self._staff(o['uzytkownik'])
             queue = PublicFigureMediaMention.objects.select_related('public_figure', 'organisation')

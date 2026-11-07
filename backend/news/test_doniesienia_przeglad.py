@@ -34,3 +34,12 @@ def test_without_staff_user_the_command_refuses(mention):
     from django.core.management.base import CommandError
     with pytest.raises(CommandError):
         call_command('przeszlosc_doniesienia_przeglad', '--publikuj', str(mention.pk))
+
+
+def test_fill_missing_dates_uses_page_metadata(mention, monkeypatch, capsys):
+    import datetime
+    from news import doniesienia_badacz
+    monkeypatch.setattr(doniesienia_badacz, 'page_date', lambda url, get=None: datetime.date(2026, 10, 2))
+    call_command('przeszlosc_doniesienia_przeglad', '--uzupelnij-daty')
+    mention.refresh_from_db()
+    assert mention.published_on == datetime.date(2026, 10, 2) and 'Uzupełniono dat: 1' in capsys.readouterr().out
