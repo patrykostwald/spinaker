@@ -6,16 +6,22 @@ w PublicRecord, tekst wpisu z PDF). Osoba pojawia się w raporcie tylko wtedy, g
 """
 import re
 
+from news.przeszlosc_podmiot_nip import valid_nip
 from news.political_models import PublicFigureOrganisationRelation, RegisteredOrganisation
 from news.public_records_models import PublicRecord
 
-NIP_RE = re.compile(r'NIP\D{0,12}(\d{3}[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}|\d{3}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{3})', re.I)
-KRS_RE = re.compile(r'KRS\D{0,12}(\d{10})\b', re.I)
+TEN_DIGITS = re.compile(r'(?<![\d-])(\d(?:[\s-]{0,3}\d){9})(?![\d])')
+KRS_RE = re.compile(r'KRS\D{0,12}(\d(?:[\s-]{0,2}\d){9})(?!\d)', re.I)
 
 
 def identifiers(text):
-    nips = {re.sub(r'\D', '', m) for m in NIP_RE.findall(text or '')}
-    return {n for n in nips if len(n) == 10}, set(KRS_RE.findall(text or ''))
+    """NIP: każdy ciąg 10 cyfr (dowolne spacje/myślniki) z poprawną sumą kontrolną; KRS: tylko po słowie KRS."""
+    nips = set()
+    for m in TEN_DIGITS.findall(text or ''):
+        nip = valid_nip(re.sub(r'\D', '', m))
+        if nip:
+            nips.add(nip)
+    return nips, {re.sub(r'\D', '', k) for k in KRS_RE.findall(text or '')}
 
 
 def lobbying_report(limit=200):

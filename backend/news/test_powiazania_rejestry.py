@@ -9,6 +9,10 @@ def test_identifiers_extract_nip_and_krs_only():
     nips, krs = pr.identifiers('Firma X, NIP: 123-456-32-18, KRS 0000123456, REGON 1234')
     assert nips == {'1234563218'} and krs == {'0000123456'}
     assert pr.identifiers('brak numerów') == (set(), set())
+    assert pr.identifiers('SYNCRETIX NIP 637 212 00 92 Gliwice')[0] == {'6372120092'}
+    assert pr.identifiers('Wojciech BIEŃ NIP 522-193- 24-20 - DAP')[0] == {'5221932420'}
+    assert pr.identifiers('PROTAGO ul. Kamienna 30A 80-747 Gdańsk 854-192-27-49 - DAP')[0] == {'8541922749'}
+    assert pr.identifiers('numer 1234567890 niepoprawna suma')[0] == set()
 
 
 @pytest.mark.django_db
