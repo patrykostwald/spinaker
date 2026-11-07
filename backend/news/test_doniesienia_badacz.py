@@ -324,3 +324,30 @@ def test_unresolved_org_reports_why_and_which_hints_it_had(monkeypatch):
     by_krs, by_name = db.org_lookup()
     stats, _, outside = db.research_person(f, by_krs, by_name, apply=False)
     assert stats['outside_db'] == 1 and 'nie ustalono numeru KRS' in outside[0] and 'miejscowość: Kraków' in outside[0]
+
+
+def test_strict_name_match_rejects_half_matching_names_but_accepts_inflection_and_legal_forms():
+    assert db.strict_name_match('Stowarzyszenie Przyjaciół Zdrowia', 'STOWARZYSZENIE PRZYJACIÓŁ ZDROWIA')
+    assert not db.strict_name_match('Stowarzyszenie Przyjaciół Zdrowia', 'STOWARZYSZENIE PRZYJACIÓŁ MEDIÓW')   # błąd z produkcji (#227)
+    assert db.strict_name_match('Fundacja Ośrodek Monitorowania Antypolonizmu (OMA)', 'FUNDACJA OŚRODEK MONITOROWANIA ANTYPOLONIZMU')
+    assert db.strict_name_match('Fundacji Profeto', 'FUNDACJA PROFETO')
+    assert not db.strict_name_match('Fundacja Polska', 'FUNDACJA POLSKA PRZEMYSŁ')    # puste po zdjęciu słów ogólnych
+    assert not db.strict_name_match('', 'FUNDACJA X')
+
+
+def test_registry_and_aggregator_pages_are_not_media_sources(monkeypatch):
+    f, o = figure(), org('Fundacja Akademia Przyszłości', '0000000111')
+    resp = fake_response([item(source_url='https://rejestr.io/krs/111/fundacja')], urls=('https://rejestr.io/krs/111/fundacja',))
+    monkeypatch.setattr(clinic_ai, '_call_claude', lambda *a, **k: resp)
+    by_krs, by_name = db.org_lookup()
+    stats, _, _ = db.research_person(f, by_krs, by_name, apply=True)
+    assert stats['dropped_url'] == 1 and PublicFigureMediaMention.objects.count() == 0
+    assert db.is_registry_host('https://www.rejestr.io/x') and not db.is_registry_host('https://wiadomosci.wp.pl/a')
+
+
+def test_adoption_refuses_org_whose_name_only_half_matches(monkeypatch):
+    from news import krs
+    monkeypatch.setattr(db.time, 'sleep', lambda s: None)
+    monkeypatch.setattr(krs, 'fetch_status', lambda number, full=False, timeout=30: (_extract('STOWARZYSZENIE PRZYJACIÓŁ MEDIÓW', number, 'SZCZECIN'), 'ok'))
+    wrong = dict(organisation_name='Stowarzyszenie Przyjaciół Zdrowia', krs_number='0000422794', city='Szczecin', board_member='')
+    assert db.verify_candidate('0000422794', wrong)[1] == 'nazwa niezgodna z odpisem KRS'
