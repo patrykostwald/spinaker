@@ -158,7 +158,7 @@ def test_backup_uploads_applies_retention_and_records_state():
     assert kz.runs_since(NOW - timedelta(hours=1)) == (1, NOW)
     assert not list((kz._tmpdir() and __import__('pathlib').Path(kz._tmpdir())).glob('spin_clinic-*'))  # pliki tymczasowe usunięte
     line = kz.report_line(NOW)
-    assert line.startswith('Kopia: lokalna 04:30, zdalna 04:30') and '2 plików / 18 dni' in line and 'jeszcze nie było' in line
+    assert line.startswith('Kopia: lokalna 04:30, zdalna 04:30') and '2 plików / 7 dni' in line and 'jeszcze nie było' in line
 
 
 def test_backup_of_council_votes_log_uses_its_own_prefix_and_thirty_day_retention():
@@ -167,7 +167,7 @@ def test_backup_of_council_votes_log_uses_its_own_prefix_and_thirty_day_retentio
                      'pg/dzis.sql.gz.enc': (b'z' * 10, NOW)})
     result = kz.backup('glosy-20261025-0330.tar.gz', io.BytesIO(dump()), 'glosy', NOW, client)
     assert result['status'] == 'ok' and result['key'] == 'glosy/glosy-20261025-0330.tar.gz.enc'
-    assert client.deleted == ['glosy/glosy-stara.tar.gz.enc'] and kz.RETENTION_DAYS == 18
+    assert client.deleted == ['glosy/glosy-stara.tar.gz.enc'] and kz.RETENTION_DAYS == 7
     state = RepairerState.objects.get(key=kz.STATE_KEY).data
     assert state['last_glosy_key'] == result['key'] and state['runs'] == []  # tylko kopia bazy liczy się do pulsu „kopia lokalna”
     from news.management.commands.kopia_zapasowa import Command

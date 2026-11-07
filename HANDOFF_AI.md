@@ -391,3 +391,8 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - Zmiana (`backend/news/kopia_zapasowa.py`): do 5 prób z odczekaniem 2/4/8/16 s dla błędów sieci, timeoutów i odpowiedzi 5xx (pojedynczy PUT i części multipart). Błędy 4xx (np. 403 = pełny limit dzienny) NIE są ponawiane.
 - Testy: `news/test_kopia_zapasowa.py` (12 przechodzi).
 - Nadal czeka decyzja właściciela: retencja 18 -> 7 dni ("retencja 7") albo podniesienie limitu B2.
+
+## 7.11 wieczór: retencja kopii B2 18 -> 7 dni, wdrożenie, decyzja o kosztach badania
+- Wdrożone i sprawdzone (wdroz.sh 7/7 OK, kopia pg+glosy w B2 bez błędu, koszyk 2,8 GB): ponawianie wysyłki do B2 (commit c228fea).
+- Zrobione, sprawdzone testami, NIEWDROŻONE: `RETENTION_DAYS` 18 -> 7 (decyzja właściciela "1 ok"); testy, `deploy/backup.sh`, `docs/KOPIE-I-ODTWORZENIE.md` zaktualizowane.
+- Decyzja właściciela (7.11): badanie doniesień ma być DARMOWE, nie za pieniądze. Płatnego badacza (`--lekki`, `--wszyscy`) NIE uruchamiać bez jego wyraźnej zgody. Nic płatnego nie zostało uruchomione w tej sesji.

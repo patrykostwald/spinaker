@@ -29,11 +29,11 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 STATE_KEY = 'kopia-zapasowa'
-RETENTION_DAYS = 18  # 5.11.2026: 30 -> 18 dni (kopia bazy ok. 0,4 GB x 18 = ok. 7,6 GB, poniżej progu 8 GB; darmowe 10 GB w B2)
+RETENTION_DAYS = 7  # 7.11.2026: 18 -> 7 dni (decyzja właściciela; 18 dni zapełniało koszyk B2 przy kilku wdrożeniach dziennie, limit 10 GB)
 MAX_AGE = timedelta(hours=26)
 SIZE_GUARD = 8 * 1024 ** 3
 PART_SIZE = 16 * 1024 ** 2  # mniejsze części: wolne łącze VPS->B2 przerywało zapis 64 MB (7.10)
-# glosy: dziennik głosów Rady (E0, news/council_votes.py), codziennie, ta sama retencja RETENTION_DAYS (18 dni) co media
+# glosy: dziennik głosów Rady (E0, news/council_votes.py), codziennie, ta sama retencja RETENTION_DAYS (7 dni) co media
 PREFIXES = {'pg': 'pg/', 'media': 'media/', 'glosy': 'glosy/'}
 RUNS_KEEP = 60
 TIMEOUT = (10, 300)
