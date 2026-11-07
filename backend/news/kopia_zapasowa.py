@@ -101,23 +101,35 @@ class S3:
         headers = {**self._headers(method, key, query, payload_hash, now), **(extra_headers or {})}
         response = requests.request(method, self._url(key), params=query, data=data, headers=headers, timeout=TIMEOUT, stream=stream)
         if response.status_code >= 300:
-            raise requests.HTTPError(f'B2 HTTP {response.status_code} ({method} {key or "/"})')
+            raise requests.HTTPError(f'B2 HTTP {response.status_code} ({method} {key or "/"})', response=response)
         return response
 
-    def _put_part(self, key, number, upload_id, chunk, tries=3):
-        # Content-MD5 wymagane przy koszyku z Object Lock; przerwany zapis części ponawiamy
-        md5 = base64.b64encode(hashlib.md5(chunk).digest()).decode()
+    @staticmethod
+    def _transient(error):
+        """Błąd chwilowy po stronie B2 lub sieci: ponawiamy (zalecenie Backblaze dla 500/503); 4xx (np. 403 limit) nie."""
+        if isinstance(error, (requests.ConnectionError, requests.Timeout)):
+            return True
+        status = getattr(getattr(error, 'response', None), 'status_code', 0) or 0
+        return isinstance(error, requests.HTTPError) and status >= 500
+
+    def _with_retries(self, call, tries=5):
         for attempt in range(tries):
             try:
-                return self.request('PUT', key, query={'partNumber': number, 'uploadId': upload_id}, data=chunk,
-                                    extra_headers={'Content-MD5': md5})
-            except requests.ConnectionError:
-                if attempt == tries - 1:
+                return call()
+            except requests.RequestException as error:
+                if attempt == tries - 1 or not self._transient(error):
                     raise
-                time.sleep(2 ** attempt)
+                time.sleep(2 ** (attempt + 1))
+
+    def _put_part(self, key, number, upload_id, chunk, tries=5):
+        # Content-MD5 wymagane przy koszyku z Object Lock; chwilowe błędy (połączenie, timeout, 5xx z B2) ponawiamy z odczekaniem
+        md5 = base64.b64encode(hashlib.md5(chunk).digest()).decode()
+        return self._with_retries(lambda: self.request('PUT', key, query={'partNumber': number, 'uploadId': upload_id}, data=chunk,
+                                                       extra_headers={'Content-MD5': md5}), tries)
 
     def put_object(self, key, data):
-        self.request('PUT', key, data=data, extra_headers={'Content-MD5': base64.b64encode(hashlib.md5(data).digest()).decode()})
+        md5 = base64.b64encode(hashlib.md5(data).digest()).decode()
+        self._with_retries(lambda: self.request('PUT', key, data=data, extra_headers={'Content-MD5': md5}))
 
     def upload_file(self, key, path):
         """Jeden PUT do PART_SIZE, powyżej - wysyłka wieloczęściowa (B2: pojedynczy PUT najwyżej 5 GB)."""

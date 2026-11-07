@@ -119,6 +119,33 @@ def test_multipart_upload_for_large_file(monkeypatch, tmp_path):
     assert calls[-1][0] == 'POST' and calls[-1][1] == {'uploadId': 'UP1'} and calls[-1][2] > 0
 
 
+def _fake_sequence(statuses, seen):
+    def fake(method, url, params=None, data=b'', headers=None, timeout=None, stream=False):
+        seen.append(method)
+        return type('R', (), {'status_code': next(statuses), 'content': b'', 'headers': {}})()
+    return fake
+
+
+def test_upload_retries_transient_b2_server_errors(monkeypatch):
+    sleeps, seen = [], []
+    monkeypatch.setattr(kz.time, 'sleep', sleeps.append)
+    with patch('requests.request', side_effect=_fake_sequence(iter([500, 503, 200]), seen)):
+        kz.S3().put_object('pg/a.enc', b'dane')
+    assert seen == ['PUT', 'PUT', 'PUT'] and sleeps == [2, 4]
+
+
+def test_upload_does_not_retry_client_errors_and_gives_up_after_limit(monkeypatch):
+    sleeps, seen = [], []
+    monkeypatch.setattr(kz.time, 'sleep', sleeps.append)
+    with patch('requests.request', side_effect=_fake_sequence(iter([403]), seen)), pytest.raises(Exception, match='B2 HTTP 403'):
+        kz.S3().put_object('pg/a.enc', b'dane')
+    assert seen == ['PUT'] and sleeps == []
+    seen.clear()
+    with patch('requests.request', side_effect=_fake_sequence(iter([500] * 9), seen)), pytest.raises(Exception, match='B2 HTTP 500'):
+        kz.S3().put_object('pg/a.enc', b'dane')
+    assert len(seen) == 5 and sleeps == [2, 4, 8, 16]
+
+
 def test_backup_uploads_applies_retention_and_records_state():
     old = NOW - timedelta(days=40)
     client = FakeS3({'pg/stara.sql.gz.enc': (b'x' * 10, old), 'pg/wczoraj.sql.gz.enc': (b'y' * 10, NOW - timedelta(days=1))})
