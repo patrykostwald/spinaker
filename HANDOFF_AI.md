@@ -396,3 +396,9 @@ Nigdy samo `docker compose up` bez tych flag i nigdy z innego katalogu.
 - Wdrożone i sprawdzone (wdroz.sh 7/7 OK, kopia pg+glosy w B2 bez błędu, koszyk 2,8 GB): ponawianie wysyłki do B2 (commit c228fea).
 - Zrobione, sprawdzone testami, NIEWDROŻONE: `RETENTION_DAYS` 18 -> 7 (decyzja właściciela "1 ok"); testy, `deploy/backup.sh`, `docs/KOPIE-I-ODTWORZENIE.md` zaktualizowane.
 - Decyzja właściciela (7.11): badanie doniesień ma być DARMOWE, nie za pieniądze. Płatnego badacza (`--lekki`, `--wszyscy`) NIE uruchamiać bez jego wyraźnej zgody. Nic płatnego nie zostało uruchomione w tej sesji.
+
+## 7.11 noc: darmowy raport powiązań z rejestrów (bez AI, bez sieci, bez zapisu) - zrobione, testy 2/2, NIEWDROŻONE
+- Decyzja właściciela: szukanie ma być za darmo; zbieranie z korpusu artykułów (współwystępowanie nazw) odrzucone wcześniej (precyzja ≤15%), więc wersja bez modelu opiera się na rejestrach i numerach.
+- `backend/news/powiazania_rejestry.py` + `manage.py przeszlosc_powiazania_raport [--limit N]`: wpisy rejestru lobbingu MSWiA (`PublicRecord kind=lobby_entity`) -> NIP/KRS z tekstu wpisu -> podmiot w `RegisteredOrganisation` (tylko po numerze) -> osoby z relacją KRS (`PublicFigureOrganisationRelation`). Tylko odczyt.
+- **Niesprawdzone:** ile wpisów lobbingu jest w produkcyjnej bazie, ile ma NIP/KRS w tekście (parser PDF jest heurystyczny) i co wyjdzie; raport sam poda te liczby. Jeśli wpisów jest 0, źródło `lobby_mswia` nie zostało zebrane i trzeba je włączyć (też darmowe).
+- Dalsze darmowe kroki po ocenie raportu: wyniki do kolejki jako osobna kategoria (lobbing) dopiero za zgodą właściciela; Rejestr Korzyści Sejmu (PDF z warstwą tekstu, bez OCR); zamówienia BZP/TED po NIP dla podmiotów osób.
