@@ -46,3 +46,26 @@ def lobbying_report(limit=200):
                      'krs': org.krs_number, 'role': rel.public_role, 'organ': rel.organ, 'status': rel.relation_status,
                      'verification': rel.verification_status, 'lobby_entry': record.external_id, 'source': record.source_url})
     return {'entries': entries, 'with_ids': with_ids, 'matched_orgs': len(matched), 'rows': rows}
+
+
+def diagnosis(samples=3, width=220):
+    """Ile wpisów zawiera słowa NIP/KRS/REGON i czy rozpoznajemy z nich numery; kilka skróconych próbek (rejestr jest publiczny)."""
+    counts = {'entries': 0, 'word_nip': 0, 'word_krs': 0, 'word_regon': 0, 'nip_ok': 0, 'krs_ok': 0, 'word_but_no_number': 0}
+    odd, plain = [], []
+    for record in PublicRecord.objects.filter(kind='lobby_entity').only('external_id', 'text').iterator():
+        text = record.text or ''
+        counts['entries'] += 1
+        has_nip, has_krs, has_regon = bool(re.search(r'\bNIP\b', text, re.I)), bool(re.search(r'\bKRS\b', text, re.I)), bool(re.search(r'REGON', text, re.I))
+        counts['word_nip'] += has_nip
+        counts['word_krs'] += has_krs
+        counts['word_regon'] += has_regon
+        nips, krs = identifiers(text)
+        counts['nip_ok'] += bool(nips)
+        counts['krs_ok'] += bool(krs)
+        if (has_nip or has_krs) and not (nips or krs):
+            counts['word_but_no_number'] += 1
+            if len(odd) < samples:
+                odd.append((record.external_id, ' '.join(text.split())[:width]))
+        elif not (has_nip or has_krs) and len(plain) < samples:
+            plain.append((record.external_id, ' '.join(text.split())[:width]))
+    return {'counts': counts, 'word_but_no_number': odd, 'no_words': plain}

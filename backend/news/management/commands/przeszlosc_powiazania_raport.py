@@ -12,8 +12,17 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=200)
+        parser.add_argument('--diagnoza', action='store_true', help='Jak wyglądają wpisy rejestru: liczby i kilka skróconych próbek.')
 
     def handle(self, *args, **o):
+        if o['diagnoza']:
+            d = pr.diagnosis()
+            self.stdout.write(str(d['counts']))
+            for label, key in (('Ze słowem NIP/KRS, ale bez rozpoznanego numeru', 'word_but_no_number'), ('Bez słów NIP/KRS', 'no_words')):
+                self.stdout.write(label + ':')
+                for number, text in d[key]:
+                    self.stdout.write(f'  [{number}] {text}')
+            return
         r = pr.lobbying_report(o['limit'])
         self.stdout.write(f"Wpisów rejestru lobbingu w bazie: {r['entries']}; z numerem NIP/KRS: {r['with_ids']}; "
                           f"dopasowanych podmiotów z naszego rejestru (po numerze): {r['matched_orgs']}; osób z relacją KRS: {len(r['rows'])}")

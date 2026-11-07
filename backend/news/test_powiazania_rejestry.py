@@ -24,3 +24,14 @@ def test_report_matches_by_number_never_by_name():
     r = pr.lobbying_report()
     assert (r['entries'], r['with_ids'], r['matched_orgs']) == (2, 1, 1)
     assert [x['figure'] for x in r['rows']] == ['Jan Testowy'] and r['rows'][0]['lobby_entry'] == '00001'
+
+
+@pytest.mark.django_db
+def test_diagnosis_counts_words_and_recognised_numbers():
+    base = dict(source='lobby_mswia', kind='lobby_entity', source_url='https://gov.pl/r.pdf', response_sha256='a', response_url='https://gov.pl/r.pdf')
+    PublicRecord.objects.create(external_id='1', text='Firma NIP 123-456-32-18', **base)
+    PublicRecord.objects.create(external_id='2', text='Firma NIP w osobnej linii', **base)
+    PublicRecord.objects.create(external_id='3', text='Jan Kowalski, ul. Prosta 1', **base)
+    d = pr.diagnosis()
+    assert d['counts']['entries'] == 3 and d['counts']['nip_ok'] == 1 and d['counts']['word_but_no_number'] == 1
+    assert d['word_but_no_number'][0][0] == '2' and d['no_words'][0][0] == '3'
