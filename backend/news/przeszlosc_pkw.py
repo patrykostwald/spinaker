@@ -63,7 +63,7 @@ def _report(data):
 
 
 def catalogue():
-    """Wszystkie dokumenty (kilkaset): [{title, kind, published, url}] od najnowszych; cache 10 min."""
+    """Wszystkie dokumenty (kilkaset): [{title, kind, published, url, report}]: najpierw z odczytanymi kwotami, potem od najnowszych; cache 10 min."""
     rows = cache.get(CACHE_KEY)
     if rows is None:
         from news.public_records_models import PublicRecord
@@ -73,7 +73,8 @@ def catalogue():
             when = _published(url)
             rows.append({'title': (title or '').strip()[:300], 'kind': _kind(title), 'published': when.isoformat() if when else None, 'url': url,
                          'report': _report(reports.get(key))})
-        rows.sort(key=lambda r: (r['published'] or '', r['title']), reverse=True)
+        # Najpierw pozycje z odczytanymi kwotami (najcenniejsze dla czytelnika), potem od najnowszych plików.
+        rows.sort(key=lambda r: (bool(r['report'] and r['report'].get('readable')), r['published'] or '', r['title']), reverse=True)
         cache.set(CACHE_KEY, rows, CACHE_TTL)
     return rows
 

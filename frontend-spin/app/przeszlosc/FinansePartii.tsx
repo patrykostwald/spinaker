@@ -17,6 +17,9 @@ const API = '/api/przeszlosc/pkw/';
 const PER = 20;
 const DECISION: Record<string, string> = { przyjete: 'sprawozdanie przyjęte', odrzucone: 'sprawozdanie odrzucone', bez_rozpatrzenia: 'pozostawione bez rozpatrzenia' };
 const money = (v: string, c: string) => `${Number(v).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c === 'PLN' ? 'zł' : c}`;
+/** Etykieta stanu karty: z kwotami / skan (bez OCR) / inny dokument / jeszcze do odczytu. */
+const state = (r: Report): { text: string; tone: 'ok' | 'off' } =>
+  !r ? { text: 'do odczytu', tone: 'off' } : r.readable ? { text: 'z kwotami', tone: 'ok' } : { text: /skan/.test(r.reason ?? '') ? 'skan' : 'bez kwot', tone: 'off' };
 const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'brak daty';
 
 export function FinansePartii() {
@@ -59,8 +62,9 @@ export function FinansePartii() {
     {failed && <p className="px-msg" role="alert">Nie udało się pobrać spisu. Spróbuj ponownie za chwilę.</p>}
     {data && <p className="px-note" role="status">{data.total.toLocaleString('pl-PL')} z {data.all.toLocaleString('pl-PL')} dokumentów</p>}
     <ul className="px-fp__list">{rows.map(r => <li key={r.url} className="px-card px-fp__item">
-      <h2 className="px-h3">{r.title}</h2>
-      <p className="px-fp__meta">{data?.kinds.find(k => k.key === r.kind)?.label ?? r.kind} · na stronie PKW od {day(r.published)}</p>
+      <div className="px-fp__top"><h2 className="px-h3" title={r.title}>{r.title}</h2>
+        <span className={`px-fp__state px-fp__state--${state(r.report).tone}`}>{state(r.report).text}</span></div>
+      <p className="px-fp__meta">{data?.kinds.find(k => k.key === r.kind)?.label ?? r.kind} · plik wgrany na stronę PKW: {day(r.published)}</p>
       {r.report?.readable && <div className="px-fp__report">
         <p><b>{r.report.name}</b>, sprawozdanie za {r.report.year}: {DECISION[r.report.decision ?? ''] ?? 'decyzja nieodczytana'}
           {r.report.with_irregularity ? ' ze wskazaniem uchybienia' : ''}. Uchwała PKW nr {r.report.resolution} z {day(r.report.resolution_date)}.</p>

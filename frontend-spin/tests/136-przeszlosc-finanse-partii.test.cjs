@@ -27,3 +27,7 @@ test('karta: decyzja i kwoty z cytatem w podpowiedzi, powód braku odczytu, zaws
 test('bez danych osobowych: komponent nie ma pól na nazwiska darczyńców ani numery rachunków', () => {
   assert.ok(!/account_number|donor_name|numer rachunku/i.test(c));
 });
+
+test('etykiety stanu karty i data wgrania pliku (nie data sprawozdania)', () => {
+  for (const key of ["text: 'z kwotami'", "'skan'", "text: 'do odczytu'", 'px-fp__state', 'plik wgrany na stronę PKW']) assert.ok(c.includes(key), key);
+});

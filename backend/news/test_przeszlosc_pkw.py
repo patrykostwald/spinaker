@@ -76,3 +76,13 @@ def test_report_summary_is_attached_and_unreadable_scans_say_why(monkeypatch):
     body = APIClient().get('/api/przeszlosc/pkw/?z_danymi=1').json()
     assert body['total'] == 1 and body['with_data'] == 1 and body['results'][0]['title'].startswith('Polska Partia')
     assert 'bez OCR' in body['note'] and 'nazwisk darczyńców' in body['note']
+
+
+def test_documents_with_readable_amounts_come_first_then_newest():
+    PublicRecord.objects.filter(source='pkw', kind='financial_document', external_id='d1').update(external_id=sha256(ROWS[1][1].encode()).hexdigest())
+    PublicRecord.objects.create(source='pkw', kind='financial_report', external_id=sha256(ROWS[1][1].encode()).hexdigest(), source_url=ROWS[1][1],
+                                response_url=ROWS[1][1], response_sha256='0', data={'readable': True, 'name': 'X', 'report_year': 2024, 'amounts': {}})
+    cache.clear()
+    titles = [r['title'] for r in pk.catalogue()]
+    assert titles[0] == 'Komitet Wyborczy Wyborców Nasza Lewica'      # starszy plik, ale z odczytanymi kwotami
+    assert titles[1] == 'Polska Partia Piratów (EwP 328)'             # dalej od najnowszych
