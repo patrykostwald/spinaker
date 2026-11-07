@@ -10,7 +10,7 @@ import { SearchField } from "../../SearchField";
 export const meta = {
   id: "kontrolki",
   title: "Kontrolki",
-  lead: "Flażek, radio, przełącznik, segmentowany wybór i pole wyszukiwania — każdy stan to osobna komórka, w obu motywach. Kontrolki są w pełni interaktywne: prawdziwe najechanie myszą i Tab pokazują te same stany co wymuszone komórki „Najechanie” / „Fokus”.",
+  lead: "Flażek, radio, przełącznik, segmentowany wybór i pole wyszukiwania - każdy stan to osobna komórka, w obu motywach. Kontrolki są w pełni interaktywne: prawdziwe najechanie myszą i Tab pokazują te same stany co wymuszone komórki „Najechanie” / „Fokus”.",
 };
 
 function Cell({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
@@ -100,7 +100,7 @@ function RadioSection({ theme }: { theme: string }) {
         </Cell>
       </div>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "var(--sc-s-4) 0 var(--sc-s-3)" }}>
-        Grupa — kropka przejeżdża między opcjami wspólnym <code className="sc-t-mono">layoutId</code>, nie gaśnie i zapala się.
+        Grupa - kropka przejeżdża między opcjami wspólnym <code className="sc-t-mono">layoutId</code>, nie gaśnie i zapala się.
       </p>
       <RadioGroup
         name={`motyw-${theme}`}

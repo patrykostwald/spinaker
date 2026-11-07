@@ -620,7 +620,7 @@ def panel_section(now, snapshot):
                       'Pieniądze, klucze, zasoby i decyzje właściciela.', items=[
                           card(i['title'], 'warn', i['hint']) for i in needs]))
     return card('Naprawiacz', 'ok' if last else 'unknown',
-                'Bezpieczne naprawy co 15 minut. Limit 20 działań; dziennik 30 dni.',
+                'Analiza i propozycje co 15 minut. Zmiany produkcji wymagają decyzji właściciela.',
                 last.data.get('at') if last else None,
                 [metric('Włączony', flag('REPAIRER_ENABLED', True)), metric('Tryb próbny', flag('REPAIRER_DRY_RUN', False))] +
                 [metric(s, counts.get(s, 0)) for s in ('fixed', 'retried', 'skipped', 'failed', 'needs_owner')], items)
@@ -652,7 +652,8 @@ RULES = (repair_locks, repair_fetches, repair_diagnoses, repair_archives, repair
 def run(*, dry_run=False, now=None):
     if not flag('REPAIRER_ENABLED', True):
         return {'status': 'disabled', 'actions': []}
-    ctx = Run(now or timezone.now(), dry_run or flag('REPAIRER_DRY_RUN', False))
+    preview = dry_run or flag('REPAIRER_DRY_RUN', False)
+    ctx = Run(now or timezone.now(), True)
     token = uuid4().hex
     if not cache.add(RUN_LOCK, token, 600):
         return {'status': 'locked', 'actions': []}
@@ -660,17 +661,33 @@ def run(*, dry_run=False, now=None):
         from news.admin_status import snapshot
         data = snapshot(ctx.now)
         # Daily mail gets a slot even when there is a large repair backlog.
-        for rule in (operational_notifications, owner_digest, *RULES):
+        for rule in RULES:
             if not ctx.room:
                 break
             try:
                 rule(ctx, data)
             except Exception as exc:
                 ctx.record(rule.__name__, 'rule', 'failed', safe_error(exc))
-        if not ctx.dry_run:
+        if not preview:
+            for action in ctx.actions:
+                RepairAction.objects.get_or_create(created_at=ctx.now, **{**action, 'result': 'needs_owner',
+                    'description': action['description'].replace('DRY RUN: ', 'Propozycja: ')[:300]})
             RepairAction.objects.filter(created_at__lt=ctx.now - timedelta(days=30)).delete()
             RepairerState.objects.update_or_create(key='last-run', defaults={'data': {'at': ctx.now.isoformat()}})
-        return {'status': 'ok', 'dry_run': ctx.dry_run, 'actions': ctx.actions,
+        return {'status': 'ok', 'dry_run': preview, 'analysis_only': True, 'actions': ctx.actions,
                 'failed': sum(a['result'] == 'failed' for a in ctx.actions)}
     finally:
         compare_delete(RUN_LOCK, token)
+
+
+def schedule_proposal(key, name, body, now):
+    """Zgłoszenie Ratownika: opis i propozycja, bez zmiany produkcji."""
+    proposal = ('Sprawdź ostatnie błędy, klucze i dostępne środki. '
+                'Po usunięciu przyczyny właściciel może ręcznie ponowić zadanie. '
+                'Naprawiacz nie zmienia konfiguracji ani treści.')
+    with transaction.atomic():
+        row = RepairerState.objects.select_for_update().get(key=key)
+        row.data = {**row.data, 'repairer_request': body, 'proposal': proposal}
+        row.save(update_fields=['data'])
+        RepairAction.objects.get_or_create(rule='schedule:proposal', target=key, defaults={
+            'created_at': now, 'result': 'needs_owner', 'description': (name + ': ' + proposal)[:300]})

@@ -1,4 +1,4 @@
-/** Rodzina każdej kategorii techniki (jak backend/news/techniques.py) — gdy odpowiedź API nie ma jeszcze pola scan. */
+/** Rodzina każdej kategorii techniki (jak backend/news/techniques.py) - gdy odpowiedź API nie ma jeszcze pola scan. */
 export const FAMILY_OF: Record<string, string> = {
   "Inne": "inne",
   "Liczba bez punktu odniesienia": "dane", "Wybiórcze dane": "dane", "Pominięcie kontekstu": "dane", "Przeinaczenie faktów": "dane",
@@ -10,8 +10,9 @@ export const FAMILY_OF: Record<string, string> = {
 };
 
 export const TECHNIQUE_FAMILIES = [
-  ["dane", "Dane i wnioskowanie"],
-  ["przedstawienie", "Emocje i przedstawienie"],
+  // Kolejność jak sygnalizator (właściciel 2.10): od góry czerwony, żółty, zielony.
   ["spor", "Spór i odpowiedzialność"],
+  ["przedstawienie", "Emocje i przedstawienie"],
+  ["dane", "Dane i wnioskowanie"],
   ["inne", "Inne"],
 ] as const;

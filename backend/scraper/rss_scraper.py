@@ -6,6 +6,7 @@ import feedparser
 from django.utils import timezone
 from news.models import FetchAttempt, Source
 from news.models import SourceAccessInstruction
+from scraper import media_metadata
 from scraper.access_gate import approved_instruction
 from scraper.catalog import RSS_SOURCES, INSTITUTIONS
 from scraper.utils import guarded, fetch_feed, get_or_create_source, record_fetch_refusal, upsert_article
@@ -51,6 +52,17 @@ def scrape_rss_source(source_id):
             outcome=FetchAttempt.Outcome.REFUSED_NO_INSTRUCTION, error_code='no_approved_instruction')
         Source.objects.filter(pk=source.pk).update(last_error='no_approved_instruction')
         return 0
+    # Karta „tylko metadane mediów” (właściciel 6.10): przed pobraniem robots.txt hosta i sygnał opt-outu TDM (art. 4 DSM),
+    # raz na dobę; opt-out = pomijamy źródło i zapisujemy powód. Do bazy trafiają tylko tytuł, data, redakcja i adres.
+    strict = media_metadata.metadata_only(instruction)
+    if strict:
+        verdict = media_metadata.tdm_allows(source.rss_url)
+        if not verdict['ok']:
+            record_fetch_refusal(source=source, channel=SourceAccessInstruction.Channel.RSS,
+                requested_kind=FetchAttempt.RequestedKind.FEED, url=source.rss_url,
+                outcome=FetchAttempt.Outcome.BLOCKED_ROBOTS, error_code=verdict['reason'][:64], instruction=instruction)
+            Source.objects.filter(pk=source.pk).update(last_error=verdict['reason'][:200], last_attempted=timezone.now())
+            return 0
     Source.objects.filter(pk=source.pk).update(last_attempted=timezone.now())
     try:
         feed = feedparser.parse(fetch_feed(source.rss_url, hostname_transport=True, audit_source=source,
@@ -72,8 +84,8 @@ def scrape_rss_source(source_id):
             # photograph.  Image reuse gets its own reviewed record; metadata
             # harvesters therefore never turn a feed image into a portal
             # thumbnail by default.
-            description=entry.get('summary'), author=entry.get('author'), image_url='',
-            tags=entry.get('tags') or entry.get('keywords') or [])
+            description='' if strict else entry.get('summary'), author=None if strict else entry.get('author'), image_url='',
+            tags=[] if strict else (entry.get('tags') or entry.get('keywords') or []))
         total += created
     source.last_scraped = timezone.now()
     source.last_error = ''

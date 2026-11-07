@@ -12,7 +12,7 @@ def test_metrics_count_new_articles_separately_from_maps_and_repeated_pages():
     source = Source.objects.create(name='Publisher', url='https://example.org')
     for name, kind in [('new', 'page'), ('existing', 'page'), ('map', 'sitemap'), ('failed', 'page'), ('deferred', 'page')]:
         ArchiveJob.objects.create(source=source, url=f'https://example.org/{name}', kind=kind)
-    def process(job):
+    def process(job, **_):
         name = job.url.rsplit('/', 1)[1]
         if name == 'failed': raise ValueError('unclassified_page')
         if name == 'deferred': raise SourceDelay()
@@ -55,7 +55,7 @@ def test_stale_lease_finalize_skips_state_callback_after_job_is_reclaimed():
     source = Source.objects.create(name='Publisher', url='https://example.org')
     job = ArchiveJob.objects.create(source=source, url='https://example.org/story', kind='page')
 
-    def process(current_job):
+    def process(current_job, **_):
         ArchiveJob.objects.filter(pk=current_job.pk).update(
             available_at=timezone.now() + timedelta(minutes=20))
         return 1

@@ -18,9 +18,9 @@ export type ReorderableStrip = { id: string; title: string };
 
 export type ReorderableStripsProps<T extends ReorderableStrip> = {
   strips: T[];
-  /** Содержимое полосы — заглушки витрины рисует вызывающий, не `NewsCard` (её строит R3). */
+  /** Содержимое полосы - заглушки витрины рисует вызывающий, не `NewsCard` (её строит R3). */
   renderStrip: (strip: T, index: number) => ReactNode;
-  /** Ключ `localStorage`. Порядок сохраняется НА УСТРОЙСТВЕ, не в профиле — см. план. */
+  /** Ключ `localStorage`. Порядок сохраняется НА УСТРОЙСТВЕ, не в профиле - см. план. */
   storageKey?: string;
   /** Подпись группы для скринридера. */
   label?: string;
@@ -51,7 +51,7 @@ function applyStoredOrder<T extends ReorderableStrip>(strips: T[], order: string
   return ordered.length === strips.length ? ordered : strips;
 }
 
-/** Долгое нажатие 250ms на тач-устройствах для захвата; на мыши/пере — захват немедленно. */
+/** Долгое нажатие 250ms на тач-устройствах для захвата; на мыши/пере - захват немедленно. */
 function useHandlePickup(dragControls: DragControls) {
   const timerRef = useRef<number | undefined>(undefined);
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -96,8 +96,8 @@ function useHandlePickup(dragControls: DragControls) {
 /**
  * Перетаскивание полос: `Reorder.Group`/`Reorder.Item`, захват только за ручку (жест не
  * должен отбирать горизонтальную прокрутку содержимого полосы). Мышь и перо забирают жест
- * немедленно, тач — долгим нажатием `LONG_PRESS_MS`. Клавиатура: Space — взять, ↑/↓ —
- * переместить, Space — положить, Escape — отменить; каждое перемещение объявляется через
+ * немедленно, тач - долгим нажатием `LONG_PRESS_MS`. Клавиатура: Space - взять, ↑/↓ -
+ * переместить, Space - положить, Escape - отменить; каждое перемещение объявляется через
  * `aria-live`. Порядок сохраняется в `localStorage` под `storageKey`.
  */
 export function ReorderableStrips<T extends ReorderableStrip>({
@@ -119,15 +119,15 @@ export function ReorderableStrips<T extends ReorderableStrip>({
   const suppressNextReorder = useRef(false);
   const autoscroll = useRef({ speed: 0, raf: 0 });
 
-  // Гидратация из localStorage один раз после монтирования — чтобы SSR и первый клиентский
-  // рендер совпадали (порядок по умолчанию — это порядок `strips`).
+  // Гидратация из localStorage один раз после монтирования - чтобы SSR и первый клиентский
+  // рендер совпадали (порядок по умолчанию - это порядок `strips`).
   useEffect(() => {
     const stored = readStoredOrder(storageKey);
     if (stored) setOrder((current) => applyStoredOrder(current, stored));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
-  // Родитель может обновить набор полос — сохраняем пользовательский порядок там, где можно.
+  // Родитель может обновить набор полос - сохраняем пользовательский порядок там, где можно.
   useEffect(() => {
     setOrder((current) => {
       const byId = new Map(current.map((s) => [s.id, s] as const));
@@ -140,7 +140,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(next.map((s) => s.id)));
       } catch {
-        /* localStorage недоступен (приватный режим) — порядок просто не переживёт перезагрузку. */
+        /* localStorage недоступен (приватный режим) - порядок просто не переживёт перезагрузку. */
       }
     },
     [storageKey],
@@ -205,7 +205,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
     snapshotRef.current = orderRef.current;
     setDraggingId(strip.id);
     const index = orderRef.current.findIndex((s) => s.id === strip.id);
-    setAnnouncement(`${strip.title} — pozycja ${index + 1} z ${orderRef.current.length}`);
+    setAnnouncement(`${strip.title} - pozycja ${index + 1} z ${orderRef.current.length}`);
   }, []);
 
   const endPointerDrag = useCallback(() => {
@@ -213,7 +213,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
     stopAutoscroll();
   }, [stopAutoscroll]);
 
-  // Escape во время перетаскивания мышью/пальцем — отмена, полоса возвращается на место.
+  // Escape во время перетаскивания мышью/пальцем - отмена, полоса возвращается на место.
   useEffect(() => {
     if (!draggingId) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -233,14 +233,14 @@ export function ReorderableStrips<T extends ReorderableStrip>({
         event.preventDefault();
         if (pickedId === strip.id) {
           const index = orderRef.current.findIndex((s) => s.id === strip.id);
-          setAnnouncement(`${strip.title} — upuszczono, pozycja ${index + 1} z ${orderRef.current.length}`);
+          setAnnouncement(`${strip.title} - upuszczono, pozycja ${index + 1} z ${orderRef.current.length}`);
           setPickedId(null);
           return;
         }
         snapshotRef.current = orderRef.current;
         const index = orderRef.current.findIndex((s) => s.id === strip.id);
         setAnnouncement(
-          `${strip.title} — pozycja ${index + 1} z ${orderRef.current.length}. Strzałki zmieniają miejsce, Escape anuluje.`,
+          `${strip.title} - pozycja ${index + 1} z ${orderRef.current.length}. Strzałki zmieniają miejsce, Escape anuluje.`,
         );
         setPickedId(strip.id);
         return;
@@ -256,7 +256,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
         next.splice(from, 1);
         next.splice(to, 0, strip);
         commitOrder(next);
-        setAnnouncement(`${strip.title} — pozycja ${to + 1} z ${next.length}`);
+        setAnnouncement(`${strip.title} - pozycja ${to + 1} z ${next.length}`);
         return;
       }
       if (event.key === "Escape") {
@@ -264,7 +264,7 @@ export function ReorderableStrips<T extends ReorderableStrip>({
         if (snapshotRef.current) commitOrder(snapshotRef.current);
         setPickedId(null);
         const index = (snapshotRef.current ?? orderRef.current).findIndex((s) => s.id === strip.id);
-        setAnnouncement(`${strip.title} — anulowano, pozycja ${index + 1} z ${orderRef.current.length}`);
+        setAnnouncement(`${strip.title} - anulowano, pozycja ${index + 1} z ${orderRef.current.length}`);
       }
     },
     [commitOrder, pickedId],

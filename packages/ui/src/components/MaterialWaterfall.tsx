@@ -3,8 +3,8 @@
 /**
  * „Wodospad” powiększonego boxa: baza powiązanych doniesień. Po otwarciu boxa przeszukujemy bazę
  * (`/api/articles/<id>/context/?page=N`, po 30 materiałów) i wyniki „spływają” z miniatury głównego
- * materiału do kolumn — ośmiu grup kategorii portalu (Artykuł, Film, Publiczne, Reklama…, alfabetycznie); każdy wiersz to inna data,
- * wiersze dochodzą w miarę zapełniania. Kilka pierwszych stron dociąga się samo, z krótką przerwą —
+ * materiału do kolumn - ośmiu grup kategorii portalu (Artykuł, Film, Publiczne, Reklama…, alfabetycznie); każdy wiersz to inna data,
+ * wiersze dochodzą w miarę zapełniania. Kilka pierwszych stron dociąga się samo, z krótką przerwą -
  * widać postęp szukania; dalej przycisk „Szukaj dalej”.
  */
 
@@ -50,7 +50,7 @@ export function MaterialWaterfall({ article, onSelect }: { article: Article; onS
     }
   }
 
-  // Nowy box — od zera; pierwsza strona od razu, kolejne same (do AUTO_PAGES) z przerwą.
+  // Nowy box - od zera; pierwsza strona od razu, kolejne same (do AUTO_PAGES) z przerwą.
   useEffect(() => {
     articleRef.current = article.id;
     setPages([]);
@@ -134,7 +134,7 @@ export function MaterialWaterfall({ article, onSelect }: { article: Article; onS
       {summary && !found.length && complete ? <p className="sc-t-body-s sc-text-2">W bazie nie ma jeszcze materiałów powiązanych z tym boxem.</p> : null}
 
       {found.length ? (
-        <div className="sc-material-waterfall__scroll" tabIndex={0} aria-label="Kolumny kategorii — przewijaj">
+        <div className="sc-material-waterfall__scroll" tabIndex={0} aria-label="Kolumny kategorii - przewijaj">
           <div className="sc-material-waterfall__grid" style={{ ["--sc-wf-cols" as string]: columns.length }}>
             {columns.map((column) => (
               <p key={column.key} className="sc-material-waterfall__col-head sc-t-caption">

@@ -10,7 +10,8 @@ from django.utils.text import slugify
 
 KPRM_VOIVODES_URL = 'https://www.gov.pl/web/premier/wojewodowie3'
 _NAME_RE = re.compile(r"^[A-ZĄĆĘŁŃÓŚŹŻ][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż.'’ -]{2,}$")
-_ROW_RE = re.compile(r'^(?P<name>.+?)\s+-\s+wojewoda\s+(?P<region>[a-ząćęłńóśźż-]+)$', re.IGNORECASE)
+# KPRM pisze raz „-”, raz „–” (półpauza); stary wzorzec przyjmował tylko „-” i lista wychodziła niepełna.
+_ROW_RE = re.compile(r'^(?P<name>.+?)\s+[-–—]\s+wojewoda\s+(?P<region>[a-ząćęłńóśźż-]+)$', re.IGNORECASE)
 
 VOIVODE_CONFIG = {
     'dolnoslaski': ('dolnoslaskie', 'Wojewoda Dolnośląski', 'Dolnośląski Urząd Wojewódzki we Wrocławiu'),
@@ -95,7 +96,8 @@ def get_rows(*, http_get=requests.get):
         if not match:
             continue
         name = match.group('name').strip()
-        config = VOIVODE_CONFIG.get(slugify(match.group('region')))
+        # slugify gubi „ł” (łódzki -> odzki, małopolski -> maopolski), więc zamieniamy je wcześniej.
+        config = VOIVODE_CONFIG.get(slugify(match.group('region').replace('ł', 'l').replace('Ł', 'L')))
         if not config:
             continue
         if not _NAME_RE.match(name) or len(name.split()) < 2:

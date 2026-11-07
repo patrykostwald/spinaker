@@ -1,12 +1,13 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead
+from news.political_models import PoliticalAccount, PoliticalAccountCandidate, ParliamentaryRosterEntry, PublicFigure, PublicOffice, PublicFigureRole, PublicFigureArticleReference, RegisteredOrganisation, PublicFigureOrganisationRelation, PublicFigureMediaMention, SocialHandleEvidence, OfficialVideoChannel, PoliticalPost, PoliticalDraft, PoliticalRead
 from news.political_import import create_from_preview, validate_csv
 from news.political_candidates import CandidateResolutionError, resolve_candidate
 from news.political_candidate_import import create_candidates_from_preview, validate_candidate_csv
@@ -21,6 +22,11 @@ class PoliticalAccountAdmin(admin.ModelAdmin):
     readonly_fields = ['confirmed_by', 'confirmed_at', 'confirmation_fingerprint', 'poll_cursor',
         'next_poll_at', 'last_polled_at', 'last_error', 'created_at']
     actions = ['confirm_accounts']
+
+    def changelist_view(self, request, extra_context=None):
+        from news.x_watch import latency_metrics
+        return super().changelist_view(request, extra_context={
+            **(extra_context or {}), 'x_watch_latency': latency_metrics()})
 
     def get_urls(self):
         urls = super().get_urls()
@@ -144,12 +150,30 @@ class ParliamentaryRosterEntryAdmin(admin.ModelAdmin):
 
 class PublicFigureAdmin(admin.ModelAdmin):
     """Manual editorial register; deliberately has no social-account actions."""
-    list_display = ['canonical_name', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
+    change_list_template = 'admin/news/publicfigure/change_list.html'
+    list_display = ['canonical_name', 'follower_count', 'post_follower_count', 'role_category', 'role_title', 'organisation', 'status', 'archived', 'source_checked_at']
     list_filter = ['role_category', 'status', 'archived']
     search_fields = ['canonical_name', 'role_title', 'organisation', 'political_alignment']
     autocomplete_fields = ['parliamentary_roster_entry']
     readonly_fields = ['created_at', 'updated_at']
     actions = ['archive_selected', 'restore_selected']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            followers_total=Count('follow', filter=Q(follow__user__is_active=True), distinct=True),
+            post_followers_total=Count('follow', filter=Q(follow__user__is_active=True, follow__mode='posts'), distinct=True))
+
+    @admin.display(description='Obserwujący', ordering='followers_total')
+    def follower_count(self, obj):
+        return obj.followers_total
+
+    @admin.display(description='Każdy wpis', ordering='post_followers_total')
+    def post_follower_count(self, obj):
+        return obj.post_followers_total
+
+    def changelist_view(self, request, extra_context=None):
+        top = self.get_queryset(request).filter(followers_total__gt=0).order_by('-followers_total', 'canonical_name')[:20]
+        return super().changelist_view(request, extra_context={**(extra_context or {}), 'most_followed': top})
 
     @admin.action(description='Archiwizuj wybrane wpisy (bez usuwania)')
     def archive_selected(self, request, queryset):
@@ -283,6 +307,32 @@ class PublicFigureOrganisationRelationAdmin(admin.ModelAdmin):
         return False
 
 
+class PublicFigureMediaMentionAdmin(admin.ModelAdmin):
+    list_display = ['public_figure', 'organisation', 'category', 'match_basis', 'source_outlet', 'published_on', 'status']
+    list_filter = ['status', 'category', 'match_basis']
+    search_fields = ['public_figure__canonical_name', 'organisation__name', 'organisation__krs_number', 'source_title', 'source_outlet']
+    autocomplete_fields = ['public_figure', 'organisation']
+    readonly_fields = ['reviewed_by', 'reviewed_at', 'created_at', 'updated_at']
+    actions = ['publish_mentions', 'reject_mentions']
+
+    @admin.action(description='Opublikuj wybrane doniesienia (po sprawdzeniu źródła)')
+    def publish_mentions(self, request, queryset):
+        for mention in queryset.filter(status='pending_review'):
+            try:
+                mention.publish(request.user)
+            except ValidationError as exc:
+                self.message_user(request, f'{mention}: {"; ".join(exc.messages)}', messages.ERROR)
+            else:
+                self.message_user(request, f'Opublikowano: {mention}', messages.SUCCESS)
+
+    @admin.action(description='Odrzuć wybrane doniesienia')
+    def reject_mentions(self, request, queryset):
+        queryset.filter(status='pending_review').update(status='rejected', reviewed_by=request.user, reviewed_at=timezone.now())
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class SocialHandleEvidenceAdmin(admin.ModelAdmin):
     list_display = ['handle', 'roster_entry', 'platform', 'status', 'observed_at', 'candidate']
     list_filter = ['platform', 'status', 'roster_entry__source']
@@ -364,7 +414,7 @@ class PoliticalDraftAdmin(ReadOnlyPoliticalAdmin):
             except APIValidationError:
                 self.message_user(request, 'Szkic ma niedostępne źródła; nie został zatwierdzony.', messages.ERROR)
 
-    @admin.action(description='Zatwierdź szkic (bez publikacji nitki)')
+    @admin.action(description='Zatwierdź szkic (bez publikacji spinki)')
     def approve_drafts(self, request, queryset):
         self._review(request, queryset, 'approved')
 
@@ -384,6 +434,7 @@ def register_political_admin(site):
     site.register(PublicFigureArticleReference, PublicFigureArticleReferenceAdmin)
     site.register(RegisteredOrganisation, RegisteredOrganisationAdmin)
     site.register(PublicFigureOrganisationRelation, PublicFigureOrganisationRelationAdmin)
+    site.register(PublicFigureMediaMention, PublicFigureMediaMentionAdmin)
     site.register(SocialHandleEvidence, SocialHandleEvidenceAdmin)
     site.register(PoliticalPost, PoliticalPostAdmin)
     site.register(PoliticalDraft, PoliticalDraftAdmin)

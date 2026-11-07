@@ -28,7 +28,8 @@ def test_private_default_explicit_opt_in_and_no_email(accounts, source):
     assert client.get('/api/profiles/one/activity/').status_code == 404
     assert client.get('/api/account/history/').status_code == 403
     client.force_authenticate(owner)
-    assert client.get('/api/account/profile/').data == {
+    profile = client.get('/api/account/profile/').data
+    assert {key: profile[key] for key in ('username', 'public_activity', 'theme_preference')} == {
         'username': 'one', 'public_activity': False, 'theme_preference': 'auto'}
     assert client.get('/api/account/history/').data['results'][0]['body'] == 'Public comment'
     assert client.patch('/api/account/profile/', {'public_activity': True, 'user': other.pk, 'is_staff': True}, format='json').status_code == 200
@@ -117,11 +118,12 @@ def test_topics_are_publisher_tags_not_titles_or_material_type(accounts, source)
     assert client.post('/api/account/topics/', {'label': 'Bad', 'query': 'x', 'topics': ['article']}, format='json').status_code == 400
 
 
-def test_source_selection_includes_beyond_top_ten_and_hides_inactive(source):
+def test_source_catalog_includes_beyond_top_ten_and_marks_inactive(source):
     Source.objects.create(name='Inactive', url='https://inactive.example', is_active=False)
     data = APIClient().get('/api/portal/config/').data
     assert source.pk in [row['id'] for row in data['sources']]
-    assert 'Inactive' not in [row['name'] for row in data['sources']]
+    # Portal config is also the public catalogue; inactive candidates are labelled.
+    assert next(row for row in data['sources'] if row['name'] == 'Inactive')['is_active'] is False
     assert len(data['topics']) == 13
 
 

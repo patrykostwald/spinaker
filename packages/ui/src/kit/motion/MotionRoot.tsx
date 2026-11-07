@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { springs } from "./springs";
 
 /**
- * Глобальная настройка framer-motion. reducedMotion="user" — страховка: сам framer-motion
+ * Глобальная настройка framer-motion. reducedMotion="user" - страховка: сам framer-motion
  * гасит transform и layout-анимации для тех, кто просил меньше движения, оставляя прозрачность.
  * useMotionTokens сверху добавляет спроектированную деградацию.
  * Монтируется один раз в frontend-spin/app/providers.tsx.

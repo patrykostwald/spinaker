@@ -7,8 +7,9 @@ import { formatDateTimePl } from '../lib/utils';
 import type { Paginated } from '../types';
 import { ThreadEditor } from './ThreadEditor';
 import { Button } from '../kit';
+import { Loading } from "../kit/Loading";
 
-type Camp = 'government' | 'opposition' | 'public';
+type Camp = 'government' | 'opposition' | 'public' | 'other';
 
 type XPost = {
   id: number; account: number; account_handle: string; account_display_name: string;
@@ -131,7 +132,7 @@ export function PoliticalReview() {
       const path = view === 'candidates' ? '/api/staff/political/drafts/candidates/' : '/api/staff/political/drafts/';
       const created = await apiWrite<XDraft>(path,
         { camp, day, title: title.trim(), posts: selectedPosts.map(post => post.id), notes, proposed_items });
-      setNotice(`Zapisano propozycję „${created.title}” — status: ${STATUS_LABELS[created.status]}. `
+      setNotice(`Zapisano propozycję „${created.title}” - status: ${STATUS_LABELS[created.status]}. `
         + 'To wyłącznie materiał do przeglądu zespołu; nic nie zostało opublikowane.');
       resetForm();
       await cache.invalidateQueries({ queryKey: ['political-drafts', view] });
@@ -156,7 +157,7 @@ export function PoliticalReview() {
       <h1 className="sc-t-title-l">Propozycje z już zapisanych wpisów X</h1>
       <p className="sc-political-copy">Panel wyłącznie przegląda materiał już pobrany i zapisany jako
         PoliticalPost. Nie łączy się z płatnym API X, nie publikuje nitek, nie pisze oskarżeń i nie ocenia prawdziwości
-        wpisów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje — to osobna decyzja zespołu.</p>
+        wpisów. Zatwierdzenie propozycji w tym panelu nadal niczego nie publikuje - to osobna decyzja zespołu.</p>
     </header>
 
     {status.data?.draft_rules && <details className="sc-political-rules">
@@ -184,7 +185,7 @@ export function PoliticalReview() {
           <option value="all">Wszystkie grupy</option><option value="government">Obóz rządzący</option><option value="opposition">Opozycja</option><option value="public">Instytucje publiczne</option>
         </select></label>}
       </div>
-      {posts.isPending ? <p role="status">Ładuję zapisane wpisy…</p>
+      {posts.isPending ? <p role="status"><Loading label="Ładuję zapisane wpisy" /></p>
         : posts.isError ? <div role="alert"><p>Nie udało się pobrać wpisów.</p>
             <button className={button} onClick={() => posts.refetch()}>Spróbuj ponownie</button></div>
         : <div className="sc-political-list">
@@ -193,7 +194,7 @@ export function PoliticalReview() {
               <div className="sc-political-post-body">
                 <div className="sc-political-post-meta">
                   <span>@{post.account_handle}{post.account_display_name ? ` · ${post.account_display_name}` : ''}</span>
-                  <span>{post.camp_at_collection === 'government' ? 'obóz rządzący' : post.camp_at_collection === 'opposition' ? 'opozycja' : 'instytucja publiczna'}</span>
+                  <span>{post.camp_at_collection === 'government' ? 'obóz rządzący' : post.camp_at_collection === 'opposition' ? 'opozycja' : post.camp_at_collection === 'other' ? 'inni i niezrzeszeni' : 'instytucja publiczna'}</span>
                   <span>{formatDateTimePl(post.published_at)}</span>
                 </div>
                 <p className="sc-political-post-text">{post.text || '(treść wycofana przez wydawcę)'}</p>
@@ -245,13 +246,13 @@ export function PoliticalReview() {
       <div className="sc-political-actions">
         <button type="submit" disabled={busy} className={primaryButton}>{busy ? 'Zapisuję…' : 'Zapisz jako propozycję do przeglądu'}</button>
         <button type="button" disabled={busy || !selectedPosts.length} className={button} onClick={resetForm}>Wyczyść wybór</button>
-        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje nitki i nie ocenia prawdziwości wpisów.</p>
+        <p className="sc-political-copy">Zapis tworzy wyłącznie szkic ze statusem „Do przeglądu”. Nie publikuje spinki i nie ocenia prawdziwości wpisów.</p>
       </div>
     </form>
 
     <section className="sc-political-section">
       <h2 className="sc-t-title-m">Ostatnie propozycje w tym widoku</h2>
-      {drafts.isPending ? <p role="status">Ładuję listę propozycji…</p>
+      {drafts.isPending ? <p role="status"><Loading label="Ładuję listę propozycji" /></p>
         : drafts.isError ? <p role="alert">Nie udało się pobrać listy propozycji.</p>
         : <div className="sc-political-list">
             {drafts.data?.results.map(item => <article key={item.id} className="sc-political-draft">

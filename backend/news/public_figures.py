@@ -1,4 +1,5 @@
-"""Public, evidence-only profile API for the future politician view."""
+"""Public profile API: confirmed evidence and separately labelled metadata matches."""
+from news import krs
 from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -33,11 +34,12 @@ def headline(figure):
     return ' · '.join([*titles, figure.role_title]), better[0].role_category
 
 
-def figure_data(figure, include_detail=False):
+def figure_data(figure, include_detail=False, include_mentions=True):
+    from news.przeszlosc_osoba import display_name
     role_title, role_category = headline(figure)
     data = {
         'id': figure.pk,
-        'name': figure.canonical_name,
+        'name': display_name(figure.canonical_name),
         'role_category': role_category,
         'role_title': role_title,
         'organisation': figure.organisation,
@@ -60,7 +62,9 @@ def figure_data(figure, include_detail=False):
         'kind': relation.organisation.kind,
         'legal_form': relation.organisation.legal_form,
         'sector': relation.organisation.sector,
-        'official_register_url': relation.organisation.official_register_url,
+        'official_register_url': krs.official_register_url(relation.organisation.official_register_url),
+        'extra_register_url': krs.extra_register_url(relation.organisation.krs_number),
+        'since_note': krs.SINCE_NOTE,
         'public_role': relation.public_role,
         'organ': relation.organ,
         'relation_status': relation.relation_status,
@@ -96,6 +100,32 @@ def figure_data(figure, include_detail=False):
     data['x_posts'] = verified_x_posts_data(figure)
     data['youtube_channels'] = confirmed_youtube_channels_data(figure)
     data['materials'] = materials_data(figure)
+    if include_mentions:
+        from news.media_mentions import mentions_data
+        data['mentions'] = mentions_data(figure)
+    return data
+
+
+KRS_SPIN_FIELDS = ('id', 'name', 'kind', 'sector', 'public_role', 'organ', 'relation_status')
+
+
+def krs_functions(organisations):
+    """spin.clinic (właściciel 6.10): z KRS tylko nazwa funkcji i podmiotu - bez dat, numerów KRS, źródeł i historii.
+    Pełne dane zostają w profilu przeszłość.today (przeszlosc_osoba.profile)."""
+    return [{key: row.get(key) for key in KRS_SPIN_FIELDS} for row in organisations]
+
+
+def spin_profile(figure, data):
+    """Profil osoby na spin.clinic: minimum danych z KRS i odnośnik do pełnej historii w przeszłość.today (gdy włączona)."""
+    from news.przeszlosc import enabled
+    data['organisations'] = krs_functions(data.get('organisations') or [])
+    # oś kariery bez wpisów z KRS (daty funkcji w spółkach są tylko w przeszłość.today)
+    data['employment_timeline'] = [entry for entry in data.get('employment_timeline') or [] if 'sector' not in entry]
+    data['krs_full_profile'] = None
+    if enabled():
+        from news.przeszlosc_alerts import site
+        from news.przeszlosc_osoba import slug
+        data['krs_full_profile'] = {'url': f'{site()}/przeszlosc/osoba/{slug(figure)}', 'label': 'Pełna historia w przeszłość.today'}
     return data
 
 
@@ -135,6 +165,14 @@ CURRENT_TERMS = {'parliamentary:sejm:': '2023-11-13', 'parliamentary:ep:': '2024
 def _current_term_start(figure):
     if figure.status != 'current':
         return None, ''
+    if (figure.import_key or '').startswith('parliamentary:sejm:'):
+        from django.conf import settings
+        from news.sejm_career import KNOWN_TERMS
+        entry = figure.parliamentary_roster_entry
+        if not entry or entry.term != settings.SEJM_TERM or not entry.active:
+            return None, ''
+        term = next((item for item in KNOWN_TERMS if item['num'] == settings.SEJM_TERM), {})
+        return term.get('from'), _club_short(entry.club)
     for prefix, start in CURRENT_TERMS.items():
         if (figure.import_key or '').startswith(prefix):
             club = figure.parliamentary_roster_entry.club if figure.parliamentary_roster_entry_id else ''
@@ -185,7 +223,7 @@ def employment_timeline_data(figure, roles, relations=()):
             'since': relation.since,
             'until': relation.until,
             'sector': relation.organisation.sector,
-            'source': {'label': f'KRS {relation.organisation.krs_number}', 'url': relation.organisation.official_register_url},
+            'source': {'label': f'KRS {relation.organisation.krs_number}', 'url': krs.official_register_url(relation.organisation.official_register_url)},
             'office': None,
         })
 
@@ -238,6 +276,8 @@ def materials_data(figure):
             'reference_kind': reference.reference_kind,
             'evidence_note': reference.evidence_note,
         })
+    from news.article_changes import attach_change_flags
+    attach_change_flags(results)
     return {
         'available': bool(results),
         'count': references.count(),
@@ -312,7 +352,7 @@ def dossier_data(figure):
     this bounded pack, not unrestricted database content, and may only explain
     or order the cited records.
     """
-    details = figure_data(figure, include_detail=True)
+    details = figure_data(figure, include_detail=True, include_mentions=False)
     graph = context_graph_data(figure)
     materials = details['materials']
     timeline = [
@@ -351,7 +391,7 @@ def dossier_data(figure):
         },
         'timeline': timeline[:30],
         'materials': materials,
-        'organisations': details['organisations'],
+        'organisations': krs_functions(details['organisations']),
         'roles': details['roles'],
         'votes': details['votes'],
         'graph': graph,
@@ -541,7 +581,7 @@ def public_office_list(request):
 @api_view(['GET'])
 def public_figure_detail(request, figure_id):
     figure = get_object_or_404(PublicFigure, pk=figure_id, archived=False)
-    return Response(figure_data(figure, include_detail=True))
+    return Response(spin_profile(figure, figure_data(figure, include_detail=True)))
 
 
 @extend_schema(summary="Kontekst osoby publicznej", tags=["osoby publiczne"], responses=OpenApiTypes.OBJECT)

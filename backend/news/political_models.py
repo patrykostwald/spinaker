@@ -14,10 +14,13 @@ from django.utils import timezone
 
 
 EDITORIAL_CAMPS = [('government', 'Obóz rządzący'), ('opposition', 'Opozycja')]
-ACCOUNT_CAMPS = [*EDITORIAL_CAMPS, ('public', 'Instytucja publiczna')]
+# „Inni i niezrzeszeni”: koła, posłowie niezrzeszeni, kluby spoza listy obozów. Konto jest czytane i diagnozowane,
+# ale nie wchodzi do przekazów dnia, które porównują dwa obozy (właściciel 23.10).
+OTHER_CAMP = 'other'
+ACCOUNT_CAMPS = [*EDITORIAL_CAMPS, ('public', 'Instytucja publiczna'), (OTHER_CAMP, 'Inni i niezrzeszeni')]
 ACCOUNT_CANDIDATE_CLASSIFICATIONS = [
     ('government', 'Obóz rządzący'), ('opposition', 'Opozycja'),
-    ('public', 'Instytucja publiczna'), ('independent', 'Niezależne / do oceny'),
+    ('public', 'Instytucja publiczna'), ('independent', 'Niezależne / do oceny'), (OTHER_CAMP, 'Inni i niezrzeszeni'),
 ]
 ID_VALIDATOR = RegexValidator(r'^[1-9][0-9]{0,18}$', 'Podaj numeryczny identyfikator X.')
 HANDLE_VALIDATOR = RegexValidator(r'^[A-Za-z0-9_]{1,15}$', 'Podaj nazwę konta X bez @.')
@@ -36,16 +39,40 @@ class PoliticalAccount(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     confirmation_fingerprint = models.CharField(max_length=64, blank=True, editable=False)
     enabled = models.BooleanField(default=False)
-    poll_interval_minutes = models.PositiveSmallIntegerField(default=15,
-        validators=[MinValueValidator(1), MaxValueValidator(1440)])
+    disabled_at = models.DateTimeField(null=True, blank=True, editable=False)
+    name_history = models.JSONField(default=list, blank=True, editable=False)
+    poll_interval_minutes = models.PositiveIntegerField(default=15,
+        validators=[MinValueValidator(1), MaxValueValidator(525600)])
+    include_replies = models.BooleanField(default=True, verbose_name='Czytaj odpowiedzi')
+    include_reposts = models.BooleanField(default=False, verbose_name='Czytaj podania dalej')
+    last_verified_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
+    last_profile_read_at = models.DateTimeField(null=True, blank=True, editable=False)
     poll_cursor = models.JSONField(default=dict, blank=True, editable=False)
     next_poll_at = models.DateTimeField(default=timezone.now, db_index=True, editable=False)
     last_polled_at = models.DateTimeField(null=True, editable=False)
     last_error = models.CharField(max_length=120, blank=True, editable=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
+    # Miniatura konta (news/x_avatars.py, 13.10): tylko https://pbs.twimg.com/profile_images/..., wariant _bigger.
+    avatar_url = models.URLField(max_length=500, blank=True, editable=False)
+    avatar_checked_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     def __str__(self):
         return f'@{self.handle} — {self.get_camp_display()}'
+
+    def save(self, *args, **kwargs):
+        fields = kwargs.get('update_fields')
+        previous = type(self).objects.filter(pk=self.pk).first() if self.pk else None
+        extra = set()
+        if previous and (fields is None or 'enabled' in fields) and previous.enabled != self.enabled:
+            self.disabled_at = None if self.enabled else timezone.now()
+            extra.add('disabled_at')
+        if previous and (fields is None or 'display_name' in fields) and previous.display_name != self.display_name:
+            self.name_history = [*previous.name_history, {'name': previous.display_name,
+                'until': timezone.now().isoformat(), 'source': 'database'}]
+            extra.add('name_history')
+        if fields is not None:
+            kwargs['update_fields'] = set(fields) | extra
+        super().save(*args, **kwargs)
 
     def identity_fingerprint(self):
         values = [self.user_id, self.handle.lower(), self.display_name, self.camp,
@@ -66,13 +93,47 @@ class PoliticalAccount(models.Model):
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie konta wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie konta wymaga aktywnej osoby z zespołu.')
         self.full_clean()
         if not self.confirmation_url:
             raise ValidationError('Dodaj źródło potwierdzenia konta i obozu.')
         self.confirmed_by, self.confirmed_at = staff, timezone.now()
         self.confirmation_fingerprint = self.identity_fingerprint()
         self.save(update_fields=['confirmed_by', 'confirmed_at', 'confirmation_fingerprint'])
+
+
+class AccountWardenRun(models.Model):
+    """Durable run journal; reservations survive worker loss and remain visible in costs."""
+    started_at = models.DateTimeField(default=timezone.now, db_index=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    lookups = models.PositiveIntegerField(default=0)
+    report = models.JSONField(default=dict)
+
+
+class WardenReview(models.Model):
+    account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='warden_reviews')
+    reason = models.TextField()
+    category = models.CharField(max_length=24)
+    first_decision = models.CharField(max_length=12, default='disable')
+    fingerprint = models.CharField(max_length=64)
+    evidence = models.JSONField(default=dict)
+    second_evidence = models.JSONField(default=dict, blank=True)
+    second_decision = models.CharField(max_length=12, blank=True)
+    status = models.CharField(max_length=16, default='pending', db_index=True,
+        choices=[(v, v) for v in ('pending', 'owner', 'disabled', 'kept', 'superseded')])
+    created_at = models.DateTimeField(default=timezone.now)
+    due_at = models.DateTimeField(db_index=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+')
+    lease_until = models.DateTimeField(null=True, blank=True)
+    lease_token = models.CharField(max_length=32, blank=True)
+    last_error = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['account'], condition=Q(status__in=['pending', 'owner']),
+            name='warden_one_open_review')]
 
 
 class PoliticalAccountCandidate(models.Model):
@@ -143,7 +204,7 @@ ORGANISATION_KINDS = [
 ]
 ORGANISATION_RELATION_STATUSES = [('current', 'Obecna'), ('former', 'Historyczna')]
 ORGANISATION_VERIFICATION_STATUSES = [
-    ('pending_review', 'Wymaga potwierdzenia redakcji'),
+    ('pending_review', 'Do weryfikacji'),
     ('confirmed', 'Potwierdzona w źródle publicznym'),
     ('rejected', 'Odrzucona'),
 ]
@@ -183,9 +244,10 @@ class PublicFigure(models.Model):
         help_text='Publiczne źródło potwierdzające rolę lub status wpisu.')
     evidence_note = models.TextField(blank=True)
     political_alignment = models.CharField(max_length=255, blank=True,
-        help_text='Opcjonalna, ręczna notatka redakcyjna; nie jest ustalana automatycznie.')
+        help_text='Opcjonalna, ręczna notatka zespołu; nie jest ustalana automatycznie.')
     organisations_checked_at = models.DateTimeField(null=True, blank=True, db_index=True,
         help_text='Kiedy agent KRS ostatnio szukał podmiotów tej osoby.')
+    account_discovery_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
     source_checked_at = models.DateTimeField(default=timezone.now)
     parliamentary_roster_entry = models.ForeignKey(ParliamentaryRosterEntry, null=True, blank=True,
         on_delete=models.PROTECT, related_name='public_figure_profiles',
@@ -194,7 +256,7 @@ class PublicFigure(models.Model):
         help_text='Wpis archiwalny pozostaje w rejestrze i nie jest usuwany.')
     merged_into = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='merged_profiles',
-        help_text='Potwierdzone przez redakcję połączenie z profilem tej samej osoby. Połączony wpis '
+        help_text='Potwierdzone przez zespół połączenie z profilem tej samej osoby. Połączony wpis '
                   'pozostaje archiwalny także po synchronizacji rosterów; jego role trafiają do profilu docelowego.')
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -287,7 +349,7 @@ ARTICLE_REFERENCE_KINDS = [
 ]
 ARTICLE_REFERENCE_VERIFICATION_STATUSES = [
     ('pending_review', 'Do przeglądu'),
-    ('confirmed', 'Potwierdzone przez redakcję'),
+    ('confirmed', 'Potwierdzone przez zespół'),
     ('rejected', 'Odrzucone'),
 ]
 
@@ -326,11 +388,11 @@ class PublicFigureArticleReference(models.Model):
     def clean(self):
         super().clean()
         if self.verification_status == 'confirmed' and (not self.verified_by_id or not self.verified_at):
-            raise ValidationError('Potwierdzona relacja z materiałem wymaga redaktora i daty potwierdzenia.')
+            raise ValidationError('Potwierdzona relacja z materiałem wymaga osoby z zespołu i daty potwierdzenia.')
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie relacji z materiałem wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie relacji z materiałem wymaga aktywnej osoby z zespołu.')
         self.verified_by = staff
         self.verified_at = timezone.now()
         self.verification_status = 'confirmed'
@@ -349,6 +411,13 @@ class RegisteredOrganisation(models.Model):
     register = models.CharField(max_length=1, blank=True, help_text='Rejestr KRS: P — przedsiębiorców, S — stowarzyszeń i fundacji.')
     sector = models.CharField(max_length=12, choices=ORGANISATION_SECTORS, default='unknown', db_index=True)
     sector_note = models.TextField(blank=True, help_text='Skąd wiemy, że podmiot jest państwowy lub komunalny.')
+    # Drzewo przepływu pieniędzy (właściciel 6.10): identyfikatory podmiotu z odpisu KRS. Zamówienia (TED, BZP) i dotacje (FTS)
+    # łączymy wyłącznie po NIP, KRS albo REGON - nigdy po samej nazwie.
+    nip = models.CharField(max_length=10, blank=True, db_index=True, help_text='NIP z odpisu KRS (same cyfry).')
+    regon = models.CharField(max_length=14, blank=True, db_index=True, help_text='REGON z odpisu KRS (same cyfry).')
+    seat_city = models.CharField(max_length=128, blank=True, db_index=True, help_text='Miejscowość siedziby z odpisu KRS (dopasowanie po nazwie i siedzibie).')
+    seat_postal_code = models.CharField(max_length=6, blank=True, help_text='Kod pocztowy siedziby z odpisu KRS (bez ulicy).')
+    seat_voivodeship = models.CharField(max_length=64, blank=True, help_text='Województwo siedziby z odpisu KRS.')
     source_checked_at = models.DateTimeField(default=timezone.now)
     archived = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -397,7 +466,7 @@ class PublicFigureOrganisationRelation(models.Model):
     def clean(self):
         super().clean()
         if self.verification_status == 'confirmed' and self.verification_method == 'editor' and (not self.verified_by_id or not self.verified_at):
-            raise ValidationError('Potwierdzona relacja wymaga redaktora i daty potwierdzenia.')
+            raise ValidationError('Potwierdzona relacja wymaga osoby z zespołu i daty potwierdzenia.')
 
     def save(self, *args, **kwargs):
         """Return changed public evidence to the editorial review queue.
@@ -432,7 +501,7 @@ class PublicFigureOrganisationRelation(models.Model):
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie relacji wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie relacji wymaga aktywnej osoby z zespołu.')
         if not self.evidence_url:
             raise ValidationError('Dodaj bezpośredni publiczny dowód relacji.')
         self.verified_by = staff
@@ -440,6 +509,94 @@ class PublicFigureOrganisationRelation(models.Model):
         self.verification_status = 'confirmed'
         self.full_clean()
         self.save(update_fields=['verified_by', 'verified_at', 'verification_status', 'updated_at'])
+
+
+MEDIA_MENTION_CATEGORIES = [
+    ('mention', 'Wzmianka'),
+    ('alleged', 'Rzekome powiązanie'),
+    ('lobbying', 'Lobbing'),
+    ('denied', 'Sprostowane lub zaprzeczone'),
+    ('other', 'Inne'),
+]
+MEDIA_MENTION_MATCH = [
+    ('identifier', 'Po numerze KRS lub NIP'),
+    ('name_only', 'Tylko po nazwie (niepotwierdzone)'),
+]
+MEDIA_MENTION_STATUSES = [
+    ('pending_review', 'Do przeglądu'),
+    ('published', 'Opublikowana'),
+    ('rejected', 'Odrzucona'),
+]
+MEDIA_QUOTE_LIMIT = 300
+
+
+class PublicFigureMediaMention(models.Model):
+    """Doniesienie medialne łączące osobę publiczną z podmiotem z naszej bazy (6.11.2026).
+
+    Nie opisujemy charakteru powiązania: pokazujemy źródło (link, tytuł, redakcja, data, krótki cytat) i kategorię doniesienia.
+    Wzmianka w mediach nie jest dowodem powiązania. Każda pozycja przechodzi kolejkę zatwierdzania (domyślnie „do przeglądu”);
+    zmiana treści wskazującej na powiązanie cofa publikację do kolejki. Podmiot wyłącznie z naszej bazy (KRS), dopasowanie
+    po numerze KRS/NIP albo oznaczone jako niepotwierdzone (tylko nazwa)."""
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT, related_name='media_mentions')
+    organisation = models.ForeignKey(RegisteredOrganisation, on_delete=models.PROTECT, related_name='media_mentions')
+    category = models.CharField(max_length=10, choices=MEDIA_MENTION_CATEGORIES, default='mention')
+    match_basis = models.CharField(max_length=12, choices=MEDIA_MENTION_MATCH, default='name_only')
+    source_url = models.URLField(max_length=1024, help_text='Bezpośredni link do doniesienia.')
+    source_title = models.CharField(max_length=300)
+    source_outlet = models.CharField(max_length=120, blank=True, help_text='Redakcja lub portal.')
+    published_on = models.DateField(null=True, blank=True)
+    quote = models.CharField(max_length=MEDIA_QUOTE_LIMIT, blank=True,
+        help_text='Krótki cytat z doniesienia (najwyżej 300 znaków); bez kopiowania całego tekstu.')
+    status = models.CharField(max_length=14, choices=MEDIA_MENTION_STATUSES, default='pending_review', db_index=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='reviewed_media_mentions', editable=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    collected_by = models.CharField(max_length=16, default='manual', help_text='manual, agent albo import.')
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-published_on', '-pk']
+        constraints = [models.UniqueConstraint(fields=['public_figure', 'organisation', 'source_url'],
+                                               name='unique_media_mention_per_source')]
+
+    def clean(self):
+        super().clean()
+        if urlparse(self.source_url or '').scheme not in ('http', 'https'):
+            raise ValidationError('Link do doniesienia musi zaczynać się od http lub https.')
+        if len(self.quote or '') > MEDIA_QUOTE_LIMIT:
+            raise ValidationError('Cytat może mieć najwyżej 300 znaków.')
+
+    def save(self, *args, **kwargs):
+        """Zmiana treści doniesienia cofa opublikowaną pozycję do kolejki zatwierdzania."""
+        watched = ('public_figure_id', 'organisation_id', 'category', 'match_basis', 'source_url', 'source_title', 'quote')
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).values('status', *watched).first()
+            if previous and previous['status'] == 'published' and any(previous[f] != getattr(self, f) for f in watched):
+                self.status, self.reviewed_by_id, self.reviewed_at = 'pending_review', None, None
+                if kwargs.get('update_fields') is not None:
+                    kwargs['update_fields'] = set(kwargs['update_fields']) | {'status', 'reviewed_by', 'reviewed_at', 'updated_at'}
+        super().save(*args, **kwargs)
+
+    def publish(self, staff):
+        if not staff.is_active or not staff.is_staff:
+            raise ValidationError('Publikacja doniesienia wymaga aktywnej osoby z zespołu.')
+        self.full_clean()
+        self.status, self.reviewed_by, self.reviewed_at = 'published', staff, timezone.now()
+        self.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'updated_at'])
+
+
+class MediaResearchLog(models.Model):
+    """Zapis zbadania osoby badaczem doniesień (6.11.2026): żeby nie płacić dwa razy za tę samą osobę i znać koszt/wynik każdego przebiegu."""
+    public_figure = models.ForeignKey(PublicFigure, on_delete=models.CASCADE, related_name='media_research_logs')
+    researched_at = models.DateTimeField(default=timezone.now, db_index=True)
+    items = models.PositiveSmallIntegerField(default=0, help_text='Pozycje zwrócone przez badacza.')
+    saved = models.PositiveSmallIntegerField(default=0, help_text='Pozycje zapisane do kolejki przeglądu.')
+    cost_usd = models.DecimalField(max_digits=7, decimal_places=3, default=0, help_text='Szacowany koszt (wycena zawyżona).')
+    model = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ['-researched_at']
 
 
 SOCIAL_EVIDENCE_STATUSES = [
@@ -451,7 +608,7 @@ SOCIAL_EVIDENCE_STATUSES = [
 
 OFFICIAL_VIDEO_CHANNEL_STATUSES = [
     ('pending_review', 'Do przeglądu'),
-    ('confirmed', 'Potwierdzony przez redakcję'),
+    ('confirmed', 'Potwierdzony przez zespół'),
     ('rejected', 'Odrzucony'),
 ]
 
@@ -511,11 +668,11 @@ class OfficialVideoChannel(models.Model):
         if self.collection_enabled and (self.status != 'confirmed' or not self.channel_id):
             raise ValidationError('Pobieranie metadanych wymaga potwierdzonego kanału z identyfikatorem kanału.')
         if self.status == 'confirmed' and (not self.reviewed_by_id or not self.reviewed_at):
-            raise ValidationError('Potwierdzony kanał wymaga redaktora i daty potwierdzenia.')
+            raise ValidationError('Potwierdzony kanał wymaga osoby z zespołu i daty potwierdzenia.')
 
     def confirm(self, staff):
         if not staff.is_active or not staff.is_staff:
-            raise ValidationError('Potwierdzenie kanału wymaga aktywnego redaktora.')
+            raise ValidationError('Potwierdzenie kanału wymaga aktywnej osoby z zespołu.')
         self.reviewed_by = staff
         self.reviewed_at = timezone.now()
         self.status = 'confirmed'
@@ -573,6 +730,7 @@ class SocialHandleEvidence(models.Model):
             raise ValidationError('Ręczny dowód konta może dotyczyć wyłącznie rekordu osoby publicznej.')
 
 class PoliticalPost(models.Model):
+    watch_priority = models.BooleanField(default=False, editable=False)
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='posts')
     post_id = models.CharField(max_length=19, unique=True, validators=[ID_VALIDATOR])
     url = models.URLField(max_length=1024)
@@ -608,7 +766,7 @@ class PoliticalDraft(models.Model):
     title = models.CharField(max_length=250)
     posts = models.ManyToManyField(PoliticalPost, related_name='drafts')
     origin = models.CharField(max_length=20, default='editorial_selection',
-        choices=[('editorial_selection', 'Wybór redakcji'), ('ai_proposal', 'Propozycja AI')])
+        choices=[('editorial_selection', 'Wybór zespołu'), ('ai_proposal', 'Propozycja AI')])
     proposed_items = models.JSONField(default=list,
         help_text='Szkic powiązań do sprawdzenia; nie są rekordami źródłowymi.')
     notes = models.TextField(blank=True)
@@ -631,6 +789,8 @@ class PoliticalDraft(models.Model):
 class PoliticalRead(models.Model):
     """Conservative pre-request reservation, not a statement of X billing."""
     account = models.ForeignKey(PoliticalAccount, on_delete=models.PROTECT, related_name='api_reads')
+    account_ids = models.JSONField(default=list, editable=False)
+    response_body = models.BinaryField(null=True, editable=False)
     started_at = models.DateTimeField(default=timezone.now, db_index=True)
     finished_at = models.DateTimeField(null=True)
     reserved_posts = models.PositiveSmallIntegerField()

@@ -15,7 +15,7 @@ export function ClinicNav() {
     <div id={id} data-open={open}>{clinicNavigation.map(({href, label}) => <Link key={href} href={href}
       aria-current={isClinicNavigationCurrent(pathname, href) ? "page" : undefined}
       onClick={() => setOpen(false)}>{label}</Link>)}
-      {/* Na prawym końcu paska: zasady analizy — widoczne na każdej stronie Kliniki */}
+      {/* Na prawym końcu paska: zasady analizy - widoczne na każdej stronie Kliniki */}
       <Link className="sc-clinic-nav__aside" href="/metodologia" aria-current={pathname === "/metodologia" ? "page" : undefined} onClick={() => setOpen(false)}>Jak działa analiza</Link></div>
   </nav>;
 }

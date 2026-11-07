@@ -51,7 +51,7 @@ def test_subscription_consent_and_withdrawal(authenticated):
     assert client.get(URL).data['results'][0]['topics'] == ['spin-dnia']
     assert APIClient().get(URL).data['results'] == []
     assert subscribe(APIClient(enforce_csrf_checks=True)).status_code == 409
-    assert subscribe(client, {**payload(), 'topics': ['obserwowani']}).status_code == 201
+    assert subscribe(client, {**payload(), 'topics': ['obserwowani']}).status_code == (201 if authenticated else 401)
     assert PushSubscription.objects.count() == 1
     csrf = client.get(URL).data['csrfToken']
     assert client.delete(URL, HTTP_X_CSRFTOKEN=csrf).status_code == 204
@@ -130,3 +130,58 @@ def test_thread_hook_after_commit(django_capture_on_commit_callbacks):
             enqueue.assert_not_called()
         assert enqueue.call_args.args[1] == 'nitki-dr-spina'
         assert enqueue.call_args.args[2]['url'] == '/thread/dr-spin-kontekst-2026-09-30'
+
+
+def _diagnosis(status, verdict='spin'):
+    from news.political_models import PoliticalAccount, PoliticalPost
+    from news.clinic_models import SpinDiagnosis
+    from django.utils import timezone
+    account = PoliticalAccount.objects.create(handle='posel', display_name='Jan Poseł', camp='ruling')
+    post = PoliticalPost.objects.create(account=account, post_id='1', text='Tekst', published_at=timezone.now(), camp_at_collection='ruling')
+    return SpinDiagnosis.objects.create(post=post, status=status, verdict=verdict, headline='Nagłówek diagnozy')
+
+
+def test_live_spin_alert_on_approval_once(django_capture_on_commit_callbacks):
+    from django.utils import timezone
+    with patch('news.push_events._enqueue') as enqueue, patch('news.push_events._morning_eta', return_value=None):
+        with django_capture_on_commit_callbacks(execute=True):
+            row = _diagnosis('pending_review', verdict='no_spin')
+        enqueue.assert_not_called()
+        with django_capture_on_commit_callbacks(execute=True):
+            row.status, row.verdict, row.reviewed_at = 'approved', 'spin', timezone.now()
+            row.save()
+        key, topic, data, eta = enqueue.call_args.args
+        assert key == f'spin:{row.pk}' and topic == 'spiny-na-zywo'
+        assert data['url'] == f'/klinika/{row.pk}' and 'Jan Poseł' in data['title']
+
+
+def test_review_alert_goes_to_staff(django_capture_on_commit_callbacks):
+    with patch('news.push_events._enqueue_staff') as enqueue:
+        with django_capture_on_commit_callbacks(execute=True):
+            row = _diagnosis('pending_review')
+        assert enqueue.call_args.args[0] == f'review:{row.pk}'
+
+
+def test_quiet_hours_delay_to_morning():
+    import datetime
+    from django.utils import timezone
+    from news.push_events import _morning_eta
+    late = timezone.make_aware(datetime.datetime(2026, 10, 1, 23, 30))
+    assert timezone.localtime(_morning_eta(late)).hour == 7
+    assert _morning_eta(timezone.make_aware(datetime.datetime(2026, 10, 1, 12, 0))) is None
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(monkeypatch):
+    monkeypatch.setattr('django.conf.settings.THREADS_ENABLED', True)
+
+
+def test_followed_topic_requires_account_and_binds_after_login():
+    anonymous = APIClient()
+    assert anonymous.post(URL, {**payload(), 'topics': ['obserwowani']}, format='json').status_code == 401
+    assert not PushSubscription.objects.exists()
+    user = get_user_model().objects.create_user(username='follower')
+    client = APIClient()
+    client.force_authenticate(user)
+    assert client.post(URL, {**payload(), 'topics': ['obserwowani']}, format='json').status_code == 201
+    assert PushSubscription.objects.get().user == user

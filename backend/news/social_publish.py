@@ -35,7 +35,7 @@ GRAPH_VIDEO = 'https://graph-video.facebook.com'
 BSKY = 'https://bsky.social/xrpc'
 VIDEO_NAME = re.compile(r'^\d+-[0-9a-f]{20}\.mp4$')
 HASHTAGS = '#polityka #spin #edukacjamedialna #sprawdzam #dezinformacja'
-FOOTER = 'Rządzący i opozycja — ta sama miara. Bez reklam i bez pieniędzy partii.'
+FOOTER = 'Rządzący i opozycja: ta sama miara. Bez reklam i bez pieniędzy partii.'
 
 
 def _env(name: str) -> str:
@@ -57,13 +57,18 @@ def channels() -> list[str]:
             ready.append('instagram')
     if _env('BLUESKY_HANDLE') and _env('BLUESKY_APP_PASSWORD'):
         ready.append('bluesky')
-    if _video_email():
+    if _video_email() or _env('SOCIAL_PANEL_ENABLED').lower() == 'true':
         ready.append('manual')
     return ready
 
 
 def _video_email() -> str:
     return _env('SOCIAL_VIDEO_EMAIL') or _env('X_POST_ALERT_EMAIL')
+
+
+def social_manager() -> bool:
+    """Osobny adres osoby od social mediów (właściciel 3.10.2026: tata). Jej maile idą mimo STAFF_MAIL_ENABLED=false."""
+    return bool(_env('SOCIAL_VIDEO_EMAIL'))
 
 
 # --- pliki filmów ---------------------------------------------------------------------------
@@ -76,7 +81,7 @@ def video_dir() -> Path:
 
 def video_name(diagnosis_id: int) -> str:
     """Nazwa nie do zgadnięcia (HMAC z SECRET_KEY) — film jest publiczny tylko dla tego, kto dostał adres."""
-    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v3-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
+    digest = hmac.new(settings.SECRET_KEY.encode(), f'social-video-v4-{diagnosis_id}'.encode(), hashlib.sha256).hexdigest()
     return f'{diagnosis_id}-{digest[:20]}.mp4'
 
 
@@ -98,9 +103,12 @@ def serve_video(request, name: str):
         raise Http404
     path = video_dir() / name
     diagnosis_id = int(name.split('-', 1)[0])
-    if not path.exists() or name != video_name(diagnosis_id):
+    from news.clinic import published_diagnoses
+    if not path.exists() or name != video_name(diagnosis_id) or not published_diagnoses().filter(pk=diagnosis_id).exists():
         raise Http404
-    return FileResponse(path.open('rb'), content_type='video/mp4')
+    response = FileResponse(path.open('rb'), content_type='video/mp4')
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 # --- teksty ---------------------------------------------------------------------------------
@@ -120,7 +128,8 @@ def texts_from_data(data: dict) -> dict:
     synthesis = data['x_thread']
     if any(shorten(text, len(text)) != text for text in synthesis):
         return {}
-    full = '\n\n'.join([heading(data), *synthesis])
+    from news.zmiana_zdania import social_line
+    full = '\n\n'.join([heading(data), *synthesis, *filter(None, [social_line(data)])])
     return {
         'facebook': f'{full}\n\nPełna diagnoza ze źródłami: {link}\n\n{FOOTER}',
         'instagram': f'{posts[0]}\n\nPełna diagnoza ze źródłami: spin.clinic (link w bio)\n\n{FOOTER}\n\n{HASHTAGS}',
@@ -156,11 +165,14 @@ def _meta_error(response) -> str:
 
 
 def post_facebook(path: Path, text: str) -> tuple[str, str]:
+    from news.social_video import first_frame_jpeg
     page = _env('META_PAGE_ID')
+    thumbnail = first_frame_jpeg(path)
     with path.open('rb') as handle:
         response = requests.post(f'{GRAPH_VIDEO}/{_graph_version()}/{page}/videos', timeout=(10, 300),
                                  data={'description': text, 'access_token': _env('META_PAGE_TOKEN')},
-                                 files={'source': (path.name, handle, 'video/mp4')})
+                                 files={'source': (path.name, handle, 'video/mp4'),
+                                        'thumb': ('cover.jpg', thumbnail, 'image/jpeg')})
     if response.status_code != 200:
         raise RuntimeError(_meta_error(response))
     video_id = str(response.json()['id'])
@@ -172,7 +184,7 @@ def post_instagram(diagnosis_id: int, caption: str, wait_seconds: int = 300) -> 
     user, token, version = _env('META_IG_USER_ID'), _env('META_PAGE_TOKEN'), _graph_version()
     response = requests.post(f'{GRAPH}/{version}/{user}/media', timeout=(10, 60), data={
         'media_type': 'REELS', 'video_url': video_url(diagnosis_id), 'caption': caption, 'share_to_feed': 'true',
-        'access_token': token})
+        'access_token': token, 'thumb_offset': 0})
     if response.status_code != 200:
         raise RuntimeError(_meta_error(response))
     container = response.json()['id']
@@ -257,11 +269,12 @@ def delete_bluesky(uri: str) -> None:
 
 # --- poczta (TikTok, Shorts, alarmy) --------------------------------------------------------
 
-def _mail(to: str, subject: str, body: str, attachment: Path | None = None) -> bool:
+def _mail(to: str, subject: str, body: str, attachment: Path | None = None, social: bool = False, important: bool = False) -> bool:
     import smtplib
     from email.message import EmailMessage
-    from news.clinic import _smtp_ready
-    if not to or not _smtp_ready():
+    from news.clinic import _smtp_ready, staff_mail_enabled
+    # important: rzadkie alerty (koszt filmów, nierówna miara) idą także przy STAFF_MAIL_ENABLED=false
+    if not to or not (staff_mail_enabled() or important or (social and social_manager())) or not _smtp_ready():
         return False
     email = EmailMessage()
     email['From'], email['To'], email['Subject'] = settings.SOURCE_MAIL_SMTP_FROM, to, subject
@@ -281,8 +294,11 @@ def _mail(to: str, subject: str, body: str, attachment: Path | None = None) -> b
 def post_manual(path: Path, caption: str, link: str) -> tuple[str, str]:
     body = ('Gotowy film do wrzucenia na TikTok i YouTube Shorts (w załączniku).\n\n'
             f'Opis do wklejenia:\n\n{caption}\n\nLink do diagnozy (do bio / pierwszego komentarza): {link}\n\n'
-            'Jeśli polityk usunie wpis, dostaniesz osobny mail — wtedy usuń film ręcznie z TikToka i YouTube.')
-    if not _mail(_video_email(), 'spin.clinic: film do TikToka i Shorts', body, path):
+            'Jeśli polityk usunie wpis, dostaniesz osobny mail - wtedy usuń film ręcznie z TikToka i YouTube.')
+    from news.clinic import staff_mail_enabled
+    if not _video_email() or (not staff_mail_enabled() and not social_manager()):
+        return '', ''  # maile wyłączone: film czeka w panelu, bez wiadomości
+    if not _mail(_video_email(), 'spin.clinic: film do TikToka i Shorts', body, path, social=True):
         raise RuntimeError('mail_failed')
     return '', ''
 
@@ -340,6 +356,9 @@ def run(dry_run: bool = False) -> dict:
             try:
                 if platform in ('facebook', 'instagram', 'manual') and path is None:
                     path = ensure_video(diagnosis)
+                from news.clinic import published_diagnoses
+                if not published_diagnoses().filter(pk=diagnosis.pk).exists():
+                    break
                 if platform == 'facebook':
                     external, url = post_facebook(path, text['facebook'])
                 elif platform == 'instagram':
@@ -348,13 +367,17 @@ def run(dry_run: bool = False) -> dict:
                     alt = f'Wpis polityka i ocena Dr. Spina: {diagnosis.get_verdict_display()} {diagnosis.intensity}/100.'
                     external, url = post_bluesky(text['bluesky'], card(diagnosis), alt)
                 else:
+                    # Persist the exact delivered copy even if SMTP fails.
+                    from news.social_models import SocialMaterial
+                    SocialMaterial.objects.get_or_create(diagnosis=diagnosis,
+                        defaults={'caption': text['instagram'], 'link': text['link']})
                     external, url = post_manual(path, text['instagram'], text['link'])
             except (requests.RequestException, RuntimeError, KeyError, ValueError, OSError) as error:
                 logger.warning('social %s %s: %s', platform, diagnosis.pk, error)
                 failed.add(platform)
                 alert(f'spin.clinic: wpis na {platform} się nie udał',
                       f'Diagnoza {diagnosis.pk} nie trafiła na {platform}.\n\nOdpowiedź: {str(error)[:500]}\n\n'
-                      'Najczęstsze przyczyny: wygasły token (META_PAGE_TOKEN — uruchom meta_setup), złe hasło aplikacji '
+                      'Najczęstsze przyczyny: wygasły token (META_PAGE_TOKEN - uruchom meta_setup), złe hasło aplikacji '
                       'Bluesky albo limit serwisu. Kolejna próba przy następnym przebiegu.')
                 results.append({'id': diagnosis.pk, 'platform': platform, 'posted': False, 'error': str(error)[:200]})
                 continue
@@ -364,7 +387,7 @@ def run(dry_run: bool = False) -> dict:
 
 
 def unpublish_deleted(diagnosis) -> None:
-    """Autor usunął wpis — usuwamy nasze wpisy z jego treścią; czego nie da się usunąć przez API — alarm."""
+    """Autor usunął wpis - usuwamy nasze wpisy z jego treścią; czego nie da się usunąć przez API - alarm."""
     manual = []
     for item in diagnosis.social_posts.filter(deleted_at__isnull=True):
         try:
@@ -383,13 +406,11 @@ def unpublish_deleted(diagnosis) -> None:
         item.save(update_fields=['deleted_at'])
     if manual:
         where = ', '.join(f'{item.get_platform_display()} {item.url}'.strip() for item in manual)
-        _mail(_env('X_POST_ALERT_EMAIL') or _env('CLINIC_REVIEW_EMAIL'),
+        _mail(_env('SOCIAL_VIDEO_EMAIL') or _env('X_POST_ALERT_EMAIL') or _env('CLINIC_REVIEW_EMAIL'),
               f'spin.clinic: usuń ręcznie film diagnozy {diagnosis.pk}',
               f'Polityk usunął wpis, którego dotyczy diagnoza {diagnosis.pk}. Zasady serwisów: usuwamy też nasze materiały.\n\n'
-              f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts — jeśli film tam wrzuciłeś.)')
-        for item in manual:
-            item.deleted_at = timezone.now()
-            item.save(update_fields=['deleted_at'])
+              f'Usuń ręcznie: {where}\n(TikTok i YouTube Shorts - jeśli film tam wrzuciłeś.)', social=True)
+        # Sending an alert is not proof of deletion. The social panel records confirmation.
     try:
         (video_dir() / video_name(diagnosis.pk)).unlink(missing_ok=True)
     except OSError:

@@ -1,7 +1,7 @@
 /**
  * Fikcyjne dane demonstracyjne biblioteki UI.
  * Wszystkie osoby, podmioty, źródła, tytuły, daty i adresy są zmyślone.
- * Plik nie wysyła żadnych żądań — domena `przyklad.invalid` celowo nie istnieje.
+ * Plik nie wysyła żadnych żądań - domena `przyklad.invalid` celowo nie istnieje.
  *
  * Zasady (docs/FRONTEND_MVP_DIRECTION.md): tytuły opisują UKŁAD, nie wydarzenia;
  * żadnych nazwisk, instytucji ani prawdopodobnych nagłówków. Identyfikatory są ujemne,
@@ -32,7 +32,7 @@ export function demoImage(seed: number, ratio: "16:9" | "4:3" | "1:1" = "16:9"):
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-/** Stabilny hash — identyfikator zapasowy musi być taki sam na serwerze i w przeglądarce (hydratacja). */
+/** Stabilny hash - identyfikator zapasowy musi być taki sam na serwerze i w przeglądarce (hydratacja). */
 function stableHash(input: string): number {
   let h = 5381;
   for (let i = 0; i < input.length; i += 1) h = ((h << 5) + h + input.charCodeAt(i)) >>> 0;
@@ -43,9 +43,9 @@ function stableHash(input: string): number {
  * Pełny Article z wypełnionymi polami obowiązkowymi; nadpisz, co potrzeba.
  * Bez `id` identyfikator pochodzi z hasha nadpisań, NIE z licznika modułu: licznik rósł z każdym
  * żądaniem SSR i rozjeżdżał się z klientem. Dwa wywołania z identycznymi nadpisaniami dadzą ten sam
- * id — podaj `id` jawnie, gdy renderujesz listę.
+ * id - podaj `id` jawnie, gdy renderujesz listę.
  */
-/** Rejestr wszystkich fikstur — portal witryny (wspólny PortalProvider) odnajduje po id materiał z `?podglad=` i powiązane. */
+/** Rejestr wszystkich fikstur - portal witryny (wspólny PortalProvider) odnajduje po id materiał z `?podglad=` i powiązane. */
 const REGISTRY = new Map<number, Article>();
 
 export function resolveFixture(id: number): Article | undefined {
@@ -120,7 +120,7 @@ const TITLE_CYCLE = [
   "Tytuł ze słowem Rzeczpospolita i słowem sprawiedliwości do testu przenoszenia",
 ];
 
-/** Deterministyczny zestaw n materiałów — do lent, siatek i pomiarów wydajności (makeArticles(240)). */
+/** Deterministyczny zestaw n materiałów - do lent, siatek i pomiarów wydajności (makeArticles(240)). */
 export function makeArticles(n: number, seed = 1): Article[] {
   return Array.from({ length: n }, (_, i) => {
     const k = seed * 1000 + i;
@@ -136,10 +136,10 @@ export function makeArticles(n: number, seed = 1): Article[] {
   });
 }
 
-/** 24 materiały z długimi polskimi ciągami — domyślny zestaw sekcji witryny. */
+/** 24 materiały z długimi polskimi ciągami - domyślny zestaw sekcji witryny. */
 export const FIXTURE_ARTICLES: Article[] = makeArticles(24, 3);
 
-/** Pięć polos po 8 kart — do przeciągania polos i karuzel. */
+/** Pięć polos po 8 kart - do przeciągania polos i karuzel. */
 export const FIXTURE_STRIPS: { id: string; title: string; articles: Article[] }[] = [
   { id: "najnowsze", title: "Najnowsze materiały", articles: makeArticles(8, 11) },
   { id: "polska", title: "Polska", articles: makeArticles(8, 12) },

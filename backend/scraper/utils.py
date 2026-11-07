@@ -19,6 +19,14 @@ from news.models import (Article, ArticleCategory, FetchAttempt, FetchRequest,
 from news.classification import publisher_category, normalize_publisher_tags
 
 log = logging.getLogger('scraper')
+# Ten sam podpis co w zgodach wydawców i regułach robots.txt; zmiana wymaga nowych zgód.
+SOURCE_USER_AGENT = 'ContextBeforeContent/1.0 source reader'
+
+
+def agent_for(url):
+    """User-Agent dla adresu: RCL wymaga własnego podpisu z pisma zgody (scraper.rcl_guard), reszta świata - wspólnego."""
+    from scraper.rcl_guard import RCL_USER_AGENT, is_rcl_url
+    return RCL_USER_AGENT if is_rcl_url(url) else SOURCE_USER_AGENT
 
 
 class HostRateLimited(Exception):
@@ -87,14 +95,14 @@ def reserve_budget(name, units, limit, seconds):
     return used <= limit
 
 
-def reserve_daily_fetch_budget(instruction):
+def reserve_daily_fetch_budget(instruction, *, share=1.0):
     """Reserve one durable daily request slot before any source network I/O.
 
     A card with a zero cap is deliberately unusable.  The counter is tied to
     the reviewed instruction version, so a replacement card gets a fresh,
     explicitly reviewed budget rather than inheriting an older one.
     """
-    cap = int(instruction.daily_request_cap or 0)
+    cap = int(int(instruction.daily_request_cap or 0) * max(0, min(1, share)))
     if cap < 1:
         return False
     today = timezone.localdate()
@@ -115,6 +123,14 @@ def reserve_daily_fetch_budget(instruction):
         budget.used += 1
         budget.save(update_fields=['used'])
         return True
+
+def retry_after_seconds(value):
+    try:
+        seconds = float(value) if str(value).isdigit() else (parsedate_to_datetime(value) - datetime.now(dt_timezone.utc)).total_seconds()
+        return max(0, seconds)
+    except (TypeError, ValueError, OverflowError):
+        return 60
+
 
 def retry_delay(exc, failures, cap=86400):
     """Return bounded exponential backoff, honoring a provider Retry-After floor."""
@@ -203,7 +219,7 @@ def record_fetch_refusal(*, source, channel, requested_kind, url, outcome, error
         source=source, channel=channel, requested_kind=requested_kind, **fields,
         url_fingerprint=_fetch_fingerprint(url), url_host=(urlparse(url).hostname or '').lower(),
         adapter_revision='scraper.fetch_feed/v1', transport='pre_network_gate',
-        request_user_agent='ContextBeforeContent/1.0 source reader',
+        request_user_agent=agent_for(url),
         outcome=outcome, network_started=False, error_code=error_code)
 
 
@@ -218,7 +234,7 @@ def _record_transport_attempt(*, source, instruction, requested_kind, url, outco
         adapter_revision='scraper.fetch_feed/v1',
         transport=('hostname_https' if hostname_transport else 'pinned_ip_https')
         if urlparse(url).scheme == 'https' else 'pinned_ip_http',
-        request_user_agent='ContextBeforeContent/1.0 source reader',
+        request_user_agent=agent_for(url),
         decision_basis=str(instruction.evidence.get('basis') or instruction.terms_url)[:500],
         outcome=outcome, network_started=network_started, http_status=http_status,
         bytes_received=bytes_received, response_sha256=response_sha256, error_code=error_code,
@@ -257,7 +273,7 @@ def _close_fetch_request(*, request_id, source, instruction, requested_kind, url
 
 def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instruction=None,
                requested_kind=None, return_receipt=False, method='GET', body=None,
-               request_headers=None):
+               request_headers=None, budget_share=1.0):
     """Bounded, audited HTTP request; GET remains the default feed reader."""
     if (audit_source is None) != (audit_instruction is None):
         raise ValueError('Fetch audit requires both source and instruction.')
@@ -281,13 +297,6 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 network_started=False, request_id=request_id)
             raise AccessDenied('no_approved_instruction')
         audit_instruction = active_instruction
-        if not reserve_daily_fetch_budget(audit_instruction):
-            _record_transport_attempt(source=audit_source, instruction=audit_instruction,
-                requested_kind=requested_kind, url=url,
-                outcome=FetchAttempt.Outcome.DAILY_LIMIT_PREEMPTIVE,
-                error_code='daily_request_cap_reached', hostname_transport=hostname_transport,
-                network_started=False, request_id=request_id)
-            raise HostRateLimited(24 * 60 * 60)
         from scraper.host_gateway import HostGateway
         host = (urlparse(url).hostname or '').lower()
         # Durable source identity, rather than a transient Python object id.
@@ -302,6 +311,14 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                 hostname_transport=hostname_transport, network_started=False, request_id=request_id)
             raise HostRateLimited(reservation.retry_after_seconds)
     try:
+        if audit_source is not None:
+            if not reserve_daily_fetch_budget(audit_instruction, share=budget_share):
+                _record_transport_attempt(source=audit_source, instruction=audit_instruction,
+                    requested_kind=requested_kind, url=url,
+                    outcome=FetchAttempt.Outcome.DAILY_LIMIT_PREEMPTIVE,
+                    error_code='daily_request_cap_reached', hostname_transport=hostname_transport,
+                    network_started=False, request_id=request_id)
+                raise HostRateLimited(24 * 60 * 60)
         # Persisting this reservation is the last step before transport. If it
         # fails, the raw response can never enter memory or downstream storage.
         if audit_source is not None:
@@ -323,7 +340,7 @@ def fetch_feed(url, *, hostname_transport=False, audit_source=None, audit_instru
                     )
                 if status == 429:
                     value = response.headers.get('Retry-After', '') if response is not None else ''
-                    gateway.extend_on_429(host, worker_id, int(value) if str(value).isdigit() else 60)
+                    gateway.extend_on_429(host, worker_id, retry_after_seconds(value))
             raise
         receipt = None
         if audit_source is not None:
@@ -412,7 +429,7 @@ def fetch_response_once(url, *, audit_source, audit_instruction, requested_kind,
             )
             if status == 429:
                 value = upstream.headers.get('Retry-After', '')
-                gateway.extend_on_429(host, worker_id, int(value) if str(value).isdigit() else 60)
+                gateway.extend_on_429(host, worker_id, retry_after_seconds(value))
             raise
 
         redirected = response.status_code in {301, 302, 303, 307, 308}
@@ -449,6 +466,9 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
     for _ in range(4):
         if not safe_url(url):
             raise ValueError('Invalid source URL')
+        # Host RCL: okno 01:00-06:00, flaga produkcyjna i wstrzymanie po 429/503 sprawdzane tuż przed połączeniem (rcl_guard).
+        from scraper.rcl_guard import guard_request
+        user_agent = guard_request(url) or SOURCE_USER_AGENT
         parsed = urlparse(url)
         hostname = parsed.hostname.encode('idna').decode('ascii')
         port = parsed.port or (443 if parsed.scheme == 'https' else 80)
@@ -464,7 +484,7 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
             pool = urllib3.PoolManager(cert_reqs=ssl.CERT_REQUIRED,
                 ca_certs=requests.certs.where())
             request_url = url
-            headers = {'User-Agent': 'ContextBeforeContent/1.0 source reader'}
+            headers = {'User-Agent': user_agent}
         elif parsed.scheme == 'https':
             pool = urllib3.HTTPSConnectionPool(address, port=port, server_hostname=hostname,
                 assert_hostname=hostname, cert_reqs=ssl.CERT_REQUIRED, ca_certs=requests.certs.where())
@@ -472,14 +492,14 @@ def _fetch_feed_raw(url, *, hostname_transport=False, method='GET', body=None,
             if parsed.port:
                 host_header += ':' + str(port)
             request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
-            headers = {'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'}
+            headers = {'Host': host_header, 'User-Agent': user_agent}
         else:
             pool = urllib3.HTTPConnectionPool(address, port=port)
             host_header = f'[{hostname}]' if ':' in hostname else hostname
             if parsed.port:
                 host_header += ':' + str(port)
             request_url = urlunsplit(('', '', parsed.path or '/', parsed.query, ''))
-            headers = {'Host': host_header, 'User-Agent': 'ContextBeforeContent/1.0 source reader'}
+            headers = {'Host': host_header, 'User-Agent': user_agent}
         extra_headers = dict(request_headers or {})
         if any(str(key).lower() in {'host', 'user-agent'} for key in extra_headers):
             raise ValueError('Source transport controls Host and User-Agent headers.')

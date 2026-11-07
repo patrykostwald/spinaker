@@ -13,7 +13,8 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture(autouse=True)
-def reset_cache():
+def reset_cache(settings):
+    settings.THREADS_ENABLED = True
     cache.clear()
     yield
     cache.clear()
@@ -39,7 +40,7 @@ def article():
 
 
 def payload(article):
-    return {'title': 'Autorska nitka', 'items': [{'article_id': article.pk, 'editorial_note': 'Komentarz autora'}]}
+    return {'title': 'Autorska spinka', 'items': [{'article_id': article.pk, 'editorial_note': 'Komentarz autora'}]}
 
 
 def listed(response):
@@ -195,7 +196,7 @@ def test_signup_cannot_self_grant_journalist_role(settings):
     client = APIClient()
     response = client.post('/api/account/register/', {
         'username': 'self_appointed', 'password': 'SecreT~unique~942!', 'email': 'self@example.com',
-        'accepted_terms': True, 'accepted_privacy': True,
+        'accepted_terms': True, 'accepted_privacy': True, 'adult': True,
         'groups': ['journalists'], 'role': 'journalist', 'is_journalist': True, 'is_staff': True,
     }, format='json')
     assert response.status_code == 201, response.data

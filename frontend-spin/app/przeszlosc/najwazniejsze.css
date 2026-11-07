@@ -1,0 +1,193 @@
+/* =====================================================================
+   przeszłość.today v3: landing profilu osoby "Najważniejsze" (13.10.2026). Osobny arkusz (v3.css nie ruszany: równolegle
+   dopisuje go koordynator). Zasady: boksy bez obramowań (tło tonalne), liczby Montserrat 600 w tonie tekstu, sepia tylko jako
+   akcent linków, jedno wyróżnienie na widok (kafel 1: większy, surface-2), równe wysokości (grid 1fr), dół kafla dociągnięty
+   (grid auto 1fr auto), bez pasków przewijania, ruch tylko transform/opacity z reduced-motion = stan końcowy.
+   Skala mobilna <= 640 px: treść 16-17, wiersze 16, meta 14 text-2, etykiety 13 (bez wersalików > 2 słów), cele 44 px.
+   ===================================================================== */
+
+.pt-v3 .px .pt-nw { display: grid; gap: 20px; min-width: 0; }
+.pt-v3 .px .pt-nw__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; }
+.pt-v3 .px .pt-nw__h { margin: 0; font: 600 26px/1.2 var(--sc-font-display); letter-spacing: -.02em; color: var(--sc-text); }
+.pt-v3 .px .pt-nw__rule { margin: -4px 0 0; max-width: 72ch; font: 400 16px/1.55 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-nw__rule a { color: var(--sc-accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.pt-v3 .px .pt-nw__rule a:hover { color: var(--sc-accent-hover); text-decoration: underline; text-underline-offset: 4px; }
+.pt-v3 .px .pt-nw__meta { margin: 0; font: 400 14px/1.5 var(--sc-font-sans); color: var(--sc-text-2); }
+
+/* siatka: kafel 1 (fundacje i spółki) na całą szerokość, pod nim cztery kafle w jednym rzędzie; kafle rzędu mają jedną wysokość (stretch) */
+.pt-v3 .px .pt-nw__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; min-width: 0; }
+.pt-v3 .px .pt-nw__grid > .pt-tile--wide { grid-column: 1 / -1; }
+
+/* kafel: etykieta (góra), liczba + 1-3 linie (środek 1fr), źródło + odnośnik (dół) */
+.pt-v3 .px .pt-tile { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 14px; min-width: 0; padding: 22px 24px 6px; border: 0; border-radius: var(--px-r); background: var(--sc-surface); scroll-margin-top: 72px; }
+.pt-v3 .px .pt-tile--wide { padding: 26px 28px 6px; background: var(--sc-surface-2); gap: 16px; }
+.pt-v3 .px .pt-tile__top { display: grid; gap: 10px; min-width: 0; }
+.pt-v3 .px .pt-tile__l { margin: 0; font: 600 15px/1.35 var(--sc-font-sans); letter-spacing: 0; text-transform: none; color: var(--sc-text-2); }
+.pt-v3 .px .pt-tile__vu { display: grid; align-content: start; gap: 4px; min-height: 66px; container-type: inline-size; min-width: 0; }
+.pt-v3 .px .pt-tile__v { margin: 0; font: 600 clamp(26px, 12cqi, 42px)/1.08 var(--sc-font-display); letter-spacing: -.03em; color: var(--sc-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pt-v3 .px .pt-tile__u { margin: 0; font: 500 15px/1.4 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-tile[data-state="empty"] .pt-tile__v, .pt-v3 .px .pt-tile[data-state="locked"] .pt-tile__v { font: 600 20px/1.3 var(--sc-font-display); letter-spacing: -.01em; color: var(--sc-text-2); }
+.pt-v3 .px .pt-tile__b { display: grid; align-content: start; gap: 6px; min-width: 0; }
+.pt-v3 .px .pt-tile__x { margin: 0; font: 400 15px/1.5 var(--sc-font-sans); color: var(--sc-text-2); max-width: 46ch; }
+.pt-v3 .px .pt-tile__x--quiet { font-size: 14px; color: var(--sc-text-2); }
+.pt-v3 .px .pt-tile__x a { color: var(--sc-accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.pt-v3 .px .pt-tile__x a:hover { color: var(--sc-accent-hover); }
+.pt-v3 .px .pt-tile__f { display: grid; gap: 0; align-content: end; min-width: 0; }
+.pt-v3 .px .pt-tile__source { margin: 0; min-height: calc(2 * 1.45 * 14px); font: 400 14px/1.45 var(--sc-font-sans); color: var(--sc-text-2); overflow-wrap: anywhere; }
+.pt-v3 .px .pt-tile__source a { color: var(--sc-text-2); text-decoration: underline; text-decoration-color: var(--sc-line-strong); text-underline-offset: 3px; padding-block: 12px; }
+.pt-v3 .px .pt-tile__source a:hover { color: var(--sc-accent); text-decoration-color: currentColor; }
+.pt-v3 .px .pt-tile__source i, .pt-v3 .px .pt-orgs i, .pt-v3 .px .pt-docs i, .pt-v3 .px .pt-nw__sources i { font-style: normal; color: var(--sc-text-3); }
+.pt-v3 .px .pt-tile__more { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; padding: 0; color: var(--sc-accent); font: 600 15px/1.2 var(--sc-font-sans); text-decoration: none; border-radius: 6px; }
+.pt-v3 .px .pt-tile__more:hover { color: var(--sc-accent-hover); text-decoration: underline; text-underline-offset: 4px; }
+
+/* kafel 1: liczba i podsumowanie w jednej linii, lista podmiotów (nazwa | rodzaj i rola | okres i status | KRS) */
+.pt-v3 .px .pt-tile--wide { container-type: inline-size; container-name: ptw; }
+.pt-v3 .px .pt-tile--wide .pt-tile__vu { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; min-height: 0; container-type: normal; }
+.pt-v3 .px .pt-tile--wide .pt-tile__v { font-size: clamp(40px, 4.2vw, 58px); line-height: 1; }
+.pt-v3 .px .pt-tile--wide[data-state="empty"] .pt-tile__v, .pt-v3 .px .pt-tile--wide[data-state="locked"] .pt-tile__v { font-size: 20px; line-height: 1.3; }
+.pt-v3 .px .pt-tile--wide .pt-tile__u { font-size: 17px; color: var(--sc-text); }
+.pt-v3 .px .pt-tile--wide .pt-tile__b { align-content: start; gap: 8px; }
+.pt-v3 .px .pt-tile--wide .pt-tile__x:first-child { font-size: 15px; }
+.pt-v3 .px .pt-tile--wide .pt-tile__x { max-width: none; }
+.pt-v3 .px .pt-orgs { list-style: none; margin: 4px 0 0; padding: 0; display: grid; }
+.pt-v3 .px .pt-org { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "name when krs" "role when krs"; align-items: center; column-gap: 24px; row-gap: 0; min-height: 64px; padding: 10px 0; border-top: 1px solid var(--sc-line); }
+.pt-v3 .px .pt-org p { margin: 0; min-width: 0; }
+.pt-v3 .px .pt-org__name { grid-area: name; align-self: end; font: 600 16px/1.35 var(--sc-font-sans); color: var(--sc-text); }
+.pt-v3 .px .pt-org__name a { color: inherit; text-decoration: underline; text-decoration-color: var(--sc-accent); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.pt-v3 .px .pt-org__name a:hover { color: var(--sc-accent); }
+.pt-v3 .px .pt-org__role { grid-area: role; align-self: start; font: 400 14px/1.45 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-org__date { grid-area: when; display: grid; justify-items: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pt-v3 .px .pt-org__date span { font: 400 14px/1.45 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-org__date b { font: 600 13px/1.45 var(--sc-font-sans); color: var(--sc-text); }
+.pt-v3 .px .pt-org[data-status="former"] .pt-org__date b { color: var(--sc-text-2); font-weight: 500; }
+.pt-v3 .px .pt-org__source { grid-area: krs; font: 400 14px/1.4 var(--sc-font-sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pt-v3 .px .pt-org__source a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-text-2); text-decoration: none; }
+.pt-v3 .px .pt-org__source a:hover { color: var(--sc-accent); text-decoration: underline; text-underline-offset: 3px; }
+.pt-v3 .px .pt-org__source span { color: var(--sc-text-2); }
+/* szeroki kafel (>= 900 px): jedna linia na podmiot, kolumny pod sobą w jednej linii */
+@container ptw (min-width: 900px) {
+  .pt-v3 .px .pt-org { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) 110px 170px; grid-template-areas: "name role when krs"; column-gap: 28px; }
+  .pt-v3 .px .pt-org__name, .pt-v3 .px .pt-org__role { align-self: center; }
+  .pt-v3 .px .pt-org__source { justify-self: end; }
+  .pt-v3 .px .pt-tile--wide .pt-tile__f { grid-template-columns: minmax(0, 1fr) auto; align-items: end; column-gap: 32px; }
+}
+
+/* kafel oświadczeń: odnośniki do skanów */
+.pt-v3 .px .pt-docs { list-style: none; margin: 2px 0 0; padding: 0; display: grid; }
+.pt-v3 .px .pt-docs li { margin: 0; font: 500 15px/1.4 var(--sc-font-sans); }
+.pt-v3 .px .pt-docs a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-accent); text-decoration: none; }
+.pt-v3 .px .pt-docs a:hover { color: var(--sc-accent-hover); text-decoration: underline; text-underline-offset: 3px; }
+
+/* kafel 6: pasek (jedna linia, zawija się tylko gdy brakuje miejsca): etykieta + liczba | linia | źródło + odnośnik */
+.pt-v3 .px .pt-tile--strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 32px; padding: 8px 24px; }
+.pt-v3 .px .pt-tile--strip .pt-tile__top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; }
+.pt-v3 .px .pt-tile--strip .pt-tile__vu { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-height: 0; container-type: normal; }
+.pt-v3 .px .pt-tile--strip .pt-tile__v { font-size: 28px; line-height: 1.2; }
+.pt-v3 .px .pt-tile--strip[data-state="empty"] .pt-tile__v { font-size: 18px; }
+.pt-v3 .px .pt-tile--strip .pt-tile__b { flex: 1 1 220px; }
+.pt-v3 .px .pt-tile--strip .pt-tile__x { max-width: none; }
+.pt-v3 .px .pt-tile--strip .pt-tile__f { display: flex; flex-wrap: wrap; align-items: center; gap: 0 24px; margin-left: auto; }
+.pt-v3 .px .pt-tile--strip .pt-tile__source { min-height: 0; }
+
+/* stopka landingu: zdanie neutralne i lista źródeł (odnośniki 44 px) */
+.pt-v3 .px .pt-nw__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0 16px; margin-bottom: -12px; scroll-margin-top: 72px; }
+.pt-v3 .px .pt-nw__note { margin: 0; font: 400 15px/1.5 var(--sc-font-sans); color: var(--sc-text-2); }
+.pt-v3 .px .pt-nw__sources { list-style: none; display: flex; flex-wrap: wrap; gap: 0 20px; margin: 0; padding: 0; }
+.pt-v3 .px .pt-nw__sources a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sc-text-2); font: 400 14px/1.4 var(--sc-font-sans); text-decoration: underline; text-decoration-color: var(--sc-line-strong); text-underline-offset: 3px; }
+.pt-v3 .px .pt-nw__sources a:hover { color: var(--sc-accent); text-decoration-color: currentColor; }
+
+/* ruch: kafle wchodzą po kolei co 50 ms (transform + opacity); reduced-motion = stan końcowy, treść zawsze w DOM */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pt-tile-in { from { opacity: 0; transform: translateY(10px); } }
+  .pt-v3 .px .pt-tile { animation: pt-tile-in .5s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 50ms); }
+}
+
+/* spis sekcji = indeks akt (PageIndex) przyklejony pod krawędzią okna: wiersz znaku przewija się, zostaje sam spis (44 px) */
+.pt-v3 .px.px-pp > .pt-topwrap { --pt-nw-bar: 68px; position: sticky; top: calc(var(--pt-nw-bar) * -1); z-index: 40; background: var(--sc-bg); }
+.pt-v3 .px.px-pp :is(#pp-akta, #pp-os, #pp-media, #pp-funkcje, #pp-krs, #pp-pieniadze, #pp-siec, #dn, #pp-exp-h, #pp-iw-h) { scroll-margin-top: 72px; }
+@media (max-width: 1179.98px) {
+  .pt-v3 .px.px-pp .pt-idx ol { flex-wrap: nowrap; overflow-x: auto; padding: 0 8px; margin: 0 -8px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); }
+}
+
+/* spis w profilu zwarty (9 pozycji w jednym wierszu przy 1088 px) */
+.pt-v3 .px.px-pp .pt-idx ol { gap: 0; }
+.pt-v3 .px.px-pp .pt-idx a { padding: 0 3px 0 2px; font-size: 13.5px; }
+.pt-v3 .px.px-pp .pt-idx a b { margin-right: 5px; }
+.pt-v3 .px.px-pp .pt-idx a::before { width: 1.2ch; }
+.pt-v3 .px.px-pp .pt-idx a::after { width: .9ch; }
+
+/* tablet: cztery kafle po dwa */
+@media (max-width: 1179.98px) {
+  .pt-v3 .px .pt-nw__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* telefon (skala mobilna): jedna kolumna, fundacje i spółki pierwsze; treść 16-17, meta 14 text-2, etykiety 13, cele 44 px */
+@media (max-width: 760px) {
+  .pt-v3 .px.px-pp > .pt-topwrap { --pt-nw-bar: 60px; }
+}
+@media (max-width: 640px) {
+  .pt-v3 .px .pt-nw { gap: 16px; }
+  .pt-v3 .px .pt-nw__grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .pt-v3 .px .pt-nw__h { font-size: 22px; }
+  .pt-v3 .px .pt-nw__meta { font-size: 14px; }
+  .pt-v3 .px .pt-tile { padding: 20px 16px 4px; gap: 12px; }
+  .pt-v3 .px .pt-tile--wide { padding: 20px 16px 4px; }
+  .pt-v3 .px .pt-tile__l { font-size: 15px; }
+  .pt-v3 .px .pt-tile__vu { min-height: 0; }
+  .pt-v3 .px .pt-tile__v { font-size: 36px; }
+  .pt-v3 .px .pt-tile--wide .pt-tile__v { font-size: 44px; }
+  .pt-v3 .px .pt-tile__u { font-size: 16px; }
+  .pt-v3 .px .pt-tile--wide .pt-tile__u { font-size: 17px; }
+  .pt-v3 .px .pt-tile__x { font-size: 16px; line-height: 1.5; max-width: none; }
+  .pt-v3 .px .pt-tile__x--quiet { font-size: 15px; }
+  .pt-v3 .px .pt-tile__source { font-size: 14px; min-height: 0; }
+  .pt-v3 .px .pt-tile__more { font-size: 16px; }
+  .pt-v3 .px .pt-org { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "role role" "when krs"; align-items: center; gap: 2px 16px; padding: 12px 0 0; }
+  .pt-v3 .px .pt-org__source { justify-self: end; }
+  .pt-v3 .px .pt-org__name { font-size: 16px; }
+  .pt-v3 .px .pt-org__role { font-size: 15px; }
+  .pt-v3 .px .pt-org__date { display: flex; flex-wrap: wrap; justify-items: initial; gap: 0 10px; white-space: normal; }
+  .pt-v3 .px .pt-org__date span, .pt-v3 .px .pt-org__date b { font-size: 14px; color: var(--sc-text-2); }
+  .pt-v3 .px .pt-org__source { font-size: 14px; }
+  .pt-v3 .px .pt-docs li { font-size: 16px; }
+  .pt-v3 .px .pt-nw__note { font-size: 15px; }
+  .pt-v3 .px .pt-nw__rule { font-size: 16px; }
+  .pt-v3 .px .pt-nw__foot { margin-bottom: -9px; }
+  .pt-v3 .px .pt-nw__sources a { font-size: 14px; color: var(--sc-text-2); }
+}
+
+/* nagłówek akt: karta "W skrócie" szersza (400 px), żeby wiersze nie łamały się i landing zaczynał się wyżej (pierwszy ekran) */
+@media (min-width: 1001px) {
+  .pt-v3 .px.px-pp .pt-akta { grid-template-columns: minmax(0, 1fr) 400px; }
+}
+
+/* nagłówek akt zawiera landing: komputer = tytuł i "W skrócie" w pierwszym wierszu, landing w drugim na całą szerokość, odstęp wierszy
+   jak między sekcjami; węższy ekran (jedna kolumna) = tytuł, landing, "W skrócie" (fundacje i spółki na pierwszym ekranie telefonu) */
+.pt-v3 .px.px-pp .pt-akta { row-gap: var(--pt-sec); }
+.pt-v3 .px.px-pp .pt-akta > .pt-head__l { grid-column: 1; grid-row: 1; }
+.pt-v3 .px.px-pp .pt-akta > .pt-kv { grid-column: 2; grid-row: 1; }
+.pt-v3 .px.px-pp .pt-akta > .pt-nw { grid-column: 1 / -1; grid-row: 2; }
+@media (max-width: 1000px) {
+  .pt-v3 .px.px-pp .pt-akta > :is(.pt-head__l, .pt-kv, .pt-nw) { grid-column: 1; grid-row: auto; }
+}
+
+/* skrócona zasada w stopce profilu: jedna linia pod treścią, nad stopką serwisu; ten sam rytm co sekcje */
+.pt-v3 .px .pt-nw__rule--foot { margin: 0; font-size: 15px; }
+
+/* cztery wąskie kafle w rzędzie: tytuł do dwóch linii w stałej strefie, żeby liczby stały na jednej wysokości */
+@media (min-width: 1180px) {
+  .pt-v3 .px .pt-nw__grid > .pt-tile:not(.pt-tile--wide) .pt-tile__l { min-height: calc(2 * 1.35 * 15px); }
+}
+
+/* pasek liczb: pierwszy wiersz liczb wystawał 2 px nad własną krawędź (line-height Montserrat), więc odstęp od landingu mierzył się 2 px za mały */
+.pt-v3 .px.px-pp .px-pp__proof { padding-top: 2px; }
+
+/* jasny motyw: odnośniki landingu w ciemniejszym tonie akcentu (treść >= 7:1 na tle i na surface; sam akcent #7A5A2E daje 5,6-6,0) */
+html[data-theme="light"] .pt-v3 .px :is(.pt-tile__more, .pt-nw__rule a, .pt-tile__x a, .pt-docs a) { color: var(--sc-accent-hover) !important; }
+html[data-theme="light"] .pt-v3 .px :is(.pt-tile__more, .pt-nw__rule a, .pt-tile__x a, .pt-docs a):hover { color: var(--sc-accent-press) !important; }
+html[data-theme="light"] .pt-v3 .px .pt-org__name a { text-decoration-color: var(--sc-accent-hover); }
+
+/* dziesięć pozycji w spisie (z "Wcześniej i teraz": sieć + mianowniki + pary) mieści się w jednym wierszu przy 1088 px: 13 px zamiast 13,5 */
+.pt-v3 .px.px-pp .pt-idx ol:has(> li:nth-child(10)) a { font-size: 13px; padding-right: 2px; }
+/* oświadczenia z API: data publikacji i odczyt automatyczny ("sprawdź w PDF") pod wierszem */ .pt-v3 .pt-docs__m, .pt-v3 .pt-docs__a { display: block; color: var(--sc-text-2); font-size: 14px; line-height: 1.45; }

@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 
 /**
  * SiteFooter (docs/UI_KIT_PLAN.md → «Компоненты» SiteFooter, «Оживление каждого элемента → Футер»).
- * Każda kolumna to WŁASNY `<nav aria-label>` z prawdziwym `<ul>` — obecny footer w
+ * Każda kolumna to WŁASNY `<nav aria-label>` z prawdziwym `<ul>` - obecny footer w
  * `PortalHome.tsx` ma jeden nieoznaczony `<nav>` z gołymi `<a>`, tego tu nie powielamy.
- * Siatka reaguje na WŁASNĄ szerokość (container queries), nie szerokość okna — działa też
+ * Siatka reaguje na WŁASNĄ szerokość (container queries), nie szerokość okna - działa też
  * wewnątrz wąskiej ramki witryny.
  *
- * `sticky`: jeden wiersz przyklejony do dołu okna — wordmark, kolumny linków (np. źródła, informacje)
+ * `sticky`: jeden wiersz przyklejony do dołu okna - wordmark, kolumny linków (np. źródła, informacje)
  * i przycisk wsparcia na jednej linii. `note` i `bottom` renderują się tylko w układzie zwykłym.
  */
 
@@ -33,11 +33,11 @@ export type SiteFooterCta = {
 export type SiteFooterProps = {
   /** Slot na wordmark. */
   brand: ReactNode;
-  /** Tekst redakcyjny (dosłowny dysklaimer) — nie skracamy ani nie parafrazujemy. */
+  /** Tekst redakcyjny (dosłowny dysklaimer) - nie skracamy ani nie parafrazujemy. */
   note?: ReactNode;
   columns: SiteFooterColumn[];
   cta?: SiteFooterCta;
-  /** Dolny wiersz — np. data wersji, prawa. */
+  /** Dolny wiersz - np. data wersji, prawa. */
   bottom?: ReactNode;
   /** Jednowierszowa stopka zawsze widoczna u dołu okna (patrz opis modułu). */
   sticky?: boolean;
@@ -89,7 +89,7 @@ export function SiteFooter({ brand, note, columns, cta, bottom, sticky = false, 
     </div>
   );
 
-  // Przewijanie w dół chowa przyklejony dół (pasek wsparcia + stopka), w górę — pokazuje (audyt UX 28.09).
+  // Przewijanie w dół chowa przyklejony dół (pasek wsparcia + stopka), w górę - pokazuje (audyt UX 28.09).
   const dockRef = useHideOnScroll();
   if (sticky) {
     const bar = (

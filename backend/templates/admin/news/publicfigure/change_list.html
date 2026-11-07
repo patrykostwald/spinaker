@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% block content %}
+<section class="module">
+  <h2>Najczęściej obserwowani</h2>
+  <table><thead><tr><th>Osoba publiczna</th><th>Obserwujący</th><th>Każdy wpis</th></tr></thead><tbody>
+  {% for figure in most_followed %}
+    <tr><td><a href="{% url 'admin:news_publicfigure_change' figure.pk %}">{{ figure.canonical_name }}</a></td><td>{{ figure.followers_total }}</td><td>{{ figure.post_followers_total }}</td></tr>
+  {% empty %}<tr><td colspan="3">Brak obserwowanych osób.</td></tr>{% endfor %}
+  </tbody></table>
+</section>
+{{ block.super }}
+{% endblock %}
