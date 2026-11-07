@@ -129,3 +129,11 @@ scrollstory.pl {
 www.scrollstory.pl {
 	redir https://scrollstory.pl{uri} permanent
 }
+
+trybunal.ai {
+    reverse_proxy trybunal-web:8000
+}
+
+www.trybunal.ai {
+    redir https://trybunal.ai{uri} permanent
+}
