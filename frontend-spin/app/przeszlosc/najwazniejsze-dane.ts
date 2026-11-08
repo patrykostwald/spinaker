@@ -250,10 +250,17 @@ export function majatekTile(d: LandingInput): Tile {
   const docsRaw = results.filter(r => ASSET_KINDS.includes(r.kind ?? '') || r.label === ASSET_LABEL);
   const count = Math.max(d.documents?.by_kind?.[ASSET_LABEL] ?? 0, docsRaw.length);
   const isMp = Boolean(d.votes?.available);
-  if (!count) return emptyTile('majatek', 'pt-t-majatek', 'Oświadczenia majątkowe',
-    isMp ? 'indeks oświadczeń posłów w serwisie Sejmu'
-      : 'indeks oświadczeń posłów w serwisie Sejmu; osoba nie jest posłem w naszych danych', stamp, INFO_LINK,
-    sourceRef(d.official_profile_url, 'sejm.gov.pl') ?? SEJM_SRC());
+  if (!count) {
+    const empty = emptyTile('majatek', 'pt-t-majatek', 'Oświadczenia majątkowe',
+      isMp ? 'indeks oświadczeń posłów w serwisie Sejmu'
+        : 'indeks oświadczeń posłów w serwisie Sejmu; osoba nie jest posłem w naszych danych', stamp, INFO_LINK,
+      sourceRef(d.official_profile_url, 'sejm.gov.pl') ?? SEJM_SRC());
+    const profile = safeUrl(d.official_profile_url);
+    // 8.11: oświadczenia posłów są jawne w serwisie Sejmu, a my jeszcze ich nie pobieramy (serwis blokuje automaty): mówimy to wprost i dajemy link
+    if (!isMp || !profile) return empty;
+    return { ...empty, lines: [nb('Oświadczenia majątkowe posłów są jawne w serwisie Sejmu. Jeszcze ich u nas nie ma: serwis Sejmu blokuje pobieranie automatyczne.')],
+      docs: [{ key: 'sejm-profil', title: 'Oświadczenia w serwisie Sejmu (menu posła)', url: profile, year: null, meta: 'strona sejm.gov.pl' }] };
+  }
   const docs: DocRow[] = docsRaw.slice(0, 3).map((r, i) => ({ key: `${i}-${r.url ?? r.title ?? ''}`, title: (r.title ?? '').trim() || ASSET_LABEL, url: safeUrl(r.url), year: assetYear(r.title) }));
   const years = docs.map(x => x.year).filter((y): y is number => y !== null);
   const newest = years.length ? Math.max(...years) : null;

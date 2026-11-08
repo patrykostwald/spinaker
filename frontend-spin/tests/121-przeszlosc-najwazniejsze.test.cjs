@@ -204,3 +204,11 @@ test('pliki: komponent importowany w profilu, indeks z landingIndex, filtr osi c
     assert.doesNotMatch(src, /\?\?\?|Å|Ä…/, `${f}: popsute znaki`);
   }
 });
+
+test('kafel oświadczeń bez danych: poseł dostaje uczciwy komunikat i link do profilu na sejm.gov.pl, nie-poseł bez linku (8.11)', () => {
+  const mp = tile(base({ official_profile_url: 'https://www.sejm.gov.pl/Sejm10.nsf/posel.xsp?id=123' }), 'majatek');
+  assert.match(mp.lines[0], /jawne w serwisie Sejmu/); assert.match(mp.lines[0], /blokuje pobieranie automatyczne/);
+  assert.equal(mp.docs.length, 1); assert.equal(mp.docs[0].url, 'https://www.sejm.gov.pl/Sejm10.nsf/posel.xsp?id=123');
+  const notMp = tile(base({ votes: { available: false, count: 0, deviation: null }, official_profile_url: 'https://www.sejm.gov.pl/Sejm10.nsf/posel.xsp?id=123' }), 'majatek');
+  assert.equal(notMp.docs.length, 0); assert.match(notMp.lines[0], /nie jest posłem/);
+});
