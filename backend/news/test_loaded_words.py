@@ -113,7 +113,7 @@ def test_card_loaded_row_has_separate_space(monkeypatch, long_content):
         return original(draw, value, box, **kwargs)
     monkeypatch.setattr(clinic_card, '_text', capture)
     monkeypatch.setattr(clinic_card, 'fetch_image', lambda url: None)
-    clinic_card.render(data)
+    clinic_card.render(data, 'szczegoly')
     label, box = next((value, box) for value, box in boxes if value.startswith('Słowa nacechowane:'))
     assert label == 'Słowa nacechowane: 2 · Tragedia · skandal'
     assert box[3] <= 802

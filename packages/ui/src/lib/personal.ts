@@ -3,7 +3,7 @@ import { ApiError, apiFetch, apiWrite } from './api';
 import { useAccount, type SavedTopic } from './account';
 import { useFeature } from './features';
 
-/* ——— Kształty odpowiedzi z backend/news/personal_context.py, profiles.py i accounts.py ——— */
+/* --- Kształty odpowiedzi z backend/news/personal_context.py, profiles.py i accounts.py --- */
 
 export type PersonalArticleRef = {
   id: number;
@@ -12,12 +12,16 @@ export type PersonalArticleRef = {
   category: string;
   published_date: string | null;
   position?: number;
-  /** Tylko w interfejsie — backend nitki nie zwraca nazwy źródła. */
+  /** Tylko w interfejsie - backend nitki nie zwraca nazwy źródła. */
   source_name?: string;
 };
 
 export type PersonalContextThread = {
+  continues?: number | null;
+  opinions?: { positive: number; doubt: number; negative: number };
+  comments_count?: number;
   id: number;
+  kind?: string;
   title: string;
   description: string;
   query: string;
@@ -30,13 +34,18 @@ export type PersonalContextThread = {
   is_public?: boolean;
   published_at?: string | null;
   hidden_at?: string | null;
+  admitted_at?: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type PersonalThreadItemInput = { article_id?: number; link_id?: number; note?: string };
+export type PersonalThreadItemInput = { article_id?: number; link_id?: number; box_item_id?: number; note?: string; link_note?: string };
 
 export type PersonalContextThreadInput = {
+  continues?: number | null;
+  repin_of?: number | null;
+  /** Rodzaj spinki czytelnika (właściciel 6.10): kontekst, sprzecznosc, sprawdzam, pytanie. */
+  kind?: string;
   title: string;
   description: string;
   query: string;
@@ -67,8 +76,8 @@ export const REACTION_LABELS = {
   negative: 'Nieprzydatne',
 } as const;
 
-export const MAX_THREAD_ARTICLES = 100;
-export const THREAD_LIMITS = { title: 140, description: 500, query: 200 };
+export const MAX_THREAD_ARTICLES = 8;
+export const THREAD_LIMITS = { title: 65, description: 170, query: 200 };
 
 export const personalKeys = {
   threads: (ownerId?: number) => ['personal-threads', ownerId] as const,
@@ -79,7 +88,7 @@ export const personalKeys = {
   history: (ownerId?: number) => ['account-history', ownerId, 'first-page'] as const,
 };
 
-/** Endpoint nieobecny na serwerze (np. starsza wersja backendu) — pokazujemy pusty stan, bez udawania zapisu. */
+/** Endpoint nieobecny na serwerze (np. starsza wersja backendu) - pokazujemy pusty stan, bez udawania zapisu. */
 export function isUnavailable(error: unknown) {
   return error instanceof ApiError && (error.status === 404 || error.status === 405 || error.status === 501);
 }

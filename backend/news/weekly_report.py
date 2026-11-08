@@ -114,5 +114,15 @@ def generate(today=None):
 
 
 def report_data(report) -> dict:
+    from news.clinic_models import SpinDiagnosis
+    from django.db.models import Q
+    affected = SpinDiagnosis.objects.filter(post__published_at__date__gte=report.week_start,
+                                            post__published_at__date__lte=report.week_end).filter(
+        Q(withdrawn_at__isnull=False) | Q(hidden_at__isnull=False)).exists()
+    if affected:
+        # Nie udostępniamy starej syntezy ani zapisanych kart po wycofaniu źródła.
+        # Odtworzenie samych danych nie wykonuje wywołań AI.
+        return {'week_start': report.week_start, 'week_end': report.week_end, 'summary': '',
+                **build(report.week_end), 'created_at': report.created_at}
     return {'week_start': report.week_start, 'week_end': report.week_end, 'summary': report.summary, **report.data,
             'created_at': report.created_at}

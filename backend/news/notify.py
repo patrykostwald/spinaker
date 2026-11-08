@@ -4,10 +4,12 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from news.account_models import PersonalContextThread
+from news.account_models import PersonalContextThread, AccountIdentity
 from news.clinic_models import SpinDiagnosis
 from news.community_models import CommunityThreadOpinion
+from news.thread_social_models import ThreadComment
 from news.notification_models import Notification, NotificationEvent, NotificationSettings
+from news.political_models import PoliticalPost
 
 logger = logging.getLogger(__name__)
 
@@ -16,14 +18,27 @@ def enabled():
     return getattr(settings, 'ACCOUNTS_ENABLED', False)
 
 
-def notify(user, kind, title, url):
+def notify(user, kind, title, url, *, figure=None):
     """Called by the worker; in-app delivery survives unavailable push providers."""
+    from news.features import threads_enabled
+    if kind in ('followed_thread', 'thread_reply') and not threads_enabled():
+        return None
     if not enabled() or not user.is_active:
         return None
-    row = Notification.objects.create(user=user, kind=kind, title=title[:240], url=url[:1024])
     preferences = NotificationSettings.objects.filter(user=user).first()
+    social = kind in ('followed_thread', 'spin_of_day')
+    if social and not (preferences and preferences.social_enabled):
+        return None
+    if not social and preferences and not preferences.service_enabled:
+        return None
+    row = Notification.objects.create(user=user, kind=kind, title=title[:240], url=url[:1024], figure=figure)
     push_field = 'push_thread_replies' if kind == 'thread_reply' else 'push_spin_of_day' if kind == 'spin_of_day' else 'push_followed'
     if getattr(settings, 'PUSH_ENABLED', False) and preferences and getattr(preferences, push_field):
+        if figure and kind == 'followed_diagnosis':
+            # The same worker releases figure alerts after Warsaw quiet hours.
+            row.push_pending = True
+            row.save(update_fields=['push_pending'])
+            return row
         def deliver():
             try:
                 from news.push import send_to_user
@@ -37,6 +52,9 @@ def notify(user, kind, title, url):
 
 
 def queue_event(kind, target_id):
+    from news.features import threads_enabled
+    if kind in ('thread', 'thread_comment', 'reply', 'moderation') and not threads_enabled():
+        return
     if enabled():
         try:
             # A savepoint isolates an outbox error from the publishing transaction.
@@ -44,6 +62,20 @@ def queue_event(kind, target_id):
                 NotificationEvent.objects.get_or_create(kind=kind, target_id=target_id)
         except Exception:
             logger.exception('Could not queue notification event')
+
+
+@receiver(post_save, sender=PoliticalPost)
+def political_post_created(sender, instance, created, raw=False, **kwargs):
+    if not raw and created and enabled():
+        from news.followed_posts import eligible_post
+        if eligible_post(instance, recent=True):
+            queue_event('post', instance.pk)
+
+
+@receiver(post_save, sender=AccountIdentity)
+def account_newsletter_requested(sender, instance, raw=False, **kwargs):
+    if not raw and instance.email_verified and instance.newsletter_consent_at:
+        queue_event('account_newsletter', instance.pk)
 
 
 @receiver(pre_save, sender=SpinDiagnosis)
@@ -70,5 +102,11 @@ def thread_published(sender, instance, raw=False, **kwargs):
 
 @receiver(post_save, sender=CommunityThreadOpinion)
 def opinion_published(sender, instance, created, raw=False, **kwargs):
-    if not raw and created:
+    if not raw and created and instance.body:
         queue_event('reply', instance.pk)
+
+
+@receiver(post_save, sender=ThreadComment)
+def thread_comment_published(sender, instance, created, raw=False, **kwargs):
+    if not raw and created and not instance.hidden_at and not instance.deleted_at:
+        queue_event('thread_comment', instance.pk)

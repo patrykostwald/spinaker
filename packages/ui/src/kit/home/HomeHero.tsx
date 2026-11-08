@@ -3,7 +3,7 @@
 /**
  * Pas powitalny: ilustracja autorska (`/illustrations/<motyw>/<pora>.webp`) jako niskie tło, a na niej
  * jedno zdanie o trzech częściach serwisu, linki i „Wesprzyj projekt”. Zastępuje wysoki baner, który
- * spychał wiadomości pod linię przewijania. Pas jest stały — nie da się go ukryć.
+ * spychał wiadomości pod linię przewijania. Pas jest stały - nie da się go ukryć.
  */
 
 import Link from "next/link";
@@ -31,14 +31,14 @@ function readTheme(): ThemeName {
 export function HomeHero() {
   const query = useQuery({ queryKey: ["clinic-page"], queryFn: getClinicPage, staleTime: 5 * 60_000 });
   const stats = query.data?.stats;
-  // Pora dnia i motyw znamy dopiero w przeglądarce — do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
+  // Pora dnia i motyw znamy dopiero w przeglądarce - do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
   const [period, setPeriod] = useState<DayPeriod | null>(null);
   const [theme, setTheme] = useState<ThemeName | null>(null);
 
   useEffect(() => {
     setPeriod(currentPeriod());
     setTheme(readTheme());
-    // Dawny przycisk „ukryj” zapisywał to na urządzeniu — sprzątamy, pas wraca u wszystkich.
+    // Dawny przycisk „ukryj” zapisywał to na urządzeniu - sprzątamy, pas wraca u wszystkich.
     try { localStorage.removeItem("sc-home-intro"); } catch {}
     const observer = new MutationObserver(() => setTheme(readTheme()));
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

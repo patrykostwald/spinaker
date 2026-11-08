@@ -35,7 +35,11 @@ class Command(BaseCommand):
         with transaction.atomic():
             for row in rows:
                 ParliamentaryRosterEntry.objects.update_or_create(source=source, external_id=row.external_id, defaults={
-                    'full_name': row.full_name, 'club': row.club, 'district': row.district,
+                    'full_name': row.full_name,
+                    # The Senate list does not expose clubs; preserve the club
+                    # discovered on its official personal profile.
+                    'club': row.club or (existing[row.external_id].club if source == 'senat' and row.external_id in existing else ''),
+                    'district': row.district,
                     'profile_url': row.profile_url, 'source_url': row.source_url, 'active': row.active,
                     'term': row.term,
                     'last_seen_at': now,

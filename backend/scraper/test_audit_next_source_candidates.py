@@ -24,8 +24,9 @@ def test_next_candidate_audit_selects_only_stale_candidates_and_stays_read_only(
     nested.assert_called_once()
     args = nested.call_args.args
     assert args[0] == 'audit_sources'
-    assert str(stale.pk) in args
-    assert str(fresh.pk) not in args and str(active.pk) not in args
+    # Compare only --source-id values; '--workers 3' must not collide with pk 3.
+    selected = [args[i + 1] for i, part in enumerate(args) if part == '--source-id']
+    assert selected == [str(stale.pk)]
     for source in (fresh, stale, active):
         source.refresh_from_db()
     assert fresh.catalog_stage == stale.catalog_stage == 'candidate'
@@ -44,5 +45,5 @@ def test_next_candidate_audit_skips_a_recent_failed_probe_so_later_sources_can_r
     with patch('scraper.management.commands.audit_next_source_candidates.call_command') as nested:
         call_command('audit_next_source_candidates', '--limit=1', '--output-prefix', str(tmp_path/'audit'))
     args = nested.call_args.args
-    assert str(waiting.pk) in args
-    assert str(failed.pk) not in args
+    selected = [args[i + 1] for i, part in enumerate(args) if part == '--source-id']
+    assert selected == [str(waiting.pk)]

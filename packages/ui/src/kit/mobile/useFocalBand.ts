@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * useFocalBand — zamiennik najechania na telefonie (docs/UI_KIT_PLAN.md → «Mobilne rozkłady»,
- * «Fokus przy przewijaniu — zamiana najechania»).
+ * useFocalBand - zamiennik najechania na telefonie (docs/UI_KIT_PLAN.md → «Mobilne rozkłady»,
+ * «Fokus przy przewijaniu - zamiana najechania»).
  *
  * Pasmo fokalne to środkowe 30% obszaru przewijania (domyślnie 35–65% wysokości). Karta, której
- * środek jest najbliżej środka pasma, dostaje `data-lit="true"` — dokładnie ta sama uwaga CSS,
+ * środek jest najbliżej środka pasma, dostaje `data-lit="true"` - dokładnie ta sama uwaga CSS,
  * której `.sc-hoverable::before` używa dla najechania/fokusu (kit.css, blok R0/R4). Ten hak steruje
- * WYŁĄCZNIE poświatą przez atrybut DOM, bez React state na element — stopień A (scale/lewitacja)
+ * WYŁĄCZNIE poświatą przez atrybut DOM, bez React state na element - stopień A (scale/lewitacja)
  * zostaje tym, czym jest w NewsCard, sterowanym własnym hover/focus tej karty.
  *
- * Wydajność: JEDEN IntersectionObserver na instancję, `rootMargin` ściąga korzeń do samego pasma —
+ * Wydajność: JEDEN IntersectionObserver na instancję, `rootMargin` ściąga korzeń do samego pasma -
  * przecięcie = "w paśmie". Jedyny nasłuch przewijania w całym pliku tylko ZAPISUJE prędkość do refa
- * (bez odczytu geometrii, bez setState) — decyzję "czy zatwierdzić" podejmuje się z tego refa.
+ * (bez odczytu geometrii, bez setState) - decyzję "czy zatwierdzić" podejmuje się z tego refa.
  */
 
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -20,23 +20,23 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 export type FocalBandAxis = "y" | "x";
 
 export type FocalBandOptions = {
-  /** Ułamki [start, koniec] pasma na osi przewijania. @default [0.35, 0.65] — tylko oś Y. */
+  /** Ułamki [start, koniec] pasma na osi przewijania. @default [0.35, 0.65] - tylko oś Y. */
   band?: [number, number];
   /** Selektor kandydatów wewnątrz kontenera. @default '[data-material-id]' */
   selector?: string;
-  /** Oś przewijania — Carousel używa 'x' z marginesem 0px -42% 0px -42% (Karuzela w planie). */
+  /** Oś przewijania - Carousel używa 'x' z marginesem 0px -42% 0px -42% (Karuzela w planie). */
   axis?: FocalBandAxis;
-  /** Wymusza działanie na urządzeniach z (hover: hover) and (pointer: fine) — używa stoisko witryny. */
+  /** Wymusza działanie na urządzeniach z (hover: hover) and (pointer: fine) - używa stoisko witryny. */
   force?: boolean;
   /** Próg prędkości (px/ms), powyżej którego zmiana fokusu jest wstrzymana do zwolnienia. */
   velocityThreshold?: number;
 };
 
-/** Pasmo fokalne z planu (35–65% wysokości) — eksportowane, żeby FoldedSection używało tego samego progu. */
+/** Pasmo fokalne z planu (35–65% wysokości) - eksportowane, żeby FoldedSection używało tego samego progu. */
 export const FOCAL_BAND: [number, number] = [0.35, 0.65];
-const DEFAULT_VELOCITY_THRESHOLD = 0.55; // px/ms ≈ ~33px za klatkę 60Hz — dobrany na oko, patrz «Ryzyka»
+const DEFAULT_VELOCITY_THRESHOLD = 0.55; // px/ms ≈ ~33px za klatkę 60Hz - dobrany na oko, patrz «Ryzyka»
 
-/** `rootMargin` ściągający korzeń IntersectionObserver do pasma — używane też przez FoldedSection. */
+/** `rootMargin` ściągający korzeń IntersectionObserver do pasma - używane też przez FoldedSection. */
 export function focalBandRootMargin(axis: FocalBandAxis, band: [number, number] = FOCAL_BAND): string {
   const [start, end] = band;
   const before = `${(start * 100).toFixed(3)}%`;
@@ -67,7 +67,7 @@ export function useFocalBand(containerRef: RefObject<HTMLElement | null>, option
   const lastScrollRef = useRef(0);
   const lastTimeRef = useRef(0);
 
-  // Stabilne przez cały czas życia efektu — zmiana w trakcie przewijania nie jest scenariuszem tego komponentu.
+  // Stabilne przez cały czas życia efektu - zmiana w trakcie przewijania nie jest scenariuszem tego komponentu.
   const bandKey = band.join(",");
 
   useEffect(() => {
@@ -138,7 +138,7 @@ export function useFocalBand(containerRef: RefObject<HTMLElement | null>, option
     }
     observeAll();
 
-    // Sekcje/karuzele montują karty asynchronicznie (rozwijanie FoldedSection, doładowanie) —
+    // Sekcje/karuzele montują karty asynchronicznie (rozwijanie FoldedSection, doładowanie) -
     // dogląda nowych kandydatów bez ponownego tworzenia obserwatora.
     const mutationObserver = new MutationObserver(observeAll);
     mutationObserver.observe(container, { childList: true, subtree: true });

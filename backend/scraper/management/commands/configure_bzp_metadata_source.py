@@ -9,7 +9,9 @@ from scraper.bzp_backfill import SEARCH_URL, SOURCE_URL
 
 TERMS_URL = 'https://ezamowienia.gov.pl/pl/regulamin/'
 DOCS_URL = 'https://edu.ezamowienia.gov.pl/pl/integracja/'
-DAILY_CAP = 480
+# 6.11.2026 (zgoda właściciela): najwyżej 20 zapytań/min (urząd gwarantuje 30/min z adresu IP), do 5000 dziennie.
+INTERVAL_SECONDS = 3
+DAILY_CAP = 5000
 
 
 def configure(reviewer):
@@ -24,6 +26,7 @@ def configure(reviewer):
         channel=SourceAccessInstruction.Channel.API,
         allowed_scope=SourceAccessInstruction.Scope.METADATA,
         endpoint=SEARCH_URL, terms_url=TERMS_URL, valid_until__gt=now,
+        minimum_interval_seconds=INTERVAL_SECONDS, daily_request_cap=DAILY_CAP,
     ).order_by('-version').first()
     if card is None:
         latest = SourceAccessInstruction.objects.filter(source=source).order_by('-version').first()
@@ -37,10 +40,10 @@ def configure(reviewer):
             evidence={
                 'documentation_url': DOCS_URL,
                 'scope': 'BZP notice number, title, publication date and direct record link only; no notice full text, files, images or participant data.',
-                'rate_limit': 'One request at least every three minutes; 480 requests per day maximum.',
+                'rate_limit': 'One request at least every three seconds (at most 20 per minute; the official limit is 30 per minute per IP, ezamowienia.gov.pl/pl/integracja/, in force from 2026-10-06); 5000 requests per day maximum.',
                 'attribution': 'Keep the official BZP record link and acquisition time on every box.',
             },
-            minimum_interval_seconds=180, daily_request_cap=DAILY_CAP,
+            minimum_interval_seconds=INTERVAL_SECONDS, daily_request_cap=DAILY_CAP,
             reviewed_at=now, reviewed_by=reviewer, valid_until=now + timedelta(days=180),
         )
     source.name = 'Biuletyn Zamówień Publicznych'
@@ -61,7 +64,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not options['apply']:
-            self.stdout.write('PLAN: BZP API; tytuł, numer, data i link, maksymalnie 480 żądań/dobę. Bez --apply nie zmieniam bazy.')
+            self.stdout.write('PLAN: BZP API; tytuł, numer, data i link, najwyżej 20 żądań/min i 5000/dobę. Bez --apply nie zmieniam bazy.')
             return
         source, card = configure(options['reviewed_by'])
         self.stdout.write(self.style.SUCCESS(

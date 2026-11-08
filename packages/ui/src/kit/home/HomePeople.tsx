@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { apiFetch } from "../../lib/api";
 import { ROLE_CATEGORY_LABELS, type PublicFigureSummary } from "../../lib/publicFigures";
+import { Loading } from "../Loading";
 
 type Page = { count: number; page: number; page_size: number; results: PublicFigureSummary[] };
 const PAGE_SIZE = 60;
@@ -52,7 +53,7 @@ export function HomePeople({ query, scrollRoot }: { query: string; scrollRoot: R
     return () => observer.disconnect();
   }, [people, people.hasNextPage, people.isFetchingNextPage, scrollRoot]);
 
-  if (people.isPending) return <p role="status" className="sc-t-body-s sc-text-2">Ładuję osoby publiczne…</p>;
+  if (people.isPending) return <p role="status" className="sc-t-body-s sc-text-2"><Loading label="Ładuję osoby publiczne" /></p>;
   if (people.isError) return <p role="alert" className="sc-t-body-s sc-text-2">Nie udało się pobrać rejestru osób publicznych.</p>;
   if (!rows.length) return <p className="sc-t-body-s sc-text-2">Brak osób publicznych pasujących do hasła.</p>;
 
@@ -79,7 +80,7 @@ export function HomePeople({ query, scrollRoot }: { query: string; scrollRoot: R
       </ul>
       {people.hasNextPage ? (
         <div ref={sentinelRef} className="sc-home-baza__more" role="status">
-          {people.isFetchingNextPage ? "Ładuję kolejne osoby…" : "Przewiń siatkę niżej, aby załadować kolejne osoby."}
+          {people.isFetchingNextPage ? <Loading label="Ładuję kolejne osoby" /> : "Przewiń siatkę niżej, aby załadować kolejne osoby."}
         </div>
       ) : null}
     </>

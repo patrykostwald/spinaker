@@ -13,7 +13,7 @@ export interface SearchFieldProps {
   label?: string;
   disabled?: boolean;
   error?: boolean;
-  /** Liczba wyników — jeśli podana, przewija się liczbą obok pola (MorphValue robi to u konsumenta). */
+  /** Liczba wyników - jeśli podana, przewija się liczbą obok pola (MorphValue robi to u konsumenta). */
   resultsCount?: number;
   id?: string;
   className?: string;
@@ -27,7 +27,7 @@ export interface SearchFieldProps {
  * Pole wyszukiwania (docs/UI_KIT_PLAN.md → «Селекторы, флажки и переключатели»).
  * Pierścień fokusu i krawędź przechodzą (`fade`), ikona przebarwia się w akcent przy fokusie,
  * przycisk czyszczenia pojawia się scale .8→1. Napisane jako `input.sc-input` (specyficzność
- * 0,2,1 pod `.sc-root`) — jedyna prawdziwa pułapka kaskady dla pól tekstowych.
+ * 0,2,1 pod `.sc-root`) - jedyna prawdziwa pułapka kaskady dla pól tekstowych.
  */
 export function SearchField({
   value,

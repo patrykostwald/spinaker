@@ -15,9 +15,9 @@ const defaultFormat = (value: number) => Math.round(value).toLocaleString("pl-PL
 
 /**
  * Числа и счётчики перетекают, а не перескакивают. Значение анимируется на `MotionValue`
- * (пружина `move`) и пишется в DOM напрямую через подписку — не через React-рендер на
+ * (пружина `move`) и пишется в DOM напрямую через подписку - не через React-рендер на
  * каждый кадр. Под уменьшенным движением значение подставляется мгновенно.
- * `tabular-nums` — через класс `sc-t-mono`, чтобы соседние цифры не «дышали» по ширине.
+ * `tabular-nums` - через класс `sc-t-mono`, чтобы соседние цифры не «дышали» по ширине.
  */
 export function MorphValue({ value, className, format = defaultFormat }: MorphValueProps) {
   const m = useMotionTokens();

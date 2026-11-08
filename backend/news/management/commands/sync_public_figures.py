@@ -86,9 +86,15 @@ class Command(BaseCommand):
                         'archived': False,
                     },
                 )
-            PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', archived=False, status='current').exclude(import_key__in=keys).update(
+            PublicFigure.objects.filter(import_key__startswith='kprm-cabinet:', status='current').exclude(import_key__in=keys).update(
                 status='former', source_checked_at=now
             )
+            role_keys = {f'{cabinet_office_import_key(row.role_title)}:holder:{row.import_key}' for row in rows}
+            PublicFigureRole.objects.filter(import_key__startswith='public-office:cabinet:', status='current').exclude(
+                import_key__in=role_keys).update(status='former', source_checked_at=now)
+            PublicOffice.objects.filter(import_key__startswith='public-office:cabinet:').exclude(
+                import_key__in={cabinet_office_import_key(row.role_title) for row in rows}).update(
+                    current_holder=None, archived=True, source_checked_at=now)
         self.stdout.write(self.style.SUCCESS(
             f'Zaimportowano {len(rows)} aktualnych członków rządu; nowe {created}; zaktualizowane {updated}; '
             f'oznaczone jako byli członkowie rządu {absent}. Nie utworzono kont X ani kandydatur.'

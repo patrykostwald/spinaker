@@ -1,0 +1,6 @@
+/* Odnośnik "Jak to działa" na stronie głównej przeszłości (seria PWA + "Jak to działa", 13.10.2026).
+   Osobny plik: v3.css ma równoległego właściciela. Cel 44 px (Fitts), jeden styl odnośników "... →" (Similarity). */
+.pt-v3 .px .pt-console__how { margin: 4px 0 0; }
+.pt-v3 .px .pt-console__how a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.pt-v3 .px .pt-console__how a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.pt-v3 .px .pt-console__how--sec { margin: 16px 0 0; }

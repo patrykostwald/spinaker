@@ -109,6 +109,7 @@ def test_preview_missing_synthesis_does_not_write(monkeypatch, tmp_path):
                                        status='approved', diagnosed_at=timezone.now())
     monkeypatch.setattr(clinic_ai, 'x_thread', lambda data: {'posts': sample()['x_thread']})
     monkeypatch.setattr(x_publish, 'polish', lambda text: text)
+    monkeypatch.setattr('news.clinic.polish_synthesis', lambda posts: posts)  # językoznawca Konsylium: bez zapytań do modeli
     from django.db import connection
     from django.test.utils import CaptureQueriesContext
     with CaptureQueriesContext(connection) as queries:

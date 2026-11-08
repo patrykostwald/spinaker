@@ -6,7 +6,7 @@ import { iconStroke, iconA11yProps } from "./types";
 import { useMotionTokens } from "../motion/useMotionTokens";
 
 export interface PlusIconProps extends IconProps {
-  /** Dodanie do nitki / „dodaj temat”. Gdy true — obraca się o 45°, wyglądając jak krzyżyk. */
+  /** Dodanie do nitki / „dodaj temat”. Gdy true - obraca się o 45°, wyglądając jak krzyżyk. */
   active?: boolean;
 }
 

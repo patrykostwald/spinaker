@@ -11,7 +11,7 @@ export interface IconProps {
   size?: IconSize;
   className?: string;
   /**
-   * Gdy podane — ikona staje się widoczna dla technologii asystujących
+   * Gdy podane - ikona staje się widoczna dla technologii asystujących
    * (dostaje <title> i role="img") i przestaje być aria-hidden.
    * Domyślnie ikony są dekoracyjne (aria-hidden), bo prawie zawsze towarzyszy im tekst.
    */

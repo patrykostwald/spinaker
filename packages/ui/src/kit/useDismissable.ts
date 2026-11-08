@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * useDismissable — zamykanie panelu klikiem poza nim, Escape (z powrotem fokusu na wyzwalacz)
- * i Tab (bez pułapki fokusu — Tab robi swoje, panel tylko się zamyka).
+ * useDismissable - zamykanie panelu klikiem poza nim, Escape (z powrotem fokusu na wyzwalacz)
+ * i Tab (bez pułapki fokusu - Tab robi swoje, panel tylko się zamyka).
  * docs/UI_KIT_PLAN.md → «Dropdown»: "Escape закрывает и возвращает фокус на триггер, Tab закрывает без ловушки".
  */
 

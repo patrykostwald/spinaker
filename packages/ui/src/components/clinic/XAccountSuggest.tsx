@@ -20,7 +20,7 @@ export function XAccountSuggest({ figureId, name }: { figureId: number; name: st
       const result = await suggestXAccount(figureId, url.trim());
       setMessage(result.status === "received"
         ? `Dziękujemy. Sprawdzimy, czy @${result.handle} to oficjalne konto, zanim zaczniemy je czytać.`
-        : `Ktoś już zgłosił @${result.handle} — czeka na weryfikację.`);
+        : `Ktoś już zgłosił @${result.handle} - czeka na weryfikację.`);
       setOpen(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Nie udało się wysłać sugestii.");

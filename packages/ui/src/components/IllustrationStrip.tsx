@@ -18,7 +18,7 @@ function readTheme(): ThemeName {
 }
 
 export function IllustrationStrip() {
-  // Pora dnia i motyw znamy dopiero w przeglądarce — do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
+  // Pora dnia i motyw znamy dopiero w przeglądarce - do tego czasu bez obrazka (inaczej pobieralibyśmy dwa).
   const [period, setPeriod] = useState<DayPeriod | null>(null);
   const [theme, setTheme] = useState<ThemeName | null>(null);
 

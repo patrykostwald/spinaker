@@ -22,7 +22,7 @@ def _bearer_token():
     return token
 
 
-def resolve_candidate(candidate, staff):
+def resolve_candidate(candidate, staff, *, verified_data=None):
     """One deliberate X lookup. Never enables polling and never fetches a timeline."""
     if candidate.resolved_account_id:
         return candidate.resolved_account
@@ -31,6 +31,8 @@ def resolve_candidate(candidate, staff):
     # handle match; keep that account's confirmation and polling settings intact.
     existing = PoliticalAccount.objects.filter(handle__iexact=candidate.handle).first()
     if existing:
+        if verified_data is not None and str(verified_data.get('id')) != existing.user_id:
+            raise CandidateResolutionError('Nazwa wskazuje inne ID X; wymagana decyzja zespołu.')
         with transaction.atomic():
             candidate = PoliticalAccountCandidate.objects.select_for_update().get(pk=candidate.pk)
             if candidate.resolved_account_id:
@@ -45,20 +47,13 @@ def resolve_candidate(candidate, staff):
         raise CandidateResolutionError('Przed zatwierdzeniem przypisz konto do jednej z grup pobierania.')
     if not candidate.confirmation_url:
         raise CandidateResolutionError('Dodaj publiczny link potwierdzający tożsamość konta.')
+    if verified_data is not None:
+        data = verified_data
+    else:
+        data = _lookup_candidate(candidate)
     try:
-        response = requests.get(
-            f'https://api.x.com/2/users/by/username/{candidate.handle}',
-            headers={'Authorization': f'Bearer {_bearer_token()}', 'Accept': 'application/json'},
-            params={'user.fields': 'id,name,username'}, timeout=(5, 15), allow_redirects=False,
-        )
-    except requests.RequestException as exc:
-        raise CandidateResolutionError('Nie udało się połączyć z X.') from exc
-    if response.status_code != 200:
-        raise CandidateResolutionError(f'X odrzucił sprawdzenie konta (HTTP {response.status_code}).')
-    try:
-        data = response.json()['data']
         user_id, username = str(data['id']), str(data['username'])
-    except (ValueError, KeyError, TypeError) as exc:
+    except (KeyError, TypeError) as exc:
         raise CandidateResolutionError('X zwrócił niepełną odpowiedź dla tego konta.') from exc
     if username.lower() != candidate.handle.lower():
         raise CandidateResolutionError('Odpowiedź X nie zgadza się z wybranym handlem.')
@@ -81,3 +76,21 @@ def resolve_candidate(candidate, staff):
         candidate.resolution_error = ''
         candidate.save(update_fields=['resolved_account', 'resolved_at', 'resolution_error'])
         return account
+
+
+def _lookup_candidate(candidate):
+    try:
+        response = requests.get(
+            f'https://api.x.com/2/users/by/username/{candidate.handle}',
+            headers={'Authorization': f'Bearer {_bearer_token()}', 'Accept': 'application/json'},
+            params={'user.fields': 'id,name,username'}, timeout=(5, 15), allow_redirects=False,
+        )
+    except requests.RequestException as exc:
+        raise CandidateResolutionError('Nie udało się połączyć z X.') from exc
+    if response.status_code != 200:
+        raise CandidateResolutionError(f'X odrzucił sprawdzenie konta (HTTP {response.status_code}).')
+    try:
+        data = response.json()['data']
+    except (ValueError, KeyError, TypeError) as exc:
+        raise CandidateResolutionError('X zwrócił niepełną odpowiedź dla tego konta.') from exc
+    return data

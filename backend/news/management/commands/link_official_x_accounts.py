@@ -6,7 +6,8 @@ Kroki (dla każdej osoby):
    Sejm blokuje automatyczne pobieranie profili (HTTP 403) — nie obchodzimy tego. Dla posłów
    (--wikidata) korzystamy z Wikidanych (CC0, właściwość P2002 „nazwa użytkownika X”) dopasowanych
    do aktualnego składu Sejmu po jednoznacznym imieniu i nazwisku; źródło zapisujemy w notatce.
-2. Obóz (rządzący / opozycja) wynika z klubu lub frakcji; osoby bez jednoznacznego klubu pomijamy.
+2. Obóz (rządzący / opozycja) wynika z klubu lub frakcji; klub spoza listy (koło, niezrzeszeni) = obóz „inni”,
+   osoby bez klubu pomijamy.
 3. Jedno sprawdzenie konta w API X (ok. 0,01 USD), utworzenie konta i potwierdzenie przez wskazanego
    członka zespołu (--confirmed-by). Z --enable konto od razu trafia do czytania postów.
 
@@ -40,6 +41,13 @@ CLUB_CAMPS = {
     'ECR': 'opposition', 'PfE': 'opposition', 'ESN': 'opposition',
 }
 LOOKUP_USD = 0.01
+
+
+def camp_for(club):
+    """Obóz z klubu w oficjalnym rejestrze. Klub spoza listy (koło, posłowie niezrzeszeni) to obóz „inni” —
+    osoba jest czytana i diagnozowana (właściciel 23.10); pusty klub = obóz nieustalony."""
+    from news.political_models import OTHER_CAMP
+    return CLUB_CAMPS.get(club) or (OTHER_CAMP if club else '')
 INSTITUTIONAL_HANDLES = {'polskisenat', 'kancelariasejmu', 'europarl_pl', 'ep_poland', 'europarl_en'}
 
 
@@ -177,7 +185,7 @@ class Command(BaseCommand):
         for evidence in evidence_rows[:options['limit']]:
             entry, figure = evidence_entry(evidence, figures_type)
             club = (entry.club if entry else '') or getattr(self, '_clubs', {}).get(entry.pk if entry else None, '')
-            camp = CLUB_CAMPS.get(club)
+            camp = camp_for(club)
             name = entry.full_name if entry else (figure.canonical_name if figure else evidence.handle)
             if not camp:
                 skipped += 1
@@ -241,7 +249,7 @@ class Command(BaseCommand):
             if not own:
                 continue
             club = entry.club or senate_club(entry)
-            camp = CLUB_CAMPS.get(club)
+            camp = camp_for(club)
             for handle, url in own:
                 personal += 1
                 if not apply:
@@ -292,7 +300,7 @@ class Command(BaseCommand):
             if not re.fullmatch(r'[A-Za-z0-9_]{1,15}', handle):
                 continue
             matched += 1
-            camp = CLUB_CAMPS.get(entry.club)
+            camp = camp_for(entry.club)
             if not apply:
                 self.stdout.write(f'{"POŁĄCZ " if camp else "POMIŃ  "} @{handle} → {entry.full_name} · Sejm · {entry.club or "klub nieustalony"}'
                                   + (f' · {camp}' if camp else '') + ' · Wikidane')

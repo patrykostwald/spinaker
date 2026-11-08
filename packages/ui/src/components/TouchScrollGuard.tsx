@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Telefon: listy z własnym przewijaniem nie „łapią” palca — strona przewija się dalej.
+ * Telefon: listy z własnym przewijaniem nie „łapią” palca - strona przewija się dalej.
  * Przytrzymanie palca na liście (ok. 0,4 s) włącza jej przewijanie (niebieska ramka, krótka wibracja);
  * dotknięcie poza listą wyłącza. Na komputerze (mysz) nic się nie zmienia.
  */

@@ -7,7 +7,7 @@ import { POLISH_LONG_WORDS, POLISH_SPECIMEN } from "../fixtures";
 export const meta = {
   id: "typografia",
   title: "Typografia",
-  lead: "Montserrat, latin-ext. Obie wersje kolorystyczne obok siebie — kompensacji optycznej wagi nie da się ocenić z pamięci.",
+  lead: "Montserrat, latin-ext. Obie wersje kolorystyczne obok siebie - kompensacji optycznej wagi nie da się ocenić z pamięci.",
 };
 
 const SAMPLES: Record<(typeof TYPE_TOKENS)[number], string> = {
