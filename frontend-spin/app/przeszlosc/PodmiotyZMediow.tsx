@@ -9,7 +9,7 @@ import './podmioty-media.css';
  * dowodem powiązania. Pozycje po przeglądzie zespołu (backend: news/przeszlosc_doniesienia.py).
  */
 export type OrgMention = { id: number; category: string; category_label: string; unconfirmed: boolean; quote: string;
-  organisation: { name: string; krs_number: string; kind: string; url: string; register_url?: string; extra_url?: string };
+  organisation: { name: string; krs_number: string; kind: string; url: string; register_url?: string; extra_url?: string; identifier?: string; no_krs?: boolean };
   source: { url: string; title: string; outlet: string; date: string | null } };
 export type OrgMentions = { count: number; notice: string; by_category: Record<string, number>; results: OrgMention[] };
 
@@ -34,10 +34,15 @@ export function PodmiotyZMediow({ data, id = 'pp-om-h' }: { data?: OrgMentions; 
     </header>
     <ol className="px-om__list">{shown.map(m => <li key={m.id}>
       <div className="px-om__top">
-        <a className="px-om__org" href={m.organisation.url} title={m.organisation.name}>{m.organisation.name}</a>
+        {m.organisation.no_krs
+          ? <span className="px-om__org" title={m.organisation.name}>{m.organisation.name}</span>
+          : <a className="px-om__org" href={m.organisation.url} title={m.organisation.name}>{m.organisation.name}</a>}
         <small className="px-om__cat">{m.category_label}{m.unconfirmed ? ' · niepotwierdzone' : ''}</small>
       </div>
-      {m.organisation.register_url && <p className="px-om__reg">KRS {m.organisation.krs_number}:{' '}
+      {m.organisation.no_krs && m.organisation.register_url && <p className="px-om__reg">Bez wpisu w KRS{m.organisation.identifier ? ` · ${m.organisation.identifier}` : ''}:{' '}
+        <a href={m.organisation.register_url} target="_blank" rel="noopener noreferrer"
+          aria-label={`Rejestr urzędowy: ${m.organisation.name} (otwiera się w nowej karcie)`}>rejestr ↗</a></p>}
+      {!m.organisation.no_krs && m.organisation.register_url && <p className="px-om__reg">KRS {m.organisation.krs_number}:{' '}
         <a href={m.organisation.register_url} target="_blank" rel="noopener noreferrer"
           aria-label={`Urzędowy odpis z KRS: ${m.organisation.name} (otwiera się w nowej karcie)`}>odpis ↗</a>
         {m.organisation.extra_url && <> · <a href={m.organisation.extra_url} target="_blank" rel="noopener noreferrer"

@@ -4,6 +4,8 @@ Pokazujemy: kategorię doniesienia, podmiot z naszej bazy (KRS) i źródło (lin
 Nie opisujemy charakteru powiązania. Wzmianka w mediach nie jest dowodem powiązania. Tylko pozycje opublikowane po przeglądzie
 zespołu (status „published”); dopasowanie po numerze KRS/NIP albo oznaczone jako niepotwierdzone (tylko nazwa).
 """
+from django.db.models import Q
+
 from news import krs
 from news.political_models import MEDIA_MENTION_CATEGORIES, PublicFigureMediaMention
 
@@ -21,14 +23,19 @@ def official_extract_url(org):
 
 
 def mentions_for(figure, limit=100):
-    rows = list(PublicFigureMediaMention.objects.filter(public_figure=figure, status='published', organisation__archived=False)
+    rows = list(PublicFigureMediaMention.objects.filter(public_figure=figure, status='published').filter(Q(organisation__isnull=True) | Q(organisation__archived=False))
                 .select_related('organisation').order_by('-published_on', '-pk')[:limit])
     rows.sort(key=lambda m: ORDER.index(m.category) if m.category in ORDER else len(ORDER))
+    def entity(m):
+        if m.organisation_id is None:      # podmiot bez KRS: nazwa, identyfikator i link do właściwego rejestru (bez strony spółki i bez rejestr.io)
+            return {'name': m.entity_name, 'krs_number': '', 'kind': 'other', 'url': '', 'register_url': m.entity_register_url, 'extra_url': '',
+                    'identifier': m.entity_identifier, 'no_krs': True}
+        org = m.organisation
+        return {'name': org.name, 'krs_number': org.krs_number, 'kind': org.kind, 'url': f'/przeszlosc/spolka/{org.krs_number}',
+                'register_url': official_extract_url(org), 'extra_url': krs.extra_register_url(org.krs_number), 'identifier': '', 'no_krs': False}
     results = [{
         'id': m.pk, 'category': m.category, 'category_label': LABELS.get(m.category, m.category),
-        'organisation': {'name': m.organisation.name, 'krs_number': m.organisation.krs_number, 'kind': m.organisation.kind,
-                         'url': f'/przeszlosc/spolka/{m.organisation.krs_number}', 'register_url': official_extract_url(m.organisation),
-                         'extra_url': krs.extra_register_url(m.organisation.krs_number)},
+        'organisation': entity(m),
         'unconfirmed': m.match_basis == 'name_only',
         'source': {'url': m.source_url, 'title': m.source_title, 'outlet': m.source_outlet,
                    'date': m.published_on.isoformat() if m.published_on else None},

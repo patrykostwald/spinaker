@@ -4,6 +4,8 @@ CSV (UTF-8, nagłówki): public_figure_id (albo public_figure_name = dokładna n
 source_outlet, published_on, quote, match_basis; opcjonalnie organisation_name i city (potrzebne z --dodaj-podmioty).
 category: mention | alleged | denied | other; match_basis: identifier | name_only. Podmiot musi być w bazie (krs_number) albo, z --dodaj-podmioty,
 zostaje dodany z oficjalnego odpisu KRS, jeśli nazwa i miejscowość siedziby z pliku zgadzają się z odpisem (bez modelu AI, bez kosztów).
+Podmiot BEZ KRS (jednoosobowa działalność, fundusz, gmina): puste krs_number oraz kolumny organisation_name, entity_register_url (https, link do właściwego
+rejestru, np. CEIDG) i opcjonalnie entity_identifier (np. „NIP 1234563218”).
 Bez --apply tylko sprawdza i liczy. Zakazane kolumny: PESEL, data urodzenia. Pozycje trafiają ze statusem „do przeglądu”.
 """
 import csv
@@ -15,7 +17,7 @@ from django.core.management.base import BaseCommand, CommandError
 from news.political_models import (MEDIA_MENTION_CATEGORIES, MEDIA_MENTION_MATCH, MEDIA_QUOTE_LIMIT, PublicFigure,
                                    PublicFigureMediaMention, RegisteredOrganisation)
 
-REQUIRED = {'krs_number', 'category', 'source_url', 'source_title'}
+REQUIRED = {'category', 'source_url', 'source_title'}
 FORBIDDEN = {'pesel', 'date_of_birth', 'birth_date', 'data_urodzenia'}
 CATEGORIES = {k for k, _ in MEDIA_MENTION_CATEGORIES}
 MATCHES = {k for k, _ in MEDIA_MENTION_MATCH}
@@ -52,16 +54,19 @@ class Command(BaseCommand):
                 figure = found[0] if len(found) == 1 else None      # niejednoznaczna nazwa = błąd, nie zgadujemy
             else:
                 figure = None
-            org = RegisteredOrganisation.objects.filter(krs_number=get('krs_number').zfill(10), archived=False).first()
+            no_krs = not get('krs_number')
+            org = None if no_krs else RegisteredOrganisation.objects.filter(krs_number=get('krs_number').zfill(10), archived=False).first()
             new_extract = None
-            if org is None and options['dodaj_podmioty']:
+            if org is None and not no_krs and options['dodaj_podmioty']:
                 new_extract, why = self.verified_extract(get('krs_number'), get('organisation_name'), get('city'))
                 if new_extract is None:
                     errors.append(f'wiersz {n}: nie dodano podmiotu ({why})')
                     continue
             category, basis = get('category'), get('match_basis') or 'name_only'
             quote = get('quote')
-            problem = ('nie ma takiej osoby (albo nazwa niejednoznaczna)' if figure is None else 'nie ma podmiotu w bazie' if org is None and new_extract is None
+            problem = ('nie ma takiej osoby (albo nazwa niejednoznaczna)' if figure is None
+                       else 'podmiot bez KRS wymaga organisation_name i entity_register_url (https)' if no_krs and not (get('organisation_name') and get('entity_register_url').startswith('https://'))
+                       else 'nie ma podmiotu w bazie' if org is None and not no_krs and new_extract is None
                        else 'zła kategoria' if category not in CATEGORIES else 'zła podstawa dopasowania' if basis not in MATCHES
                        else f'cytat dłuższy niż {MEDIA_QUOTE_LIMIT} znaków' if len(quote) > MEDIA_QUOTE_LIMIT else '')
             published_on = None
@@ -73,17 +78,23 @@ class Command(BaseCommand):
             if problem:
                 errors.append(f'wiersz {n}: {problem}')
                 continue
-            if org is not None and PublicFigureMediaMention.objects.filter(public_figure=figure, organisation=org, source_url=get('source_url')).exists():
+            if no_krs:
+                duplicate = PublicFigureMediaMention.objects.filter(public_figure=figure, organisation__isnull=True, entity_name=get('organisation_name'), source_url=get('source_url')).exists()
+            else:
+                duplicate = org is not None and PublicFigureMediaMention.objects.filter(public_figure=figure, organisation=org, source_url=get('source_url')).exists()
+            if duplicate:
                 skipped += 1
                 continue
-            if org is None:
+            if org is None and not no_krs:
                 if not options['apply']:
                     added += 1                     # raport: podmiot do dodania z odpisu KRS, pozycja do kolejki
                     self.stdout.write(f'  nowy podmiot z KRS: {new_extract.name} ({new_extract.krs}, {new_extract.seat_city})')
                     continue
                 from news import krs_pokrycie
                 org = krs_pokrycie.save_extract(new_extract)
-            mention = PublicFigureMediaMention(public_figure=figure, organisation=org, category=category, match_basis=basis,
+            entity = {'entity_name': get('organisation_name')[:300], 'entity_identifier': get('entity_identifier')[:40],
+                      'entity_register_url': get('entity_register_url')} if no_krs else {}
+            mention = PublicFigureMediaMention(public_figure=figure, organisation=org, category=category, match_basis=basis, **entity,
                 source_url=get('source_url'), source_title=get('source_title')[:300], source_outlet=get('source_outlet')[:120],
                 published_on=published_on, quote=quote, collected_by='import')
             try:

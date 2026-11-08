@@ -53,7 +53,7 @@ class Command(BaseCommand):
                     continue
                 m.status, m.reviewed_by, m.reviewed_at = 'rejected', staff, timezone.now()
                 m.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'updated_at'])
-                self.stdout.write(f'#{pk}: ODRZUCONO ({m.public_figure.canonical_name} / {m.organisation.name})')
+                self.stdout.write(f'#{pk}: ODRZUCONO ({m.public_figure.canonical_name} / {m.display_name})')
             for pk in o['publikuj']:
                 m = queue.filter(pk=pk).first()
                 if m is None:
@@ -64,11 +64,12 @@ class Command(BaseCommand):
                 except ValidationError as error:
                     self.stdout.write(f'#{pk}: NIE opublikowano: {"; ".join(error.messages)}')
                     continue
-                self.stdout.write(f'#{pk}: OPUBLIKOWANO ({m.public_figure.canonical_name} / {m.organisation.name})')
+                self.stdout.write(f'#{pk}: OPUBLIKOWANO ({m.public_figure.canonical_name} / {m.display_name})')
             return
         rows = PublicFigureMediaMention.objects.select_related('public_figure', 'organisation').order_by('-pk')
         rows = rows[:50] if o['wszystkie'] else rows.filter(status='pending_review')[:50]
         for m in rows:
-            self.stdout.write(f'#{m.pk} [{m.status}] {m.public_figure.canonical_name} | {m.organisation.name} (KRS {m.organisation.krs_number}) | '
+            ident = ('KRS ' + m.organisation.krs_number) if m.organisation_id else ('bez KRS: ' + (m.entity_identifier or 'brak identyfikatora'))
+            self.stdout.write(f'#{m.pk} [{m.status}] {m.public_figure.canonical_name} | {m.display_name} ({ident}) | '
                               f'{m.get_category_display()}{" | niepotwierdzone" if m.match_basis == "name_only" else ""} | {m.source_outlet} {m.published_on or ""}\n'
                               f'    {m.source_url}\n    „{m.quote[:250]}”')

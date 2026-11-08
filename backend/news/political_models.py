@@ -538,7 +538,11 @@ class PublicFigureMediaMention(models.Model):
     zmiana treści wskazującej na powiązanie cofa publikację do kolejki. Podmiot wyłącznie z naszej bazy (KRS), dopasowanie
     po numerze KRS/NIP albo oznaczone jako niepotwierdzone (tylko nazwa)."""
     public_figure = models.ForeignKey(PublicFigure, on_delete=models.PROTECT, related_name='media_mentions')
-    organisation = models.ForeignKey(RegisteredOrganisation, on_delete=models.PROTECT, related_name='media_mentions')
+    organisation = models.ForeignKey(RegisteredOrganisation, on_delete=models.PROTECT, related_name='media_mentions', null=True, blank=True,
+        help_text='Podmiot z KRS. Puste dla podmiotu bez wpisu w KRS (wtedy nazwa, identyfikator i link do rejestru poniżej).')
+    entity_name = models.CharField(max_length=300, blank=True, help_text='Nazwa podmiotu bez wpisu w KRS (np. jednoosobowa działalność, fundusz, gmina).')
+    entity_identifier = models.CharField(max_length=40, blank=True, help_text='Identyfikator podmiotu bez KRS, np. „NIP 1234563218” albo „REGON …”.')
+    entity_register_url = models.URLField(max_length=1024, blank=True, help_text='Link do właściwego rejestru (CEIDG, BIP, rejestr urzędowy); https.')
     category = models.CharField(max_length=10, choices=MEDIA_MENTION_CATEGORIES, default='mention')
     match_basis = models.CharField(max_length=12, choices=MEDIA_MENTION_MATCH, default='name_only')
     source_url = models.URLField(max_length=1024, help_text='Bezpośredni link do doniesienia.')
@@ -557,11 +561,21 @@ class PublicFigureMediaMention(models.Model):
 
     class Meta:
         ordering = ['-published_on', '-pk']
-        constraints = [models.UniqueConstraint(fields=['public_figure', 'organisation', 'source_url'],
-                                               name='unique_media_mention_per_source')]
+        constraints = [models.UniqueConstraint(fields=['public_figure', 'organisation', 'source_url'], name='unique_media_mention_per_source'),
+                       models.UniqueConstraint(fields=['public_figure', 'entity_name', 'source_url'], condition=models.Q(organisation__isnull=True),
+                                               name='unique_media_mention_entity_per_source')]
+
+    @property
+    def display_name(self):
+        return self.organisation.name if self.organisation_id else self.entity_name
 
     def clean(self):
         super().clean()
+        if not self.organisation_id:
+            if not (self.entity_name or '').strip():
+                raise ValidationError('Podmiot bez KRS wymaga nazwy.')
+            if urlparse(self.entity_register_url or '').scheme != 'https':
+                raise ValidationError('Podmiot bez KRS wymaga linku (https) do właściwego rejestru.')
         if urlparse(self.source_url or '').scheme not in ('http', 'https'):
             raise ValidationError('Link do doniesienia musi zaczynać się od http lub https.')
         if len(self.quote or '') > MEDIA_QUOTE_LIMIT:
@@ -569,7 +583,7 @@ class PublicFigureMediaMention(models.Model):
 
     def save(self, *args, **kwargs):
         """Zmiana treści doniesienia cofa opublikowaną pozycję do kolejki zatwierdzania."""
-        watched = ('public_figure_id', 'organisation_id', 'category', 'match_basis', 'source_url', 'source_title', 'quote')
+        watched = ('public_figure_id', 'organisation_id', 'entity_name', 'entity_register_url', 'category', 'match_basis', 'source_url', 'source_title', 'quote')
         if self.pk:
             previous = type(self).objects.filter(pk=self.pk).values('status', *watched).first()
             if previous and previous['status'] == 'published' and any(previous[f] != getattr(self, f) for f in watched):

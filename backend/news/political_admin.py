@@ -308,9 +308,9 @@ class PublicFigureOrganisationRelationAdmin(admin.ModelAdmin):
 
 
 class PublicFigureMediaMentionAdmin(admin.ModelAdmin):
-    list_display = ['public_figure', 'organisation', 'category', 'match_basis', 'source_outlet', 'published_on', 'status']
+    list_display = ['public_figure', 'organisation', 'entity_name', 'category', 'match_basis', 'source_outlet', 'published_on', 'status']
     list_filter = ['status', 'category', 'match_basis']
-    search_fields = ['public_figure__canonical_name', 'organisation__name', 'organisation__krs_number', 'source_title', 'source_outlet']
+    search_fields = ['public_figure__canonical_name', 'organisation__name', 'organisation__krs_number', 'entity_name', 'source_title', 'source_outlet']
     autocomplete_fields = ['public_figure', 'organisation']
     readonly_fields = ['reviewed_by', 'reviewed_at', 'created_at', 'updated_at']
     actions = ['publish_mentions', 'reject_mentions']

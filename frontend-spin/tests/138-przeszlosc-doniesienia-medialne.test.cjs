@@ -40,3 +40,8 @@ test('podmiot ma link do urzędowego odpisu KRS i do rejestr.io w nowej karcie',
   assert.match(c, /href=\{m\.organisation\.extra_url\} target="_blank" rel="noopener noreferrer"/);
   assert.match(c, /Urzędowy odpis z KRS/); assert.match(c, />odpis ↗</);
 });
+
+test('podmiot bez KRS: bez strony spółki i rejestr.io, z identyfikatorem i linkiem do właściwego rejestru (8.11)', () => {
+  for (const key of ['no_krs', 'Bez wpisu w KRS', 'identifier', 'Rejestr urzędowy:']) assert.ok(c.includes(key), key);
+  assert.match(c, /m\.organisation\.no_krs\s*\?\s*<span className="px-om__org"/);
+});
