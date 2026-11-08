@@ -1,6 +1,6 @@
 # Wniosek do Kancelarii Sejmu: oświadczenia majątkowe posłów (szkic z 8.11.2026)
 
-Status: **szkic, niewysłany**. Wysyła właściciel (działanie zewnętrzne). Adres: z zakładki „Kontakt” na sejm.gov.pl.
+Status: **wysłany przez właściciela 8.11.2026** (adres i kanał do uzupełnienia przez właściciela; odpowiedź: oczekiwana). Wysyła właściciel (działanie zewnętrzne). Adres: z zakładki „Kontakt” na sejm.gov.pl.
 **Do sprawdzenia przez Prawnika przed wysyłką [DP]:** powołane ustawy (wpisane z pamięci): ustawa z dnia 9 maja 1996 r. o wykonywaniu mandatu
 posła i senatora (jawność oświadczeń), ustawa z dnia 25 lutego 2016 r. o ponownym wykorzystywaniu informacji sektora publicznego.
 
