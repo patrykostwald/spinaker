@@ -36,7 +36,7 @@ function OrgItem({ r }: { r: OrgRow }) {
   </li>;
 }
 
-function TileView({ t, i, onFilter }: { t: Tile; i: number; onFilter?: (k: Filter) => void }) {
+function TileView({ t, i, onFilter, mentions = 0 }: { t: Tile; i: number; onFilter?: (k: Filter) => void; mentions?: number }) {
   const wide = t.id === 'podmioty';
   const strip = t.id === 'media';
   const hid = `${t.anchor}-h`;
@@ -54,6 +54,8 @@ function TileView({ t, i, onFilter }: { t: Tile; i: number; onFilter?: (k: Filte
       {t.lines.map((l, k) => <p key={k} className="pt-tile__x">{l}</p>)}
       {wide && shown.length > 0 && <ol className="pt-orgs" aria-label="Podmioty z KRS">{shown.map(r => <OrgItem key={r.key} r={r} />)}</ol>}
       {wide && t.orgs.length > shown.length && <p className="pt-tile__x pt-tile__x--quiet">Pokazano {shown.length} z {t.orgs.length}. Reszta jest w sekcji „Funkcje w KRS”.</p>}
+      {/* odesłanie do okna doniesień medialnych (właściciel 8.11): dwa rodzaje powiązań tej osoby obok siebie, tylko gdy są opublikowane pozycje */}
+      {wide && mentions > 0 && <p className="pt-tile__x pt-tile__x--quiet pt-tile__x--om">Podmioty z doniesień medialnych: {mentions}. <a href="#pp-doniesienia">Zobacz ↓</a></p>}
       {t.docs.length > 0 && <ul className="pt-docs" aria-label="Oświadczenia majątkowe">{t.docs.map(d => <li key={d.key}>
         {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer">{d.meta !== undefined ? d.title : d.year ? `Oświadczenie za rok ${d.year}` : d.title}<i aria-hidden="true"> ↗</i></a> : <span>{d.title}</span>}
         {d.meta ? <small className="pt-docs__m">{d.meta}</small> : null}{d.auto ? <small className="pt-docs__a">{d.auto}</small> : null}</li>)}</ul>}
@@ -66,7 +68,7 @@ function TileView({ t, i, onFilter }: { t: Tile; i: number; onFilter?: (k: Filte
   </article>;
 }
 
-export function Najwazniejsze({ data, onFilter, extra }: { data: LandingInput; onFilter?: (k: Filter) => void; extra?: ReactNode }) {
+export function Najwazniejsze({ data, onFilter, extra, mentions = 0 }: { data: LandingInput; onFilter?: (k: Filter) => void; extra?: ReactNode; mentions?: number }) {
   const landing = useMemo(() => buildLanding(data), [data]);
   const [org, ...rest] = landing.tiles;
   const media = rest[rest.length - 1];
@@ -78,7 +80,7 @@ export function Najwazniejsze({ data, onFilter, extra }: { data: LandingInput; o
     </div>
     <p className="pt-nw__rule" data-pt-rule>{nb(landing.disclaimer)} <a href="/przeszlosc/jak-to-dziala">Jak to działa</a></p>
     <div className="pt-nw__grid">
-      <TileView t={org} i={0} onFilter={onFilter} />
+      <TileView t={org} i={0} onFilter={onFilter} mentions={mentions} />
       {stats.map((t, k) => <TileView key={t.id} t={t} i={k + 1} onFilter={onFilter} />)}
     </div>
     <TileView t={media} i={stats.length + 1} onFilter={onFilter} />

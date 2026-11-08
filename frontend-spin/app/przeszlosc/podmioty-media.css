@@ -24,3 +24,6 @@ html body .pt-v3 .px .px-om__heading .px-h3 { margin: 0; white-space: nowrap; ov
 .px-om__reg { margin: 0; font-size: 13px; line-height: 1.4; color: var(--sc-text-3); min-height: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .px-om__reg a { color: var(--sc-text-3); text-decoration: none; }
 .px-om__reg a:hover, .px-om__reg a:focus-visible { color: var(--sc-accent); }
+
+/* odesłanie z kafla „Podmioty z KRS” (8.11): lądowanie pod paskiem menu */
+.pt-v3 .px #pp-doniesienia, #pp-doniesienia { scroll-margin-top: 72px; }

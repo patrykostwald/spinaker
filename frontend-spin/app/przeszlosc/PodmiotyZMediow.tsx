@@ -23,7 +23,7 @@ export function PodmiotyZMediow({ data, id = 'pp-om-h' }: { data?: OrgMentions; 
   const labels = new Map(data.results.map(r => [r.category, r.category_label]));
   const rows = data.results.filter(r => category === 'all' || r.category === category);
   const shown = more ? rows : rows.slice(0, FIRST);
-  return <section className="px-card px-om" aria-labelledby={id}>
+  return <section className="px-card px-om" id="pp-doniesienia" aria-labelledby={id}>
     <header className="px-om__head">
       <div className="px-om__heading"><h3 id={id} className="px-h3">Podmioty z doniesień medialnych</h3><small className="px-om__status">po przeglądzie</small></div>
       <p className="px-note">{data.count} {plural(data.count, 'doniesienie', 'doniesienia', 'doniesień')}. {nb(data.notice)}</p>

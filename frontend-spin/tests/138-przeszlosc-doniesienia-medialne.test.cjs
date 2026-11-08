@@ -45,3 +45,10 @@ test('podmiot bez KRS: bez strony spółki i rejestr.io, z identyfikatorem i lin
   for (const key of ['no_krs', 'Bez wpisu w KRS', 'identifier', 'Rejestr urzędowy:']) assert.ok(c.includes(key), key);
   assert.match(c, /m\.organisation\.no_krs\s*\?\s*<span className="px-om__org"/);
 });
+
+test('odesłanie z kafla KRS do okna doniesień: tylko gdy są pozycje, kotwica z marginesem pod paskiem (8.11)', () => {
+  const n = read('app/przeszlosc/Najwazniejsze.tsx'), p = read('app/przeszlosc/PersonProfile.tsx');
+  assert.match(n, /wide && mentions > 0 &&[\s\S]*href="#pp-doniesienia"/);
+  assert.match(p, /mentions=\{data\.org_mentions\?\.count \?\? 0\}/);
+  assert.ok(c.includes('id="pp-doniesienia"'));
+});

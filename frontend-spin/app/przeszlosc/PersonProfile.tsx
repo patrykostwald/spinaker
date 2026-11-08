@@ -153,7 +153,7 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
       {/* landing 13.10 (zlecenie właściciela): fundacje i spółki z KRS, oświadczenia, rozliczenia, głosy inne niż większość klubu, funkcje i media
           zaraz pod tytułem. Kolejność w DOM: tytuł, landing, "W skrócie" (telefon: landing przed kartą); na komputerze "W skrócie" stoi
           w prawej kolumnie pierwszego wiersza, landing zajmuje drugi wiersz (najwazniejsze.css). "Zobacz wszystko" ustawia filtr osi czasu. */}
-      <Najwazniejsze data={data} onFilter={k => { setKind(k); setMore(false); }} extra={<PairsTile block={pairs} stamp={`stan na ${ymd(data.generated_at)}`} />} />
+      <Najwazniejsze data={data} onFilter={k => { setKind(k); setMore(false); }} mentions={data.org_mentions?.count ?? 0} extra={<PairsTile block={pairs} stamp={`stan na ${ymd(data.generated_at)}`} />} />
       <section className="px-card px-brief pt-kv" aria-labelledby="pp-brief-h">
         <h2 id="pp-brief-h" className="px-h3">W skrócie</h2>
         <dl>
