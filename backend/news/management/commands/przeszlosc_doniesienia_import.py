@@ -105,10 +105,10 @@ class Command(BaseCommand):
         from news.doniesienia_badacz import _fold, strict_name_match
         if not claimed_name or not city:
             return None, 'wymagane kolumny organisation_name i city'
-        extract, status = krs.fetch_status(number, full=False)
+        extract, status = krs.fetch_status(number, full=True)
         if extract is None:
             return None, f'KRS: {status}'
-        if not strict_name_match(claimed_name, extract.name):
+        if not any(strict_name_match(claimed_name, known) for known in [extract.name, *getattr(extract, 'former_names', [])]):
             return None, f'nazwa niezgodna z odpisem: {extract.name}'
         if _fold(city) != _fold(extract.seat_city):
             return None, f'miejscowość niezgodna z odpisem: {extract.seat_city}'

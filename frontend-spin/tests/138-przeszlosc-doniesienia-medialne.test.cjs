@@ -25,6 +25,7 @@ test('profil osoby: okno wysoko, przed „W mediach”, dane z org_mentions', ()
   assert.match(p, /org_mentions\?: OrgMentions/);
   assert.match(p, /<PodmiotyZMediow data=\{data\.org_mentions\} \/>/);
   assert.ok(p.indexOf('<PodmiotyZMediow') < p.indexOf('id="pp-media"'));
+  assert.ok(p.indexOf('<PodmiotyZMediow') < p.indexOf('id="pp-os"'), 'okno doniesień stoi przed osią czasu (8.11)');
 });
 
 test('układ: wiersze o stałej wysokości, tytuły w jednej linii, cele 44 px przez chipy wspólne', () => {

@@ -71,6 +71,7 @@ class Extract:
     seat_city: str = ''         # siedziba podmiotu (dział 1: siedziba i adres): miejscowość, kod pocztowy, województwo; bez ulicy
     seat_postal_code: str = ''
     seat_voivodeship: str = ''
+    former_names: list[str] = field(default_factory=list)   # dawne nazwy podmiotu z historii odpisu pełnego (zmiana nazwy w KRS)
 
     @property
     def official_url(self) -> str:
@@ -214,6 +215,9 @@ def parse(krs: str, register: str, data: dict) -> Extract:
     name = _text(subject.get('nazwa') or [], 'nazwa')
     legal_form = _text(subject.get('formaPrawna') or [], 'formaPrawna')
     extract = Extract(krs=krs, register=register, name=name, legal_form=legal_form, kind=_kind(legal_form), **identifiers(subject), **seat(body.get('dzial1') or {}))
+    names = subject.get('nazwa')
+    if isinstance(names, list):      # OdpisPelny: historia nazw; dawne = wszystkie poza aktualną
+        extract.former_names = [n for n in dict.fromkeys(str(x.get('nazwa') or '').strip() for x in names if isinstance(x, dict)) if n and n != name]
     extract.owners = _owners({k: v for k, v in (body.get('dzial1') or {}).items() if k != 'danePodmiotu'})
     persons: list[Person] = []
     dates = _entry_dates(header)

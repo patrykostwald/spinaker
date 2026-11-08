@@ -174,10 +174,11 @@ def verify_candidate(number, item):
     if not city and not member:
         return None, 'brak drugiej danej (miejscowość lub osoba z zarządu)'
     time.sleep(1.0)   # grzeczność wobec api-krs
-    extract, status = krs.fetch_status(number, full=bool(member))
+    extract, status = krs.fetch_status(number, full=True)     # odpis pełny: ma historię nazw (zmiana nazwy w KRS nie jest „niezgodnością”)
     if extract is None:
         return None, f'KRS {status}'
-    if not strict_name_match(item.get('organisation_name') or '', extract.name):
+    claimed = item.get('organisation_name') or ''
+    if not any(strict_name_match(claimed, known) for known in [extract.name, *getattr(extract, 'former_names', [])]):
         return None, 'nazwa niezgodna z odpisem KRS'
     city_ok = bool(city) and _fold(city) == _fold(extract.seat_city)
     member_ok = bool(member) and bool(krs.matching_persons(extract, member))

@@ -182,6 +182,8 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
     <div className="px-grid">
       <div className="px-main">
         {/* „Wcześniej i teraz”: pełna lista zatwierdzonych par tuż nad osią czasu (flaga NEXT_PUBLIC_POSITION_PAIRS, tylko gdy API zwraca pary) */}
+        {/* Podmioty z doniesień medialnych (właściciel 8.11): wysoko, przed osią czasu z setkami wpisów (Von Restorff, jedno wyróżnienie) */}
+        <PodmiotyZMediow data={data.org_mentions} />
         <PairsSection block={pairs} />
         <section className="px-time pt-tl" id="pp-os" aria-labelledby="pp-os-h">
           <div className="px-time__head"><h2 id="pp-os-h" className="px-h3">Oś czasu</h2><span>{shown.length} {plural(shown.length, 'pozycja', 'pozycje', 'pozycji')}</span></div>
@@ -209,7 +211,6 @@ function ProfileView({ data, onNet }: { data: Profile; onNet: (a: NetAvailabilit
           {shown.length > 12 && <button type="button" className="px-more" onClick={() => setMore(!more)}>{more ? 'Pokaż mniej' : `Pokaż wszystko (${shown.length})`}</button>}
         </section>
         {/* „W mediach” (właściciel 6.10): potwierdzone artykuły o osobie; tylko tytuł, data, redakcja i odnośnik */}
-        <PodmiotyZMediow data={data.org_mentions} />
         <div id="pp-media" className="pt-anchor" /><WMediach id="pp-wm-h" items={data.materials.results.filter(m => m.url).map(m => ({ id: `wm${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
         <WMediach id="pp-mentions-h" heading="Wzmianki" automatic total={data.mentions?.total} emptyReason={data.mentions?.reason} items={(data.mentions?.results ?? []).filter(m => m.url).map(m => ({ id: `mention${m.id}`, outlet: m.source || 'Media', date: m.published_date ? m.published_date.slice(0, 10) : null, title: m.title, url: m.url, material_type: m.material_type, kind_label: m.kind_label, snippet: m.snippet, confidence: m.confidence, changed: m.text_changed ? m.text_changed.detected_at.slice(0, 10) : null }))} />
       </div>
