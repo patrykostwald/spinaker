@@ -17,9 +17,9 @@ const API = '/api/przeszlosc/pkw/';
 const PER = 20;
 const DECISION: Record<string, string> = { przyjete: 'sprawozdanie przyjęte', odrzucone: 'sprawozdanie odrzucone', bez_rozpatrzenia: 'pozostawione bez rozpatrzenia' };
 const money = (v: string, c: string) => `${Number(v).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c === 'PLN' ? 'zł' : c}`;
-/** Etykieta stanu karty: z kwotami / skan (bez OCR) / inny dokument / jeszcze do odczytu. */
+/** Etykieta stanu karty: z kwotami (są pozycje kwot) / z decyzją (odczytana uchwała bez kwot) / skan (bez OCR) / bez kwot / do odczytu. */
 const state = (r: Report): { text: string; tone: 'ok' | 'off' } =>
-  !r ? { text: 'do odczytu', tone: 'off' } : r.readable ? { text: 'z kwotami', tone: 'ok' } : { text: /skan/.test(r.reason ?? '') ? 'skan' : 'bez kwot', tone: 'off' };
+  !r ? { text: 'do odczytu', tone: 'off' } : r.readable ? ((r.amounts?.length ?? 0) > 0 ? { text: 'z kwotami', tone: 'ok' } : { text: 'z decyzją', tone: 'ok' }) : { text: /skan/.test(r.reason ?? '') ? 'skan' : 'bez kwot', tone: 'off' };
 const day = (d?: string | null) => d ? new Date(d).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'brak daty';
 
 export function FinansePartii() {
@@ -57,7 +57,7 @@ export function FinansePartii() {
         {data?.kinds.map(k => <button key={k.key} type="button" aria-pressed={kind === k.key} onClick={() => setKind(k.key)}>{`${k.label} (${k.count})`}</button>)}
       </div>
       <label className="px-fp__check"><input type="checkbox" checked={withData} onChange={e => setWithData(e.target.checked)} />
-        Tylko z odczytanymi kwotami{data ? ` (${data.with_data})` : ''}</label>
+        Tylko z odczytaną uchwałą{data ? ` (${data.with_data})` : ''}</label>
     </div>
     {failed && <p className="px-msg" role="alert">Nie udało się pobrać spisu. Spróbuj ponownie za chwilę.</p>}
     {data && <p className="px-note" role="status">{data.total.toLocaleString('pl-PL')} z {data.all.toLocaleString('pl-PL')} dokumentów</p>}

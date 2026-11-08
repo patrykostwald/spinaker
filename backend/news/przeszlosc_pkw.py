@@ -73,8 +73,8 @@ def catalogue():
             when = _published(url)
             rows.append({'title': (title or '').strip()[:300], 'kind': _kind(title), 'published': when.isoformat() if when else None, 'url': url,
                          'report': _report(reports.get(key))})
-        # Najpierw pozycje z odczytanymi kwotami (najcenniejsze dla czytelnika), potem od najnowszych plików.
-        rows.sort(key=lambda r: (bool(r['report'] and r['report'].get('readable')), r['published'] or '', r['title']), reverse=True)
+        # Najpierw odczytane uchwały, w nich najpierw te z kwotami (najcenniejsze dla czytelnika), potem od najnowszych plików.
+        rows.sort(key=lambda r: (bool(r['report'] and r['report'].get('readable')), bool(r['report'] and r['report'].get('amounts')), r['published'] or '', r['title']), reverse=True)
         cache.set(CACHE_KEY, rows, CACHE_TTL)
     return rows
 

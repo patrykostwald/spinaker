@@ -29,5 +29,5 @@ test('bez danych osobowych: komponent nie ma pól na nazwiska darczyńców ani n
 });
 
 test('etykiety stanu karty i data wgrania pliku (nie data sprawozdania)', () => {
-  for (const key of ["text: 'z kwotami'", "'skan'", "text: 'do odczytu'", 'px-fp__state', 'plik wgrany na stronę PKW']) assert.ok(c.includes(key), key);
+  for (const key of ["text: 'z kwotami'", "text: 'z decyzją'", "'skan'", "text: 'do odczytu'", 'px-fp__state', 'plik wgrany na stronę PKW']) assert.ok(c.includes(key), key);
 });
