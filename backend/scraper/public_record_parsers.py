@@ -667,13 +667,17 @@ def pkw_report(text):
     verb = re.search(r'\b(przyjąć|odrzucić|pozostawić bez rozpatrzenia)\b', decision_part)
     decision = {'przyjąć': 'przyjete', 'odrzucić': 'odrzucone', 'pozostawić bez rozpatrzenia': 'bez_rozpatrzenia'}.get(verb.group(1)) if verb else None
     amounts, evidence = {}, {}
-    for key, pattern in (
-            ('income_total', r'przychody o łącznej wartości ' + _AMT),
-            ('individuals_total', r'od osób fizycznych w kwocie ' + _AMT),
-            ('membership_fees', r'składki członkowskie[^:]{0,160}?:\s*' + _AMT),
-            ('donations_cash', r'darowizny \(pieniężne\):\s*' + _AMT),
-            ('non_cash_value', r'wycenione na kwotę ' + _AMT),
-            ('election_fund_inflow', r'na rachunek Funduszu Wyborczego[^.]{0,120}?wpłynęły środki w kwocie ' + _AMT)):
+    # Uchwały przyjmujące i odrzucające mają różne sformułowania (np. „uzyskała przychody w łącznej kwocie”, „w wysokości”): kilka wariantów
+    # na pole, pierwszy pasujący wygrywa. Kwotę z kasy partii („do kasy”) i innych źródeł pomijamy: bierzemy tylko zdania o rachunku partii.
+    for key, patterns in (
+            ('income_total', (r'przychody (?:o|w) łącznej (?:wartości|kwocie) ' + _AMT,)),
+            ('individuals_total', (r'od osób fizycznych w kwocie ' + _AMT,
+                                   r'zgromadziła środki w wysokości ' + _AMT + r'[^.]{0,160}?wpłat od osób fizycznych')),
+            ('membership_fees', (r'składki członkowskie[^:.]{0,200}?:\s*' + _AMT, r'składki członkowskie[^:.]{0,260}?w wysokości ' + _AMT)),
+            ('donations_cash', (r'darowizny \(pieniężne\):\s*' + _AMT, r'darowizny \(pieniężne\) w wysokości ' + _AMT)),
+            ('non_cash_value', (r'wycenione na kwotę ' + _AMT,)),
+            ('election_fund_inflow', (r'na rachunek Funduszu Wyborczego[^.]{0,120}?wpłynęły środki w kwocie ' + _AMT,))):
+        pattern = next((p_ for p_ in patterns if re.search(p_, flat)), patterns[0])
         found = re.search(pattern, flat)
         if found:
             amounts[key] = _pl_amount(found.group(1), found.group(2))

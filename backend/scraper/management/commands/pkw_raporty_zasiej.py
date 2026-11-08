@@ -13,8 +13,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--apply', action='store_true', help='bez tej flagi tylko liczy')
+        parser.add_argument('--ponownie', action='store_true',
+                            help='Ponów odczyt uchwał już odczytanych, ale bez żadnej kwoty (po poprawce wzorców parsera).')
 
-    def handle(self, *args, apply=False, **options):
+    def handle(self, *args, apply=False, ponownie=False, **options):
+        if ponownie:
+            return self.requeue(apply)
         urls = [u for u in PublicRecord.objects.filter(source='pkw', kind='financial_document').values_list('source_url', flat=True)
                 if u.lower().endswith('.pdf') and '/uploaded_files/' in u]
         done = set(PublicRecord.objects.filter(source='pkw', kind='financial_report').values_list('source_url', flat=True))
@@ -27,3 +31,20 @@ class Command(BaseCommand):
         for url in todo:
             enqueue(state, url, 'pkw_pdf')
         self.stdout.write(self.style.SUCCESS(f'DODANO zadania: {len(todo)}'))
+
+    def requeue(self, apply):
+        """Uchwały odczytane, ale bez kwot: wznawia ich zadania (po poprawce wzorców), bez zmiany innych rekordów."""
+        from hashlib import sha256
+        from news.public_records_models import PublicCollectionJob
+        urls = [u for u, d in PublicRecord.objects.filter(source='pkw', kind='financial_report').values_list('source_url', 'data')
+                if d.get('readable') and not d.get('amounts')]
+        self.stdout.write(f'Odczytanych uchwał bez kwot do ponowienia: {len(urls)}')
+        if not apply:
+            self.stdout.write('PLAN: bez --apply niczego nie zmieniam.')
+            return
+        state, _ = PublicCollectionState.objects.get_or_create(source='pkw')
+        for url in urls:
+            identity = sha256(('pkw_pdf\n' + url).encode()).hexdigest()
+            if not PublicCollectionJob.objects.filter(state=state, identity=identity).update(done=False, failures=0, retry_at=None, last_error=''):
+                enqueue(state, url, 'pkw_pdf')
+        self.stdout.write(self.style.SUCCESS(f'WZNOWIONO zadania: {len(urls)}'))

@@ -81,3 +81,38 @@ def test_seed_command_counts_then_enqueues_only_missing_pdfs(db):
     assert 'PDF-ów w spisie: 2, już odczytanych: 1, do odczytu: 1' in out.getvalue() and PublicCollectionJob.objects.count() == 0
     call_command('pkw_raporty_zasiej', '--apply', stdout=StringIO()); call_command('pkw_raporty_zasiej', '--apply', stdout=StringIO())
     assert list(PublicCollectionJob.objects.values_list('kind', flat=True)) == ['pkw_pdf']
+
+
+REJECTED = """UCHWAŁA NR 174/2025
+Państwowej Komisji Wyborczej z dnia 5 maja 2025 r.
+w sprawie sprawozdania partii politycznej Solidarna Polska o źródłach pozyskania środków finansowych w 2023 r.
+**postanawia**
+**odrzucić** sprawozdanie partii politycznej Solidarna Polska o źródłach pozyskania środków finansowych w 2023 r. z powodu nieudzielenia wyjaśnień.
+## Uzasadnienie
+W sprawozdaniu partia polityczna Solidarna Polska wykazała, iż w okresie sprawozdawczym uzyskała przychody w łącznej kwocie 257 022,00 zł. Na swoim rachunku bankowym Partia zgromadziła środki w wysokości 256 122,00 zł, które w całości pochodziły ze środków pochodzących z wpłat od osób fizycznych, w tym: składki członkowskie w kwocie nieprzekraczającej w jednym roku wysokości najniższego miesięcznego wynagrodzenia za pracę pracowników w wysokości 26 982,00 zł, darowizny (pieniężne) w wysokości 229 140,00 zł. Partia pozyskała również środki do kasy pochodzące ze składek członkowskich w kwocie nieprzekraczającej minimalnego wynagrodzenia w wysokości 900,00 zł."""
+
+
+def test_rejected_resolution_wording_variants_give_amounts():
+    r = parsers.pkw_report(REJECTED)
+    assert r['decision'] == 'odrzucone' and r['name'] == 'Solidarna Polska'
+    assert {k: Decimal(v) for k, v in r['amounts'].items()} == {
+        'income_total': Decimal('257022.00'), 'individuals_total': Decimal('256122.00'),
+        'membership_fees': Decimal('26982.00'), 'donations_cash': Decimal('229140.00')}      # 900 zł z kasy nie jest składką z rachunku
+
+
+def test_requeue_resets_done_jobs_of_readable_reports_without_amounts(db):
+    from hashlib import sha256
+    from io import StringIO
+    from django.core.management import call_command
+    from news.public_records_models import PublicCollectionJob
+    url = 'https://pkw.gov.pl/uploaded_files/1_a.pdf'
+    PublicRecord.objects.create(source='pkw', kind='financial_report', external_id='r1', source_url=url, response_url=url, response_sha256='0',
+                                data={'readable': True, 'amounts': {}})
+    PublicRecord.objects.create(source='pkw', kind='financial_report', external_id='r2', source_url='https://pkw.gov.pl/uploaded_files/2_b.pdf',
+                                response_url=url, response_sha256='0', data={'readable': True, 'amounts': {'income_total': '1.00'}})
+    state, _ = PublicCollectionState.objects.get_or_create(source='pkw')
+    PublicCollectionJob.objects.create(state=state, identity=sha256(('pkw_pdf\n' + url).encode()).hexdigest(), url=url, kind='pkw_pdf', done=True)
+    out = StringIO(); call_command('pkw_raporty_zasiej', '--ponownie', stdout=out)
+    assert 'do ponowienia: 1' in out.getvalue() and PublicCollectionJob.objects.get().done is True
+    call_command('pkw_raporty_zasiej', '--ponownie', '--apply', stdout=StringIO())
+    assert PublicCollectionJob.objects.get().done is False and PublicCollectionJob.objects.count() == 1
