@@ -154,3 +154,16 @@ def test_beat_registry_and_command(capsys):
     call_command('przeszlosc_doba', '--kolejka')
     out = capsys.readouterr().out
     assert 'sudop' in out and 'bzp' in out
+
+
+def test_weekly_niw_success_without_changes_is_not_stale(monkeypatch):
+    """NIW i OPP stały jako „zaległe” od 13.10, bo plik bez zmian nie odświeża fetched_at; udany bieg zapisuje datę sukcesu."""
+    from news import przeszlosc_stan, tasks
+    monkeypatch.setattr(tasks, 'call_command', lambda *a, **k: None, raising=False)
+    monkeypatch.setattr('django.core.management.call_command', lambda *a, **k: None)
+    rec('niw', 'grant_pl', 'U-1', {})
+    from news.public_records_models import PublicRecord
+    PublicRecord.objects.filter(source='niw').update(fetched_at=timezone.now() - timedelta(days=35))
+    assert {r['key']: r for r in przeszlosc_stan.sources()}['niw']['status'] == 'stale'
+    assert tasks.przeszlosc_niw_task() == {'status': 'ok'}
+    assert {r['key']: r for r in przeszlosc_stan.sources()}['niw']['status'] == 'ok'

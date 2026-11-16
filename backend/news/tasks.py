@@ -983,7 +983,17 @@ def przeszlosc_niw_task():
     if not _auto('PRZESZLOSC_NIW_AUTO'):
         return {'status': 'disabled'}
     call_command('przeszlosc_niw_dotacje')
+    _mark_weekly_success('niw')
     return {'status': 'ok'}
+
+
+def _mark_weekly_success(source):
+    """Udane pobranie pliku bez zmian nie odświeża fetched_at rekordów, więc Stan danych widział „zaległe” (NIW, OPP od 13.10).
+    Data sukcesu w PublicCollectionState (czyta ją przeszlosc_stan.sources) mówi prawdę: plik sprawdzony, nic nowego."""
+    from news.public_records_models import PublicCollectionState
+    now = timezone.now()
+    PublicCollectionState.objects.update_or_create(source=source, defaults={'last_success_at': now, 'last_complete_at': now,
+                                                                            'status': 'ok', 'last_error': ''})
 
 
 @shared_task(name="news.tasks.przeszlosc_opp_task", soft_time_limit=900, time_limit=960)
@@ -993,4 +1003,5 @@ def przeszlosc_opp_task():
     if not _auto('PRZESZLOSC_OPP_AUTO'):
         return {'status': 'disabled'}
     call_command('przeszlosc_opp_podatek')
+    _mark_weekly_success('mf_opp')
     return {'status': 'ok'}
