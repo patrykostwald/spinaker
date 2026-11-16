@@ -169,6 +169,18 @@ def test_non_json_content_raises_and_records_last_error(keyed, calls):
     assert last_error.startswith('inception_invalid_json:') and 'Przepraszam' in last_error
 
 
+def test_null_content_raises_empty_without_crashing(keyed, calls):
+    """Pole 'content' bywa null (produkcja 6.11: finish_reason inny niż 'stop') - musi dać inception_empty,
+    a nie TypeError przy próbie wycięcia fragmentu z None (awaria wywalała cały repair_daily_messages)."""
+    sent, queue = calls
+    queue.append(Response(200, {
+        'model': 'mercury-3', 'choices': [{'message': {'content': None}}], 'usage': {'total_tokens': 42}}))
+    with pytest.raises(inception.InceptionError) as error:
+        inception.chat('s', 'u', clinic_ai.SCREEN_SCHEMA)
+    assert error.value.code == 'inception_empty'
+    assert inception.usage()['last_error'] == 'inception_empty'
+
+
 # --- 3. zapas bez klucza i pierwszeństwo w zadaniach pobocznych -------------------------------------------------------
 
 def test_no_key_falls_back_to_current_chain(calls, monkeypatch):
