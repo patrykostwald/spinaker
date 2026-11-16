@@ -148,13 +148,21 @@ NA_KOGO = {'dziala': '', 'puste': 'zbieracz', 'do_wlaczenia': 'właściciel', 'c
            'decyzja_wlasciciela': 'właściciel'}
 
 
-def _karta(host):
-    """Czy istnieje aktualna, zatwierdzona karta dostępu na punkt pod tym hostem (te same warunki co access_gate)."""
+# Hosty wspólne dla wielu urzędów: karta innego źródła z tego hosta nie jest kartą pozycji (produkcja 17.11: karty ministerstw
+# na www.gov.pl dawały „do_budowy” spółkom SP i sankcjom). Tu karta musi mieć w evidence {"kolejka": "<klucz pozycji>"}.
+WSPOLNE_HOSTY = ('https://www.gov.pl/', 'https://mapy.geoportal.gov.pl/')
+
+
+def _karta(host, key=''):
+    """Czy istnieje aktualna, zatwierdzona karta dostępu tej pozycji (te same warunki co access_gate)."""
     from news.models import SourceAccessInstruction
-    return SourceAccessInstruction.objects.filter(
+    rows = SourceAccessInstruction.objects.filter(
         endpoint__startswith=host, status=SourceAccessInstruction.Status.APPROVED, minimum_interval_seconds__gte=3,
         daily_request_cap__gte=1, valid_until__gt=timezone.now(), reviewed_at__isnull=False,
-    ).exclude(terms_url='').exclude(reviewed_by='').exclude(evidence={}).exists()
+    ).exclude(terms_url='').exclude(reviewed_by='').exclude(evidence={})
+    if host in WSPOLNE_HOSTY:
+        return any((card.evidence or {}).get('kolejka') == key for card in rows.only('evidence'))
+    return rows.exists()
 
 
 def _kod(modul):
@@ -166,7 +174,7 @@ def _kod(modul):
 
 def stan_pozycji(p, rekordy=None):
     from news.public_records_models import PublicRecord
-    kod, wlaczone, karta = _kod(p.modul), _flag(p.flaga, p.domyslnie) if p.flaga else False, _karta(p.host)
+    kod, wlaczone, karta = _kod(p.modul), _flag(p.flaga, p.domyslnie) if p.flaga else False, _karta(p.host, p.key)
     if p.rekordy:
         liczba = rekordy.get(p.rekordy, 0) if rekordy is not None else PublicRecord.objects.filter(source=p.rekordy).count()
     else:

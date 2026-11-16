@@ -91,6 +91,21 @@ def test_sensitive_item_never_gets_ticket(monkeypatch):
     assert s.zglos_budowe(crbr) is None
 
 
+def test_shared_host_card_of_other_source_does_not_count():
+    """Produkcja 17.11: karty ministerstw na www.gov.pl dawały „do_budowy” spółkom SP i sankcjom."""
+    from news.models import Source, SourceAccessInstruction
+    source = Source.objects.create(name='MAP', url='https://www.gov.pl/web/aktywa-panstwowe')
+    card = SourceAccessInstruction.objects.create(
+        source=source, status='approved', channel='html', endpoint='https://www.gov.pl/web/aktywa-panstwowe/', terms_url='https://www.gov.pl/',
+        evidence={'url': 'https://www.gov.pl/'}, minimum_interval_seconds=5, daily_request_cap=10, reviewed_at=timezone.now(), reviewed_by='prawnik')
+    ssp = next(p for p in s.KOLEJKA if p.key == 'ssp')
+    assert s.stan_pozycji(ssp)['stan'] == 'czeka_na_prawnika'
+    card.evidence = {'url': 'https://www.gov.pl/', 'kolejka': 'ssp'}
+    card.save()
+    assert s.stan_pozycji(ssp)['stan'] == 'do_budowy'
+    assert s.stan_pozycji(next(p for p in s.KOLEJKA if p.key == 'sankcje'))['stan'] == 'czeka_na_prawnika'
+
+
 def test_queue_remembers_since_date():
     now = timezone.now()
     s.kolejka(now - timedelta(days=5), zapisz=True)
