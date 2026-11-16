@@ -33,6 +33,7 @@ Zasilanie danymi i raport doby działają osobno na serwerze (`backend/news/prze
 
 | id | Pozycja | Kryterium odbioru | Rozmiar | Stan |
 |---|---|---|---|---|
+| A00 | Dwa czerwone testy na gałęzi integracyjnej (pełny przebieg 16.11): `news/test_niw_dotacje.py::test_identifier_matching_company_view_notes_and_export` (test oczekuje pustej notki, widok podmiotu zwraca notkę o niepełnym składzie organów) i `scraper/test_rcl_client.py::test_robots_rule_for_our_agent_is_followed_and_override_is_explicit` (nie rzuca `RclStop`) | ustal, czy błędny jest test, czy kod (nie osłabiaj reguły robots w RCL: zasada RCL obowiązuje); oba testy zielone; opis przyczyny w PR | S | do zrobienia |
 | A01 | P1-23: przepływy osoby liczą ten sam rekord dwa razy, gdy osoba ma funkcję w zamawiającym i w wykonawcy | deduplikacja po rekordzie przed sumami i sankey; jeden wiersz z dwiema etykietami; test | S | do zrobienia |
 | A02 | P1-24: węzły sankey i sumy kontrahentów kluczowane NIP-em, nie nazwą z ogłoszenia | klucz węzła = NIP (nazwa z najnowszego rekordu); bez NIP osobny węzeł z dopiskiem; osoby fizyczne nie w jednym węźle po nazwie; test | S | do zrobienia |
 | A03 | P1-25: eksport przepływów CSV i JSON z przypisem | kolumny: data, od (NIP), do (NIP), kwota, waluta, rodzaj, źródło, link, `matched_by`, `amount_suspect`, `outside_tenure`, data pobrania; test | M | do zrobienia |
