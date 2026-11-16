@@ -786,6 +786,19 @@ def przeszlosc_warm_all_task():
     return {'status': 'ok', **warm('all', budget_seconds=50 * 60)}
 
 
+@shared_task(name="news.tasks.przeszlosc_doba_task", soft_time_limit=600, time_limit=660)
+def przeszlosc_doba_task():
+    """Codziennie 6:35 (właściciel 16.11.2026): odłożenie trwale błędnych zadań zbieraczy, raport doby do Raportu pętli,
+    kolejka rozwoju (następne źródło z listy). Bez AI i bez sieci (PRZESZLOSC_SAMOROZWOJ_ENABLED)."""
+    if not cache.add("przeszlosc-doba-lock", "1", timeout=700):
+        return {"status": "locked"}
+    try:
+        from news import przeszlosc_samorozwoj
+        return przeszlosc_samorozwoj.run()
+    finally:
+        cache.delete("przeszlosc-doba-lock")
+
+
 @shared_task(name="news.tasks.przeszlosc_alert_confirmation_task", soft_time_limit=60, time_limit=90)
 def przeszlosc_alert_confirmation_task(alert_id):
     """Mail z linkiem potwierdzającym alert przeszłość.today (podwójne potwierdzenie)."""

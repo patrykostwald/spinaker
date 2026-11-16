@@ -97,6 +97,8 @@ CONTRACTS = (
     contract('architekt', 'Architekt', 'przeszlosc', 168, 'claude:sprint', 7, agents=('architekt',), beats=('pracownia-osint',),
              registry='pracownia-osint'),
     contract('tematy', 'Tematy dnia', 'przeszlosc', 24, 'public', 1, beats=('przeszlosc-topics',), registry='przeszlosc-topics', title='Tematy dnia przeszłość.today'),
+    contract('doba-przeszlosc', 'Dane doby', 'przeszlosc', 24, 'owner:mail', 1, beats=('przeszlosc-doba',), registry='przeszlosc-doba',
+             title='przeszłość.today: dane doby, samonaprawa kolejek, lista rozwoju'),
     # Niezawodność
     contract('opiekun', 'Opiekunowie', 'niezawodnosc', 24, 'owner:panel', 3, agents=('opiekun',), beats=('opiekunowie-1h',),
              registry='opiekunowie', title='Opiekunowie pętli'),
@@ -413,7 +415,7 @@ def build(now=None):
     top = sorted((t for l in loops for t in l['top']), key=lambda t: -t['score'])[:5]
     return {'generated_at': now.isoformat(), 'day': now.astimezone(WARSAW).strftime('%d.%m'), 'summary': summary,
             'categories': categories, 'top': top, 'sprint': tickets(now), 'auto': auto, 'build': to_build(),
-            'baza': _baza(), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now), 'zewnetrzne': _zewnetrzne(now),
+            'baza': _baza(), 'przeszlosc': _przeszlosc(now), 'koszty': _koszty(now), 'mozliwosci': _mozliwosci(now), 'zewnetrzne': _zewnetrzne(now),
             'poczta': _poczta(now), 'koszty_petli': _koszty_petli(now)}
 
 
@@ -472,6 +474,15 @@ def _koszty(now):
     except Exception:  # noqa: BLE001 - raport zawsze wychodzi
         pass
     return lines
+
+
+def _przeszlosc(now):
+    """przeszłość.today (właściciel 16.11.2026): co doszło w dobie, co się nie udało, odłożone zadania, następna pozycja listy."""
+    try:
+        from news.przeszlosc_samorozwoj import report_lines
+        return report_lines(now)
+    except Exception:  # noqa: BLE001 - raport zawsze wychodzi
+        return []
 
 
 def _baza():
@@ -581,7 +592,10 @@ def text(report):
     if report.get('baza'):
         lines.append('== Zasilanie bazy (historia źródeł) ==')
         lines += [clean(line) for line in report['baza']] + ['']
-    zew = report.get('zewnetrzne') or {}
+    if report.get('przeszlosc'):
+        lines.append('== przeszłość.today: dane doby ==')
+        lines += [clean(line) for line in report['przeszlosc']] + ['']
+    zew =report.get('zewnetrzne') or {}
     if zew.get('kopia') or zew.get('puls') or zew.get('terminy'):
         lines.append('== Kopia, puls i terminy zewnętrzne ==')
         lines += [clean(line) for line in (zew.get('kopia'), zew.get('puls')) if line]
