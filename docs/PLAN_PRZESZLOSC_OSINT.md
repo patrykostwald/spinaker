@@ -166,3 +166,16 @@ Kolejność: (1) zbiór ręczny doniesień medialnych w sesji (link, redakcja, d
 - **Funkcje dla redakcji (decyzja 8.11 „zaplanuj”):** (a) teczki tematów współdzielone w zespole, (b) eksport z przypisami (źródło, data pobrania, link do archiwum), (c) API z kluczami i limitami; po rejestrach po NIP; wymagają oddzielnego planu bezpieczeństwa i regulaminu.
 - **Sprawy formalne (decyzja 8.11 „biorę to na siebie”):** właściciel przejmuje odpowiedzialność za etykiety okna doniesień („Wzmianka”, „Rzekome powiązanie”, „Lobbing”) i notkę; zabezpieczenia zostają: kolejka przeglądu, otwarcie linku źródła przed publikacją, cytat do 300 znaków, tylko pozycje z linkiem do rejestru. List do MS (KRS po nazwie) wysyła właściciel; agent może przygotować szkic.
 - **Środowisko sesji:** utworzono osobiste środowisko „przeszlosc-today (artykuły i KRS)” z dopuszczonymi hostami: oko.press, tvn24.pl, www.money.pl, www.eska.pl, www.wprost.pl, www.pap.pl, www.gazetaprawna.pl, wydarzenia.interia.pl, rejestr.io (blokuje roboty: HTTP 403), api-krs.ms.gov.pl. Bez tego sesja nie czytała artykułów ani KRS.
+
+## Samorozwój bez ręcznego kroku (16.11.2026)
+Właściciel: portal ma się sam zasilać i rozwijać o kolejne pozycje z listy, bez czekania na ręczne uruchomienie (lekcja z trybunal.ai).
+Zasilanie już działa w beat (zbieracze `collect_public_*` co 15 min, zasilanie historii nocą, kolejka KRS 1:47, Biała lista 2:33, NIW i OPP w niedzielę,
+tematy dnia 5:10, rozgrzewanie co godzinę i wszystkich posłów 5:35, alerty 7:00). Brakowało trzech rzeczy; dodane w `backend/news/przeszlosc_samorozwoj.py`,
+zadanie `przeszlosc-doba` codziennie 6:35 (bez AI, bez sieci, flaga `PRZESZLOSC_SAMOROZWOJ_ENABLED`, domyślnie włączone):
+1. **Samonaprawa kolejek:** zadanie zbieracza z 10+ błędami (`PRZESZLOSC_ODLOZ_PO_BLEDACH`) jest odkładane, więc źródło nie stoi na zawsze w `deferred`
+   (to wymagało 5.11 ręcznego usuwania zadań). Nie dotyka źródeł za bramką dostępu ani w trakcie biegu; rekordów nie usuwa.
+2. **Raport doby:** co doszło (różnica dzień do dnia per źródło i zbiór), co się nie udało, co odłożono, rozgrzewanie, KRS; sekcja w porannym Raporcie pętli
+   i w logu workera; ręcznie `python manage.py przeszlosc_doba`.
+3. **Kolejka rozwoju:** pozycje z katalogu źródeł (`KOLEJKA`) ze stanem z faktów (kod, flaga, rekordy, karta dostępu). Raport podaje następną pozycję,
+   na kogo czeka i od kiedy. Automat niczego nie włącza; bilet budowy zakłada tylko po zatwierdzonej karcie dostępu i nigdy dla danych osób prywatnych
+   (CEIDG, CRBR: decyzja właściciela). `python manage.py przeszlosc_doba --kolejka`.

@@ -113,7 +113,7 @@ def test_doba_counts_new_records_and_failures(monkeypatch):
     assert 'ted +2' in text and 'fts: 1 zadań z błędem, najczęściej fts_header_missing' in text
     assert 'Odłożone automatycznie' in text and 'questions 1' in text
     assert 'Następna pozycja z listy rozwoju' in text
-    assert '—' not in text  # zero długich myślników
+    assert chr(0x2014) not in text and chr(0x2013) not in text  # zero długich myślników
 
 
 def test_run_saves_report_used_by_loop_mail(monkeypatch):
