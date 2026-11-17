@@ -16,6 +16,18 @@ Two public-interest products on one codebase, built by [iapply](https://iapply.p
 | AI | Structured LLM outputs, reviewed by a council of independent models before publication |
 | Delivery | Docker Compose behind Caddy, GitHub Actions for CI |
 
+```mermaid
+flowchart LR
+    S[Public sources<br/>Sejm, KRS, BZP, TED, social posts] --> H[Harvesters<br/>Celery workers]
+    H --> DB[(PostgreSQL)]
+    DB --> A[LLM analysis<br/>structured output]
+    A --> C[Council of independent models<br/>quorum and fixed yardstick]
+    C --> G{Deterministic gates<br/>sources, identity, PII}
+    G -- pass --> P[Publication<br/>spin.clinic, przeszłość.today]
+    G -- doubt --> R[Human review]
+    R --> P
+```
+
 Every automated result is a proposal with evidence. Publication passes deterministic gates: source checks, identity safeguards for people and a human review where the stakes require it.
 
 ## Repository layout
