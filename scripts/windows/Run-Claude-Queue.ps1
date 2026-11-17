@@ -1,9 +1,10 @@
-param(
-    [string]$Worktree = "$PSScriptRoot\..\spinaker-claude-night",
-    [string]$QueueRoot = "$PSScriptRoot\.local\ai-coordination",
+﻿param(
+    [string]$Worktree = "$RepoRoot\..\spinaker-claude-night",
+    [string]$QueueRoot = "$RepoRoot\.local\ai-coordination",
     [ValidateRange(1,60)][int]$PollMinutes = 2,
     [ValidateRange(1,12)][int]$MaxHours = 10
 )
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $ErrorActionPreference = 'Stop'
 $inbox = Join-Path $QueueRoot 'claude\inbox'

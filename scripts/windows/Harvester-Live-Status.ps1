@@ -1,8 +1,9 @@
-param([string]$DatabasePath = 'C:\Users\User\spin-clinic\backend\db.sqlite3')
+﻿param([string]$DatabasePath = 'C:\Users\User\spin-clinic\backend\db.sqlite3')
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $python = 'C:\Users\User\spin-clinic\.venv\Scripts\python.exe'
 try {
-    $probe = Join-Path $PSScriptRoot 'backend\scraper\live_status.py'
+    $probe = Join-Path $RepoRoot 'backend\scraper\live_status.py'
     $data = (& $python $probe $DatabasePath | ConvertFrom-Json)
     $rate = [math]::Round($data.archive_new_10m / 10, 1)
     $finished = $data.done + $data.errors + $data.quarantined
@@ -28,12 +29,12 @@ try {
 } catch {
     Write-Output 'ARCHIVE DATABASE: metrics temporarily unavailable.'
 }
-$configPath = Join-Path $PSScriptRoot '.runtime\harvesters-backfill.config.json'
+$configPath = Join-Path $RepoRoot '.runtime\harvesters-backfill.config.json'
 if (Test-Path $configPath) {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
     Write-Output "HARVESTERS: configured cap=$($config.workers), dynamic mode=$($config.dynamic_sources), one request/domain, interval >=3s"
 }
-$backfillPidPath = Join-Path $PSScriptRoot '.runtime\harvesters-backfill.pid'
+$backfillPidPath = Join-Path $RepoRoot '.runtime\harvesters-backfill.pid'
 if (Test-Path $backfillPidPath) {
     $backfillPid = [int](Get-Content $backfillPidPath)
     if (Get-Process -Id $backfillPid -ErrorAction SilentlyContinue) {
@@ -44,7 +45,7 @@ if (Test-Path $backfillPidPath) {
 } else {
     Write-Output 'HARVESTERS NOW: stopped; waiting for reviewed source access instructions'
 }
-$continuationPidPath = Join-Path $PSScriptRoot '.runtime\harvesters-continuation.pid'
+$continuationPidPath = Join-Path $RepoRoot '.runtime\harvesters-continuation.pid'
 if (Test-Path $continuationPidPath) {
     $continuationPid = [int](Get-Content $continuationPidPath)
     $continuationActive = [bool](Get-Process -Id $continuationPid -ErrorAction SilentlyContinue)

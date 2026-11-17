@@ -1,8 +1,9 @@
-param([ValidateRange(2,300)][int]$RefreshSeconds = 60)
+﻿param([ValidateRange(2,300)][int]$RefreshSeconds = 60)
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $ErrorActionPreference = 'SilentlyContinue'
-$queue = Join-Path $PSScriptRoot '.local\ai-coordination\claude'
-$worktree = Join-Path $PSScriptRoot '..\spinaker-claude-night'
+$queue = Join-Path $RepoRoot '.local\ai-coordination\claude'
+$worktree = Join-Path $RepoRoot '..\spinaker-claude-night'
 $fileColumns = @(
     @{Name='Time'; Expression={$_.LastWriteTime.ToString('HH:mm:ss')}},
     @{Name='File'; Expression={$_.FullName.Substring($worktree.Length + 1)}}
@@ -17,9 +18,9 @@ while ($true) {
     Clear-Host
     Write-Output "spin.clinic - live build status - $(Get-Date -Format 'HH:mm:ss')"
     Write-Output ''
-    & (Join-Path $PSScriptRoot 'Harvester-Live-Status.ps1')
+    & (Join-Path $RepoRoot 'Harvester-Live-Status.ps1')
     Write-Output ''
-    & (Join-Path $PSScriptRoot 'Status-Claude-Queue.ps1')
+    & (Join-Path $RepoRoot 'Status-Claude-Queue.ps1')
     Write-Output ''
     Write-Output 'Important AI activity:'
     $activity = Join-Path $queue '..\activity.log'

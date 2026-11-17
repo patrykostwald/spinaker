@@ -1,6 +1,7 @@
-param([ValidateRange(1,12)][int]$MaxHours = 10)
+﻿param([ValidateRange(1,12)][int]$MaxHours = 10)
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 $ErrorActionPreference = 'Stop'
-$runtime = "$PSScriptRoot\.runtime"
+$runtime = "$RepoRoot\.runtime"
 New-Item -ItemType Directory -Force $runtime | Out-Null
 $pidPath = Join-Path $runtime 'claude-queue.pid'
 if (Test-Path $pidPath) {

@@ -1,14 +1,15 @@
-param(
+﻿param(
     [datetime]$ResumeAt = (Get-Date '2026-09-14 08:21:00'),
     [string[]]$TaskNames = @('005-backfill-reliability-audit.md', '006-next-source-wave-audit.md')
 )
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $ErrorActionPreference = 'Stop'
-$queue = Join-Path $PSScriptRoot '.local\ai-coordination\claude'
+$queue = Join-Path $RepoRoot '.local\ai-coordination\claude'
 $failed = [IO.Path]::GetFullPath((Join-Path $queue 'failed'))
 $inbox = [IO.Path]::GetFullPath((Join-Path $queue 'inbox'))
-if (-not $failed.StartsWith([IO.Path]::GetFullPath($PSScriptRoot)) -or
-    -not $inbox.StartsWith([IO.Path]::GetFullPath($PSScriptRoot))) {
+if (-not $failed.StartsWith([IO.Path]::GetFullPath($RepoRoot)) -or
+    -not $inbox.StartsWith([IO.Path]::GetFullPath($RepoRoot))) {
     throw 'Queue path escaped the project worktree.'
 }
 while ((Get-Date) -lt $ResumeAt) {

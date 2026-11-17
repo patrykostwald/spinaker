@@ -1,8 +1,9 @@
-param(
+﻿param(
     [ValidateSet('Codex','Claude','Mistral','Harvester')][string]$Actor,
     [Parameter(Mandatory=$true)][string]$Message
 )
-$folder = Join-Path $PSScriptRoot '.local\ai-coordination'
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
+$folder = Join-Path $RepoRoot '.local\ai-coordination'
 New-Item -ItemType Directory -Force $folder | Out-Null
 $safe = ($Message -replace "[`r`n]+", ' ').Trim()
 Add-Content -Encoding utf8 (Join-Path $folder 'activity.log') `

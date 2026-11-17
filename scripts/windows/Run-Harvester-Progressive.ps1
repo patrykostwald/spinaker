@@ -1,14 +1,15 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][int[]]$SourceId,
     [ValidateSet('2026-09-14T23:59:59+02:00')][string]$CutoffAt = '2026-09-14T23:59:59+02:00',
-    [string]$BaseDatabase = "$PSScriptRoot\backend\db.sqlite3",
-    [string]$OutputDirectory = "$PSScriptRoot\reports\archive-pilot"
+    [string]$BaseDatabase = "$RepoRoot\backend\db.sqlite3",
+    [string]$OutputDirectory = "$RepoRoot\reports\archive-pilot"
 )
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $ErrorActionPreference = 'Stop'
 $python = @(
-    "$PSScriptRoot\.venv\Scripts\python.exe",
-    "$PSScriptRoot\backend\.venv\Scripts\python.exe"
+    "$RepoRoot\.venv\Scripts\python.exe",
+    "$RepoRoot\backend\.venv\Scripts\python.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 if (-not (Test-Path $BaseDatabase)) { throw "Missing base SQLite database: $BaseDatabase" }
@@ -28,7 +29,7 @@ foreach ($workers in $stages) {
     $env:SQLITE_DATABASE_PATH = $database
     $arguments = "manage.py backfill_archives $ids --cutoff-at `"$CutoffAt`" --workers $workers --limit-per-source 20"
     $started = Get-Date
-    $process = Start-Process -FilePath $python -WorkingDirectory "$PSScriptRoot\backend" -ArgumentList $arguments -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru -Wait
+    $process = Start-Process -FilePath $python -WorkingDirectory "$RepoRoot\backend" -ArgumentList $arguments -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru -Wait
     $finished = Get-Date
     $results += [pscustomobject]@{
         workers = $workers

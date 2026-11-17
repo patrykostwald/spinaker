@@ -1,5 +1,6 @@
-$root = "$PSScriptRoot\.local\ai-coordination\claude"
-$pidPath = "$PSScriptRoot\.runtime\claude-queue.pid"
+﻿$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
+$root = "$RepoRoot\.local\ai-coordination\claude"
+$pidPath = "$RepoRoot\.runtime\claude-queue.pid"
 $pidValue = if (Test-Path $pidPath) { [int](Get-Content $pidPath) } else { 0 }
 $active = if ($pidValue) { [bool](Get-Process -Id $pidValue -ErrorAction SilentlyContinue) } else { $false }
 Write-Output "Claude queue active: $active; PID: $pidValue"

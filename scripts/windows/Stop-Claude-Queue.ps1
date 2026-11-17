@@ -1,7 +1,8 @@
-$queueRoot = "$PSScriptRoot\.local\ai-coordination"
+﻿$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
+$queueRoot = "$RepoRoot\.local\ai-coordination"
 New-Item -ItemType Directory -Force $queueRoot | Out-Null
 New-Item -ItemType File -Force (Join-Path $queueRoot 'STOP_CLAUDE_QUEUE') | Out-Null
-$pidPath = "$PSScriptRoot\.runtime\claude-queue.pid"
+$pidPath = "$RepoRoot\.runtime\claude-queue.pid"
 if (Test-Path $pidPath) {
     $pidValue = [int](Get-Content $pidPath)
     $process = Get-Process -Id $pidValue -ErrorAction SilentlyContinue

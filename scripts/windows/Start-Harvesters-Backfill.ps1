@@ -1,4 +1,4 @@
-param(
+﻿param(
     [int[]]$SourceId = @(),
     [switch]$DynamicSources,
     [switch]$ContinuationOwned,
@@ -6,19 +6,20 @@ param(
     [ValidateRange(1,32)][int]$Workers = 2,
     [ValidateRange(1,100)][int]$LimitPerSource = 20,
     [ValidateRange(0.1,24)][double]$MaxHours = 10,
-    [string]$DatabasePath = "$PSScriptRoot\backend\db.sqlite3"
+    [string]$DatabasePath = "$RepoRoot\backend\db.sqlite3"
 )
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $ErrorActionPreference = 'Stop'
 $python = @(
-    "$PSScriptRoot\.venv\Scripts\python.exe",
-    "$PSScriptRoot\backend\.venv\Scripts\python.exe",
-    "$PSScriptRoot\..\..\.venv\Scripts\python.exe"
+    "$RepoRoot\.venv\Scripts\python.exe",
+    "$RepoRoot\backend\.venv\Scripts\python.exe",
+    "$RepoRoot\..\..\.venv\Scripts\python.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-$pidPath = "$PSScriptRoot\.runtime\harvesters-backfill.pid"
-$transitionPath = "$PSScriptRoot\.runtime\harvesters-transition.lock"
-$logPath = "$PSScriptRoot\.runtime\harvesters-backfill.log"
-$errorPath = "$PSScriptRoot\.runtime\harvesters-backfill.err.log"
+$pidPath = "$RepoRoot\.runtime\harvesters-backfill.pid"
+$transitionPath = "$RepoRoot\.runtime\harvesters-transition.lock"
+$logPath = "$RepoRoot\.runtime\harvesters-backfill.log"
+$errorPath = "$RepoRoot\.runtime\harvesters-backfill.err.log"
 if (-not $python) { throw "Missing Python virtualenv in project root or backend directory." }
 if (-not $DynamicSources -and $SourceId.Count -eq 0) { throw "SourceId is required unless -DynamicSources is used." }
 if ((Test-Path -LiteralPath $transitionPath) -and -not $ContinuationOwned) {
@@ -36,11 +37,11 @@ $runArguments = @('-NoProfile','-ExecutionPolicy','Bypass','-File',"$PSScriptRoo
     '-MaxHours',$MaxHours,'-DatabasePath',$DatabasePath)
 if ($idText) { $runArguments += @('-SourceIdText', $idText) }
 if ($DynamicSources) { $runArguments += '-DynamicSources' }
-$process = Start-Process powershell.exe -WindowStyle Hidden -WorkingDirectory "$PSScriptRoot\backend" `
+$process = Start-Process powershell.exe -WindowStyle Hidden -WorkingDirectory "$RepoRoot\backend" `
     -ArgumentList $runArguments `
     -RedirectStandardOutput $logPath -RedirectStandardError $errorPath -PassThru
 $process.Id | Set-Content $pidPath
 $config = @{workers=$Workers; source_count=$SourceId.Count; source_ids=$SourceId; dynamic_sources=[bool]$DynamicSources;
     cutoff_at=$CutoffAt; max_hours=$MaxHours; started_at=(Get-Date).ToString('o')} | ConvertTo-Json
-$config | Set-Content "$PSScriptRoot\.runtime\harvesters-backfill.config.json"
+$config | Set-Content "$RepoRoot\.runtime\harvesters-backfill.config.json"
 Write-Output "Started archive backfill PID $($process.Id), cutoff $CutoffAt, workers $Workers, database $DatabasePath"

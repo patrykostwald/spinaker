@@ -27,7 +27,8 @@ frontend-przeszlosc/  przeszłość.today web app
 packages/             shared code
 deploy/               production compose file, Caddy config, backup and runbooks
 docs/                 architecture notes and audits
-scripts/              local tooling
+scripts/              local tooling (scripts/windows: workstation helpers)
+docs/notes/           earlier planning notes and handoff documents
 ```
 
 ## Running locally

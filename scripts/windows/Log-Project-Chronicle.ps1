@@ -1,10 +1,11 @@
-param(
+﻿param(
     [ValidateSet('Patryk','Codex','Claude','Mistral','System')][string]$Actor,
     [Parameter(Mandatory=$true)][string]$Event,
     [string]$Why = '',
     [string]$Result = ''
 )
-$path = Join-Path $PSScriptRoot 'docs\PROJECT_CHRONICLE.md'
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
+$path = Join-Path $RepoRoot 'docs\PROJECT_CHRONICLE.md'
 $clean = { param($value) (($value -replace "[`r`n]+", ' ').Trim()) }
 $line = "- **$(Get-Date -Format 'yyyy-MM-dd HH:mm') · $Actor:** $(& $clean $Event)"
 if ($Why) { $line += " Powód: $(& $clean $Why)" }

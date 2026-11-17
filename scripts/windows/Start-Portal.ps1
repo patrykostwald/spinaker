@@ -1,5 +1,6 @@
-﻿$ErrorActionPreference = 'Stop'
-$portalRoot = $PSScriptRoot
+﻿$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
+$ErrorActionPreference = 'Stop'
+$portalRoot = $RepoRoot
 $portalPython = Join-Path $portalRoot '.venv\Scripts\python.exe'
 $portalNext = Join-Path $portalRoot 'frontend-spin\node_modules\next\dist\bin\next'
 $portalLogs = Join-Path $portalRoot '.local'

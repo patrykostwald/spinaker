@@ -1,5 +1,6 @@
+﻿$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 $ErrorActionPreference = 'Stop'
-$pidPath = "$PSScriptRoot\.runtime\harvesters-backfill.pid"
+$pidPath = "$RepoRoot\.runtime\harvesters-backfill.pid"
 if (-not (Test-Path $pidPath)) { Write-Output 'No recorded archive backfill process.'; exit 0 }
 $backfillPid = [int](Get-Content $pidPath)
 $process = Get-Process -Id $backfillPid -ErrorAction SilentlyContinue

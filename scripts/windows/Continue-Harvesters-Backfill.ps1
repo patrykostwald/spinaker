@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][int]$ExpectedPid,
     [ValidateRange(1,360)][int]$PollSeconds = 60,
     [ValidateRange(0.1,24)][double]$NextMaxHours = 10,
@@ -6,11 +6,12 @@ param(
     [ValidateRange(1,100)][int]$LimitPerSource = 100,
     [string]$DatabasePath = 'C:\Users\User\spin-clinic\backend\db.sqlite3'
 )
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path  # scripts/windows -> repository root
 
 $ErrorActionPreference = 'Stop'
-$pidPath = "$PSScriptRoot\.runtime\harvesters-backfill.pid"
-$logPath = "$PSScriptRoot\.runtime\harvesters-continuation.log"
-$transitionPath = "$PSScriptRoot\.runtime\harvesters-transition.lock"
+$pidPath = "$RepoRoot\.runtime\harvesters-backfill.pid"
+$logPath = "$RepoRoot\.runtime\harvesters-continuation.log"
+$transitionPath = "$RepoRoot\.runtime\harvesters-transition.lock"
 
 function Write-ContinuationLog([string]$Message) {
     "$(Get-Date -Format o) $Message" | Add-Content -LiteralPath $logPath
