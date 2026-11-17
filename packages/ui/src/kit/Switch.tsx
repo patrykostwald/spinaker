@@ -15,12 +15,12 @@ export interface SwitchProps {
   className?: string;
 }
 
-const TRAVEL = 16; // px — szerokość toru (40) − rozmiar suwaka (20) − 2×dopełnienie (2)
+const TRAVEL = 16; // px - szerokość toru (40) − rozmiar suwaka (20) − 2×dopełnienie (2)
 
 /**
  * Przełącznik (docs/UI_KIT_PLAN.md → «Селекторы, флажки и переключатели»).
  * Suwak jedzie pружиną `move`, tor przechodzi kolorem (czysty CSS, patrz kit.css),
- * suwak lekko rozciąga się w kierunku ruchu i zbiera na końcu — podpowiedź kierunku.
+ * suwak lekko rozciąga się w kierunku ruchu i zbiera na końcu - podpowiedź kierunku.
  * Zablokowany: opacity .4, ruch zostaje, żeby stan czytał się bez koloru.
  */
 export function Switch({ checked, onChange, disabled = false, error = false, label, id, name, className }: SwitchProps) {

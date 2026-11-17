@@ -1,5 +1,6 @@
 "use client";
 
+import { SEMEVAL_MAP } from "../../lib/semeval";
 import { ClinicNav } from "./ClinicNav";
 import { Button } from "../../kit/Button";
 import { SectionHeader } from "../../kit/SectionHeader";
@@ -8,8 +9,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CAMPS, CAMP_LABELS, getClinicStats, searchClinicSpins, type ClinicSearchParams } from "../../lib/clinic";
-import { SpinRow } from "./SpinParts";
+import { SpinRow as V3Row } from "../../kit/SpinRow";
 import { clearClinicResults, readClinicResults, rememberClinicResults } from "../../lib/clinicNavigation";
+import { Loading } from "../../kit/Loading";
+import { formatDateTimePl } from "../../lib/utils";
 
 const FILTER_KEYS = ["q", "account", "camp", "verdict", "party", "technique", "intensity_min", "intensity_max", "date_from", "date_to", "sort"] as const;
 const format = (value: number) => value.toLocaleString("pl-PL");
@@ -119,7 +122,6 @@ export function ClinicDatabase() {
     });
     return () => cancelAnimationFrame(frame);
   }, [resultsUrl, query.data, query.hasNextPage, query.isFetching, query.isFetchNextPageError, query.fetchNextPage]);
-  const totals = stats.data?.totals;
   const active = [params.account, params.camp, params.verdict, params.party, params.technique,
     params.intensity_min !== undefined || params.intensity_max !== undefined,
     params.date_from || params.date_to, params.sort === "strong"].filter(Boolean).length;
@@ -177,7 +179,7 @@ export function ClinicDatabase() {
     ]} />
     <FilterChip label="Okres" value={period} onChange={value => change({ date_from: value ? daysAgo(Number(value)) : "", date_to: "" })} options={[
       { value: "", label: "Cały okres" }, { value: "7", label: "7 dni" }, { value: "30", label: "30 dni" },
-      ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} — ${params.date_to ?? "dzisiaj"}` }] : []),
+      ...(period === "custom" ? [{ value: "custom", label: `${params.date_from ?? "Początek"} - ${params.date_to ?? "dzisiaj"}` }] : []),
     ]} />
   </>;
 
@@ -187,7 +189,6 @@ export function ClinicDatabase() {
         <ClinicNav />
         <SectionHeader variant="page" titleId="clinic-db-title" title="Baza diagnoz" subtitle={<>
         <p>Znajdź analizę wpisu, autora lub techniki perswazji.</p>
-        {totals && <p>{format(totals.diagnosed.total)} diagnoz{stats.data?.accounts ? <> · {format(new Set(stats.data.accounts.map(row => row.account_id)).size)} kont z diagnozą</> : null}</p>}
       </>} />
       </div>
       <div className="sc-clinic-db__toolbar">
@@ -205,9 +206,10 @@ export function ClinicDatabase() {
           <button ref={filterButton} type="button" className="sc-clinic-db__toggle" aria-haspopup="dialog" aria-expanded={filtersOpen} aria-controls="clinic-db-filters" onClick={() => setFiltersOpen(true)}>Filtry ({active})</button>
         </div>
         <div className="sc-clinic-db__bottom">
-          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? "Wczytywanie…" : count !== undefined ? `${format(count)} ${count === 1 ? "wynik" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "wyniki" : "wyników"}` : ""}</p>
+          <p className="sc-clinic-db__count" aria-live="polite" aria-atomic="true">{query.isPending ? <Loading label="Wczytywanie" /> : count !== undefined ? `${format(count)} ${count === 1 ? "wynik" : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? "wyniki" : "wyników"}` : ""}</p>
           <label className="sc-clinic-db__sort"><span>· Sortuj</span><select value={params.sort ?? "new"} onChange={event => change({ sort: event.target.value === "new" ? "" : "strong" })}><option value="new">Najnowsze</option><option value="strong">Najwyższa siła spinu</option></select></label>
         </div>
+        {params.technique && SEMEVAL_MAP[params.technique] && <p className="sc-semeval-note">SemEval: {(stats.data?.technique_definitions?.[params.technique]?.semeval ?? SEMEVAL_MAP[params.technique]).join("; ") || "brak odpowiednika"}. <Link href="/metodologia#techniki">O przypisaniu</Link></p>}
         {stats.isError && <p role="status">Nie udało się pobrać statystyk i opcji filtrów. <button type="button" onClick={() => void stats.refetch()}>Spróbuj ponownie</button></p>}
         <dialog ref={dialog} id="clinic-db-filters" className="sc-clinic-db__sheet" aria-labelledby="clinic-db-filters-title" onCancel={() => setFiltersOpen(false)} onClose={() => setFiltersOpen(false)} onClick={event => {
           if (event.target === event.currentTarget) {
@@ -232,12 +234,16 @@ export function ClinicDatabase() {
         {activeChips.map(chip => <button key={Object.keys(chip.clear).join("-")} type="button" aria-label={`Usuń filtr: ${chip.label}`} onClick={() => { if ("q" in chip.clear) setSearch(""); change(chip.clear); }}>{chip.label} <span aria-hidden="true">×</span></button>)}
       </div> : null}
       <div className="sc-clinic-db__list" aria-busy={query.isFetching}>
-        {rows.map(spin => <SpinRow key={spin.id} spin={spin} withSummary withTechniques returnTo={resultsUrl} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}
+        {/* v3: jeden schemat wiersza list (awatar, rodzaj, tytuł w pełnej długości, meta, liczba siły w kolorze strefy) */}
+        <ol className="sc-v3 sc-v3-rows">{rows.map((spin, index) => <V3Row key={spin.id} index={index} href={`/klinika/${spin.id}?returnTo=${encodeURIComponent(resultsUrl)}`} name={spin.author.name}
+          kind={<><span className="sc-v3-row__kp">Diagnoza </span>AI · {spin.verdict === "unclear" ? "Nie da się ocenić" : spin.verdict_label} · {spin.camp_label}</>} title={spin.headline}
+          meta={[spin.author.name, <time key="t" dateTime={spin.post.published_at}>{formatDateTimePl(spin.post.published_at)}</time>, `#SPIN-${spin.id}`]}
+          value={spin.intensity} onOpen={() => rememberClinicResults(resultsUrl, query.data?.pages.length ?? 1)} />)}</ol>
       </div>
       {query.isError && <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void (query.isFetchNextPageError ? query.fetchNextPage() : query.refetch())}>Spróbuj ponownie</button></p>}
       {query.isSuccess && rows.length === 0 && <div className="sc-clinic-empty"><p>{hasFilters ? "Nie znaleźliśmy pasujących diagnoz." : "Nie ma jeszcze opublikowanych diagnoz dla tego wyboru."}</p>{hasFilters ? <button type="button" onClick={reset}>Wyczyść filtry</button> : null}</div>}
-      {query.hasNextPage && !query.isFetchNextPageError && <Button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? "Wczytywanie…" : "Pokaż więcej"}</Button>}
-      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania — to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
+      {query.hasNextPage && !query.isFetchNextPageError && <Button className="sc-clinic-db__more" type="button" disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{query.isFetchingNextPage ? <Loading inline label="Wczytywanie" /> : "Pokaż więcej"}</Button>}
+      <p className="sc-clinic-db__notice">Baza obejmuje wpisy, które izba przyjęć uznała za warte zbadania - to nie jest próba całej polityki. Liczba diagnoz jednej strony nie mówi, która strona spinuje więcej. <Link href="/metodologia">Jak wybieramy i liczymy?</Link></p>
     </section>
   );
 }

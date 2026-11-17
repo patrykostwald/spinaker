@@ -14,7 +14,7 @@ RULES = (
     ('Straszenie', r'strasz|strach|leku|katastrof'),
     ('Przypisywanie sobie zasług', r'zaslug|przypisanie wysilku'),
     ('Przypisywanie intencji', r'intencj|motywow|czytanie w mysl'),
-    ('Atak na osobę', r'atak.*osob|ad hominem|personaln|dyskredyt'),
+    ('Atak na osobę', r'atak.*osob|ad hominem|ad personam|personaln|dyskredyt'),
     ('Fałszywa alternatywa', r'alternatyw|dychotom|falszywy dylemat|zero jedynkow'),
     # przeinaczenie cudzego stanowiska przed ogólnym „przeinaczeniem”
     ('Słomiany człowiek', r'slomian|chochol|straw man|przeinaczenie (stanowiska|cudzej)'),
@@ -37,6 +37,71 @@ RULES = (
 )
 CANONICAL_TECHNIQUES = tuple(name for name, _ in RULES) + ('Inne',)
 
+# Nasze orientacyjne przypisanie do SemEval 2023 Task 3, podzadanie 3.
+SEMEVAL_2023 = {
+    'Attack on reputation': ['Name Calling/Labeling', 'Guilt by Association', 'Casting Doubt', 'Appeal to Hypocrisy', 'Questioning the Reputation'],
+    'Justification': ['Flag Waving', 'Appeal to Authority', 'Appeal to Popularity', 'Appeal to Values', 'Appeal to Fear/Prejudice'],
+    'Simplification': ['Causal Oversimplification', 'False Dilemma/No Choice', 'Consequential Oversimplification'],
+    'Distraction': ['Strawman', 'Red Herring', 'Whataboutism'],
+    'Call': ['Slogans', 'Conversation Killer', 'Appeal to Time'],
+    'Manipulative wording': ['Loaded Language', 'Obfuscation/Vagueness/Confusion', 'Exaggeration/Minimisation', 'Repetition']
+}
+
+SEMEVAL_MAP = {
+    "Straszenie": [
+        "Appeal to Fear/Prejudice"
+    ],
+    "Przypisywanie sobie zasług": [],
+    "Przypisywanie intencji": [
+        "Casting Doubt"
+    ],
+    "Atak na osobę": [
+        "Questioning the Reputation"
+    ],
+    "Fałszywa alternatywa": [
+        "False Dilemma/No Choice"
+    ],
+    "Słomiany człowiek": [
+        "Strawman"
+    ],
+    "Fałszywa analogia i skojarzenie": [
+        "Guilt by Association"
+    ],
+    "Przeinaczenie faktów": [],
+    "Sugestia i niedopowiedzenie": [
+        "Casting Doubt"
+    ],
+    "Fałszywa przyczynowość": [
+        "Causal Oversimplification"
+    ],
+    "Liczba bez punktu odniesienia": [],
+    "Wybiórcze dane": [],
+    "Pominięcie kontekstu": [],
+    "Nadmierne uogólnienie": [],
+    "Etykietowanie": [
+        "Name Calling/Labeling"
+    ],
+    "My kontra oni": [
+        "Flag Waving"
+    ],
+    "Zmiana tematu": [
+        "Red Herring",
+        "Whataboutism"
+    ],
+    "Odwołanie do autorytetu": [
+        "Appeal to Authority"
+    ],
+    "Teza bez dowodu": [],
+    "Przesada": [
+        "Exaggeration/Minimisation"
+    ],
+    "Apel do emocji": [
+        "Loaded Language",
+        "Appeal to Values"
+    ],
+    "Inne": []
+}
+
 FAMILIES = {
     'dane': ('Liczba bez punktu odniesienia', 'Wybiórcze dane', 'Pominięcie kontekstu',
               'Przeinaczenie faktów', 'Teza bez dowodu', 'Fałszywa przyczynowość',
@@ -47,8 +112,9 @@ FAMILIES = {
                  'Zmiana tematu', 'Przypisywanie sobie zasług'),
     'inne': ('Inne',),
 }
-FAMILY_LABELS = {'dane': 'Dane i wnioskowanie', 'przedstawienie': 'Emocje i przedstawienie',
-                 'spor': 'Spór i odpowiedzialność', 'inne': 'Inne'}
+# Kolejność prezentacji jak sygnalizator; niezależna od reguł klasyfikacji.
+FAMILY_LABELS = {'spor': 'Spór i odpowiedzialność', 'przedstawienie': 'Emocje i przedstawienie',
+                 'dane': 'Dane i wnioskowanie', 'inne': 'Inne'}
 FAMILY_DEFINITIONS = {
     'dane': 'Dobór i przedstawianie faktów, liczb oraz związków między nimi.',
     'przedstawienie': 'Wpływanie na odbiór przez emocje, język i ramy interpretacji.',
@@ -117,3 +183,29 @@ def technique_groups(techniques):
 
 DISPLAY_NAMES = {name: name for name in CANONICAL_TECHNIQUES}
 DISPLAY_NAMES['Słomiany człowiek'] = 'Zniekształcenie cudzego stanowiska'
+
+# Tylko pierwszy ekran. Nazwy fachowe pozostają w szczegółach i metodologii.
+PLAIN_NAMES = {
+    'Przypisywanie intencji': 'Sugerowanie złych zamiarów',
+    'Wybiórcze dane': 'Pomijanie niewygodnych faktów',
+    'Nadmierne uogólnienie': 'Obwinianie całej grupy',
+    'Etykietowanie': 'Przyklejanie łatek',
+    'Atak na osobę': 'Atak na osobę zamiast na argument',
+    'Apel do emocji': 'Granie na emocjach',
+    'Straszenie': 'Budzenie strachu',
+    'Przypisywanie sobie zasług': 'Przypisywanie sobie sukcesu',
+    'Fałszywa alternatywa': 'Tylko dwie możliwości',
+    'Słomiany człowiek': 'Przekręcanie cudzych słów',
+    'Fałszywa analogia i skojarzenie': 'Mylące porównanie',
+    'Przeinaczenie faktów': 'Przekręcanie faktów',
+    'Sugestia i niedopowiedzenie': 'Zarzut między wierszami',
+    'Fałszywa przyczynowość': 'Łączenie faktów bez dowodu',
+    'Liczba bez punktu odniesienia': 'Liczby bez porównania',
+    'Pominięcie kontekstu': 'Pomijanie ważnych okoliczności',
+    'My kontra oni': 'Dzielenie ludzi na obozy',
+    'Zmiana tematu': 'Odwracanie uwagi',
+    'Odwołanie do autorytetu': 'Podpieranie się cudzą opinią',
+    'Teza bez dowodu': 'Zarzut bez dowodu',
+    'Przesada': 'Wyolbrzymianie sprawy',
+    'Inne': 'Inny chwyt',
+}

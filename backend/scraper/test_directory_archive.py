@@ -7,7 +7,9 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from news.models import Article, ArticleContent, ArchiveJob, Source
+from scraper.access_gate import AccessDenied
 from scraper.archive import _HOST_STATES, process, run_batch, SourceDelay
+from scraper.testing import approve_access
 from scraper.directory_archive import directory_links, directory_spec
 
 
@@ -130,8 +132,9 @@ def test_directory_limit_fails_visibly_instead_of_omitting_urls(monkeypatch):
 
 def setup_job(monkeypatch, example=EXAMPLES[1], body=None):
     source = Source.objects.create(name='Synthetic publisher', url='https://' + urlsplit(example[0]).hostname)
+    approve_access(source, 'html', source.url)
     job = ArchiveJob.objects.create(source=source, url=example[0], kind='page')
-    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url: b'User-agent: *\nAllow: /'
+    monkeypatch.setattr('scraper.archive.fetch_feed', lambda url, **_: b'User-agent: *\nAllow: /'
         if url.endswith('/robots.txt') else (body if body is not None else listing_html(example)))
     return source, job
 
@@ -178,7 +181,7 @@ def test_empty_catalogue_is_terminal_technical_page(monkeypatch):
 def test_robots_disallow_prevents_catalogue_fetch(monkeypatch):
     _, job = setup_job(monkeypatch)
     called = []
-    def fetch(url):
+    def fetch(url, **_):
         called.append(url)
         return b'User-agent: *\nDisallow: /'
     monkeypatch.setattr('scraper.archive.fetch_feed', fetch)
@@ -195,13 +198,15 @@ def test_robots_disallow_prevents_catalogue_fetch(monkeypatch):
 def test_source_change_blocks_discovery_before_fetch_and_before_write(monkeypatch, change):
     source, job = setup_job(monkeypatch)
     Source.objects.filter(pk=source.pk).update(**change)
-    def forbidden(url):
+    def forbidden(url, **_):
         pytest.fail('disabled source must not fetch')
     monkeypatch.setattr('scraper.archive.fetch_feed', forbidden)
-    with pytest.raises(ValueError, match='source_unavailable'):
+    # A disabled source fails the access gate first (no_approved_instruction);
+    # a source moved to another host fails the host check. Neither fetches.
+    with pytest.raises((AccessDenied, ValueError), match='^(no_approved_instruction|source_unavailable)$'):
         process(job)
     Source.objects.filter(pk=source.pk).update(is_active=True, scrape_enabled=True, catalog_stage='configured', url='https://www.polityka.pl')
-    def disable_during_fetch(url):
+    def disable_during_fetch(url, **_):
         if url.endswith('robots.txt'):
             return b'User-agent: *\nAllow: /'
         Source.objects.filter(pk=source.pk).update(**change)

@@ -12,7 +12,7 @@ export function Dialog({ open, onClose, title, children, className = "" }: { ope
   const motionTokens = useMotionTokens();
   const a11y = useModalA11y(surfaceRef, open, onClose);
   useScrollLock(open);
-  // Okno renderujemy w <body>, nie w miejscu przycisku — rodzic (panel, pasek z przewijaniem) nie może go przyciąć ani zablokować kliknięć.
+  // Okno renderujemy w <body>, nie w miejscu przycisku - rodzic (panel, pasek z przewijaniem) nie może go przyciąć ani zablokować kliknięć.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

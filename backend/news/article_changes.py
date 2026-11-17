@@ -58,3 +58,29 @@ def record_removed(*, article, source_status: int, evidence_snapshot=None) -> Ar
         },
     )
     return event
+
+
+def change_flags(article_ids) -> dict[int, dict]:
+    """F2 (strażnik cytatu): materiały, których treść lub tytuł zmieniły się po zapisaniu u nas albo które zniknęły.
+
+    Pokazujemy tylko fakt i datę wykrycia (z haszy, bez treści); odrzucone przez redakcję zdarzenia pomijamy.
+    """
+    ids = [pk for pk in article_ids if pk]
+    if not ids:
+        return {}
+    flags = {}
+    events = (ArticleChangeEvent.objects.filter(article_id__in=ids)
+              .exclude(status=ArticleChangeEvent.ReviewStatus.REJECTED).order_by('detected_at'))
+    for event in events:
+        flags[event.article_id] = {
+            'type': event.change_type, 'detected_at': event.detected_at,
+            'title_changed': bool(event.details.get('title_changed')), 'content_changed': bool(event.details.get('content_changed')),
+        }
+    return flags
+
+
+def attach_change_flags(rows) -> None:
+    """Dopisuje `text_changed` (dict albo None) do listy materiałów z kluczem `id` = id artykułu."""
+    flags = change_flags([row.get('id') for row in rows])
+    for row in rows:
+        row['text_changed'] = flags.get(row.get('id'))

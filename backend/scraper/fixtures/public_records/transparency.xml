@@ -1,0 +1,65 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<ListOfIRPublicDetail xmlns="http://intragate.ec.europa.eu/transparencyregister/odp">
+  <metaData xmlns="">
+    <exportDate>2026-10-05T20:00:00.071+00:00</exportDate>
+    <numberOfIR>3</numberOfIR>
+  </metaData>
+  <resultList xmlns="">
+    <interestRepresentative>
+      <identificationCode>405662547431-63</identificationCode>
+      <registrationDate>2022-08-31T09:49:40.943+00:00</registrationDate>
+      <lastUpdateDate>2026-07-23T13:52:49.280+00:00</lastUpdateDate>
+      <name><originalName>Testowa Kancelaria Spółka Partnerska</originalName></name>
+      <acronym>TK</acronym>
+      <entityForm>Spółka Partnerska</entityForm>
+      <webSiteURL>https://example.org/</webSiteURL>
+      <registrationCategory>Law firms</registrationCategory>
+      <headOffice>
+        <address>ul. Testowa 1</address><postCode>00-001</postCode><city>Warsaw</city><country>POLAND</country>
+        <phone><indicPhone>48</indicPhone><phoneNumber>220000000</phoneNumber></phone>
+      </headOffice>
+      <EUOffice><city>Warsaw</city><country>POLAND</country></EUOffice>
+      <goals>Doradztwo&#x2;prawne w sprawach podatkowych.</goals>
+      <levelsOfInterest>
+        <levelOfInterest><levelOfInterest>national</levelOfInterest></levelOfInterest>
+        <levelOfInterest><levelOfInterest>european</levelOfInterest></levelOfInterest>
+      </levelsOfInterest>
+      <EULegislativeProposals>VAT in the Digital Age</EULegislativeProposals>
+      <members><members>2.0</members><membersFTE>0.2</membersFTE></members>
+      <EPAccreditedNumber>0</EPAccreditedNumber>
+      <interests><interest><name>Taxation</name></interest><interest><name>Trade</name></interest></interests>
+      <interestRepresented>Promotes their own interests or the collective interests of their members</interestRepresented>
+      <financialData>
+        <newOrganisation>false</newOrganisation>
+        <closedYear type="ClosedYearIntermediaryFinancialInformation">
+          <startDate>2025-01-01</startDate>
+          <endDate>2025-12-01</endDate>
+          <costs type="CostRange" currency="€"><range><min>10000</min><max>24999</max></range></costs>
+          <grants><grant><source>EU LIFE</source><amount type="AbsoluteCost" currency="€"><absoluteCost>82484</absoluteCost></amount></grant></grants>
+          <clients><client><name>Klient Testowy S.A.</name></client></clients>
+          <contributions><contributor><name>Jan Kowalski</name></contributor></contributions>
+        </closedYear>
+      </financialData>
+    </interestRepresentative>
+    <interestRepresentative>
+      <identificationCode>880143435725-46</identificationCode>
+      <registrationDate>2019-08-28T09:51:42.605+00:00</registrationDate>
+      <name><originalName>Asociación de Prueba</originalName></name>
+      <entityForm>Asociación</entityForm>
+      <registrationCategory>Trade unions and professional associations</registrationCategory>
+      <headOffice><city>Barcelona</city><country>SPAIN</country></headOffice>
+      <EUOffice><city>Barcelona</city><country>SPAIN</country></EUOffice>
+      <goals>Works towards a better justice system.</goals>
+    </interestRepresentative>
+    <interestRepresentative>
+      <identificationCode>123456789012-34</identificationCode>
+      <registrationDate>2020-01-01T00:00:00.000+00:00</registrationDate>
+      <name><originalName>Baltic Energy Forum</originalName></name>
+      <entityForm>ASBL</entityForm>
+      <registrationCategory>Companies and groups</registrationCategory>
+      <headOffice><city>Brussels</city><country>BELGIUM</country></headOffice>
+      <EUOffice><city>Brussels</city><country>BELGIUM</country></EUOffice>
+      <goals>Represents energy companies from Poland and the Baltic states.</goals>
+    </interestRepresentative>
+  </resultList>
+</ListOfIRPublicDetail>

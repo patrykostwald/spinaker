@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * CompactHeader — nagłówek, który zwęża się/rozszerza po KIERUNKU przewijania (nie po pozycji):
+ * CompactHeader - nagłówek, który zwęża się/rozszerza po KIERUNKU przewijania (nie po pozycji):
  * w dół → zwężenie (64 → 48px), w górę → powrót (docs/UI_KIT_PLAN.md → «Mobilne rozkłady»,
- * «Nagłówek»). Jedyny nasłuch przewijania w tym pliku — na kontenerze/oknie, NIE na elementach
- * listy — więc nie łamie zakazu nasłuchów "na element".
+ * «Nagłówek»). Jedyny nasłuch przewijania w tym pliku - na kontenerze/oknie, NIE na elementach
+ * listy - więc nie łamie zakazu nasłuchów "na element".
  *
  * Wysokość jest jedynym dozwolonym wyjątkiem od reguły „tylko transform/opacity" (jak w
  * `RevealHeight`), animowana sprężyną `ui`. Slot wyszukiwania dostaje stan `compact` przez render
@@ -20,7 +20,7 @@ export type CompactHeaderRenderProps = { compact: boolean };
 
 export type CompactHeaderProps = {
   children: ReactNode | ((state: CompactHeaderRenderProps) => ReactNode);
-  /** Kontener przewijania — na stoisku witryny to ramka telefonu; domyślnie okno przeglądarki. */
+  /** Kontener przewijania - na stoisku witryny to ramka telefonu; domyślnie okno przeglądarki. */
   scrollRootRef?: RefObject<HTMLElement | null>;
   className?: string;
 };

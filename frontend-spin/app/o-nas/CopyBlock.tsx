@@ -1,6 +1,6 @@
 /**
- * Jaśniejsze okienko z etykietą u góry (jak blok w odpowiedzi czatu AI) — sama forma, bez przycisku
- * kopiowania. `mode="diagram"` — tekst o stałej szerokości, bez łamania linii; `mode="text"` — akapit.
+ * Jaśniejsze okienko z etykietą u góry (jak blok w odpowiedzi czatu AI) - sama forma, bez przycisku
+ * kopiowania. `mode="diagram"` - tekst o stałej szerokości, bez łamania linii; `mode="text"` - akapit.
  */
 
 export function CopyBlock({ label, text, mode = "diagram", caption }: { label: string; text: string; mode?: "diagram" | "text"; caption?: string }) {

@@ -8,7 +8,7 @@ import type { PublicFigureSummary } from "../lib/publicFigures";
 const normalize = (value: string) => value.toLocaleLowerCase("pl").replace(/\s+/g, " ").trim();
 
 /**
- * Hasło to imię i nazwisko z rejestru osób publicznych? Na górze wyników — karta profilu (doniesienia, kariera, podmioty).
+ * Hasło to imię i nazwisko z rejestru osób publicznych? Na górze wyników - karta profilu (doniesienia, kariera, podmioty).
  * Pokazujemy tylko pełne dopasowanie imienia i nazwiska, żeby nie podsuwać cudzego profilu.
  */
 export function FigureMatch({ query }: { query: string }) {

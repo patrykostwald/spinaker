@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * useHistoryPortal — adres jest odbiciem stanu React, nigdy odwrotnie
+ * useHistoryPortal - adres jest odbiciem stanu React, nigdy odwrotnie
  * (docs/UI_KIT_PLAN.md → «Портал» → «Адрес»).
  *
  * `window.history.pushState`/`replaceState`, NIGDY `router.push`: prawdziwa nawigacja App
  * Router ściągnie payload RSC segmentu i ZDEMONTUJE drzewo, w którym żyje karta-partner
- * morfingu. `scroll: false` by tu nie pomogło — problem jest w odmontowaniu.
+ * morfingu. `scroll: false` by tu nie pomogło - problem jest w odmontowaniu.
  *
  * Adres ZAWSZE zachowuje `window.location.search` (tryb `query` dokłada/zdejmuje tylko
- * parametr `podglad`) — inaczej wyciek innych parametrów (np. `q` wyszukiwarki) po stronie
+ * parametr `podglad`) - inaczej wyciek innych parametrów (np. `q` wyszukiwarki) po stronie
  * wywołującego (Baza→PortalHome) zresetowałby filtr w trakcie otwartego overlaya.
  *
- * Zamknięcie ZAWSZE idzie przez `history.back()`, gdy wpis należy do nas (`owned`) — krzyżyk
+ * Zamknięcie ZAWSZE idzie przez `history.back()`, gdy wpis należy do nas (`owned`) - krzyżyk
  * i przycisk „Wstecz” to dosłownie ten sam kod, a stos historii nie rośnie. Nawigacja
  * materiał→powiązany materiał używa `replaceState` (jedno „Wstecz” wraca na stronę główną,
  * a nie odwija łańcuch powiązanych).
@@ -26,7 +26,7 @@ export type UseHistoryPortalOptions = {
   mode: PortalHistoryMode;
   /** Aktualnie otwarty materiał (faza `open`); `null` gdy zamknięty. */
   active: Article | null;
-  /** = api.open — wywoływane przy powrocie z historii (Wstecz/Dalej, wejście z linku). */
+  /** = api.open - wywoływane przy powrocie z historii (Wstecz/Dalej, wejście z linku). */
   onOpen: (article: Article, originEl?: HTMLElement | null) => void;
   /** = api.close */
   onClose: () => void;
@@ -37,7 +37,7 @@ export type UseHistoryPortalOptions = {
 export type HistoryPortal = {
   /** Krzyżyk/Escape/scrim/przeciągnięcie wywołują TO, nie `api.close()` bezpośrednio. */
   requestClose: () => void;
-  /** Klik w powiązany materiał WEWNĄTRZ overlaya — `replaceState`, dokument.title, bez push. */
+  /** Klik w powiązany materiał WEWNĄTRZ overlaya - `replaceState`, dokument.title, bez push. */
   replaceForRelated: (article: Article) => void;
 };
 
@@ -75,7 +75,7 @@ export function useHistoryPortal({ mode, active, onOpen, onClose, resolveArticle
   const suppressReflect = useRef(false);
 
   // Wczytanie strony z już obecnym ?podglad=<id> (lub /material/<id>): otwórz bez morfingu
-  // (PortalLayer renderuje przejście przez zanik — brak `flight`, bo originEl nie istnieje
+  // (PortalLayer renderuje przejście przez zanik - brak `flight`, bo originEl nie istnieje
   // w chwili wywołania) i podłącz nasłuch Wstecz/Dalej.
   useEffect(() => {
     if (mode === "none") return;
@@ -113,7 +113,7 @@ export function useHistoryPortal({ mode, active, onOpen, onClose, resolveArticle
     }
     window.addEventListener("popstate", onPopState);
     return () => { disposed = true; window.removeEventListener("popstate", onPopState); };
-    // Zamierzenie: tylko `mode` — onOpen/onClose/resolveArticle to referencje wywołującego,
+    // Zamierzenie: tylko `mode` - onOpen/onClose/resolveArticle to referencje wywołującego,
     // które nie powinny resetować nasłuchu przy każdym renderze.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
@@ -153,7 +153,7 @@ export function useHistoryPortal({ mode, active, onOpen, onClose, resolveArticle
       window.history.back();
       return;
     }
-    // Wpisu w historii nie ma — nie ma dokąd wracać (np. bezpośredni link z ?podglad=).
+    // Wpisu w historii nie ma - nie ma dokąd wracać (np. bezpośredni link z ?podglad=).
     suppressReflect.current = true;
     window.history.replaceState({}, "", buildUrl(mode, null));
     lastReflectedId.current = null;

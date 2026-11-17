@@ -13,7 +13,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true')
+        parser.add_argument('--podsumowanie', action='store_true', help='Raport 7 dni; z --dry-run bez wysyłki.')
 
     def handle(self, *args, dry_run=False, **options):
-        from news.council_recruiter import run
+        from news.council_recruiter import run, weekly_summary, _notify
+        if options.get('podsumowanie'):
+            summary = weekly_summary()
+            self.stdout.write(summary)
+            if not dry_run:
+                _notify('podsumowanie tygodnia', summary)
+            return
         self.stdout.write(json.dumps(run(dry_run=dry_run), ensure_ascii=False, indent=2, default=str))

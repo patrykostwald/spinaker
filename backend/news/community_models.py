@@ -12,6 +12,8 @@ TITLE_ORIGINS = [('publisher', 'Tytuł z metadanych strony'), ('reader', 'Tytuł
 
 
 class CommunityLink(models.Model):
+    x_data = models.JSONField(default=dict, blank=True)
+    x_fetched_at = models.DateTimeField(null=True, blank=True)
     canonical_url = models.URLField(max_length=1024, unique=True)
     domain = models.CharField(max_length=255, db_index=True)
     title = models.CharField(max_length=300)
@@ -33,15 +35,21 @@ class CommunityLink(models.Model):
 class CommunityThreadOpinion(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='community_thread_opinions')
     thread = models.ForeignKey('news.PersonalContextThread', on_delete=models.CASCADE, related_name='opinions')
-    polarity = models.CharField(max_length=8, choices=[('positive', 'Przydatna'), ('negative', 'Nieprzydatna')])
+    polarity = models.CharField(max_length=8, choices=[('positive', 'Zgadzam się'), ('doubt', 'Mam wątpliwości'), ('negative', 'Nie zgadzam się')])
     body = models.CharField(max_length=240, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
+    comment_added_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.body and not self.comment_added_at:
+            self.comment_added_at = timezone.now()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-created_at', '-id']
         constraints = [
             models.UniqueConstraint(fields=['user', 'thread'], name='one_opinion_per_user_community_thread'),
-            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'negative']), name='community_opinion_valid_polarity'),
+            models.CheckConstraint(condition=models.Q(polarity__in=['positive', 'doubt', 'negative']), name='community_opinion_valid_polarity'),
         ]
 
 
@@ -59,5 +67,5 @@ class CommunityThreadReport(models.Model):
     class Meta:
         ordering = ['-created_at']
         constraints = [models.UniqueConstraint(fields=['reporter', 'thread'], name='one_report_per_user_thread')]
-        verbose_name = 'zgłoszenie nitki'
-        verbose_name_plural = 'zgłoszenia nitek'
+        verbose_name = 'zgłoszenie spinki'
+        verbose_name_plural = 'zgłoszenia spinek'

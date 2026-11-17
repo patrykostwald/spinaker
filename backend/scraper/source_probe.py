@@ -73,6 +73,10 @@ class ProbeNetwork:
     def raw(self, address):
         if not public_link(address):
             raise ProbeError('invalid_public_url')
+        # RCL zgodziło się wyłącznie na pobieranie własnym klientem (scraper.rcl_client): inny podpis i odstęp 3 s tu nie wystarczą.
+        from scraper.rcl_guard import is_rcl_url
+        if is_rcl_url(address):
+            raise ProbeError('rcl_requires_rcl_client')
         host_state = self.host(address)
         with host_state['lock']:
             time.sleep(max(0, host_state['next'] - time.monotonic()))

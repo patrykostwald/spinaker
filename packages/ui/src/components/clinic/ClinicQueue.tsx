@@ -4,13 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../../kit";
+import { spinVar } from "../../lib/clinic";
 import { decideFlag, getClinicQueue, getNewsletterStats, reviewDailyMessage, reviewSpin } from "../../lib/clinic";
 import { useAccount } from "../../lib/account";
 import { SpinDiagnosisBody } from "./SpinDetail";
 import { SpinAuthorRow } from "./SpinParts";
 import { ShareSpinOnX } from "./ShareSpinOnX";
+import { Loading } from "../../kit/Loading";
 
-/** Kolejka zatwierdzania. Tylko dwie decyzje — treści nie da się tu zmienić. */
+/** Kolejka zatwierdzania. Tylko dwie decyzje - treści nie da się tu zmienić. */
+const wpisy = (n: number) => `${n} ${n === 1 ? 'wpis' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'wpisy' : 'wpisów'}`;
 export function ClinicQueue() {
   const account = useAccount();
   const isStaff = Boolean(account.data?.user?.is_staff);
@@ -40,7 +43,7 @@ export function ClinicQueue() {
     } finally { setBusy(""); }
   }
 
-  if (account.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty">Ładowanie…</p></div>;
+  if (account.isLoading) return <div className="sc-clinic"><p className="sc-clinic-empty"><Loading label="Ładowanie" /></p></div>;
   if (!isStaff) return <div className="sc-clinic"><p className="sc-clinic-empty">Kolejka Kliniki jest dostępna tylko dla zespołu. <Link href="/konto">Zaloguj się</Link></p></div>;
   const data = query.data;
   const buttons = (kind: "spin" | "message", id: number) => (
@@ -60,13 +63,35 @@ export function ClinicQueue() {
           {data.counts.suggestions > 0 && <> · <a href="/admin/news/xaccountsuggestion/">sugestie kont X: {data.counts.suggestions}</a></>}</p>}
         {newsletter.data && <p className="sc-clinic-notice">
           <strong>Newsletter:</strong> potwierdzeni {newsletter.data.confirmed} · czekają na potwierdzenie {newsletter.data.pending} · wypisani {newsletter.data.unsubscribed} · nowi w 7 dni +{newsletter.data.confirmed_last_7_days}
-          {!newsletter.data.smtp_ready && " · UWAGA: poczta (SMTP) nieskonfigurowana — maile potwierdzające nie wychodzą"}</p>}
+          {!newsletter.data.smtp_ready && " · UWAGA: poczta (SMTP) nieskonfigurowana - maile potwierdzające nie wychodzą"}</p>}
       </header>
+      {data?.video_stats && <section aria-labelledby="video-stats-title">
+        <h2 id="video-stats-title">Filmy: rządzący i opozycja</h2>
+        <p className="sc-clinic-notice">Koszt filmów w {data.video_stats.monthly.month}: {data.video_stats.monthly.pln.toFixed(2)} zł
+          {" · "}próg alertu {data.video_stats.monthly.threshold_pln.toFixed(2)} zł
+          {" · "}kurs {data.video_stats.monthly.usd_pln} zł/USD.</p>
+        <p>Wpisy według daty publikacji, oglądanie według ostatniego zapisanego wyniku. Koszty według dnia analizy, łącznie z ponowieniami.
+          Miniatura liczy się jako film nieobejrzany przy porównaniu stron.</p>
+        {data.video_stats.periods.map(period => <div key={period.label}>
+          <h3>{period.label} ({period.start} do {period.end})</h3>
+          {Object.entries(period.camps).map(([camp, row]) => <div key={camp}>
+            <p><strong>{row.label}:</strong> wpisy z filmem {row.posts} · filmy {row.videos} · całe {row.full} · fragment {row.partial}
+              {" · "}miniatura {row.thumbnail} · nieobejrzane {row.unseen}
+              {" · "}udział bez obejrzenia {row.unwatched_share === null ? "brak filmów" : `${(row.unwatched_share * 100).toFixed(1)}%`}
+              {" · "}koszt {row.cost_pln.toFixed(2)} zł ({row.cost_usd.toFixed(4)} USD)</p>
+            {Object.keys(row.reasons).length > 0 && <details><summary>Powody nieobejrzenia</summary>
+              <ul>{Object.entries(row.reasons).map(([reason, count]) => <li key={reason}>{reason}: {count}</li>)}</ul>
+            </details>}
+          </div>)}
+          {period.unassigned_usd > 0 && <p>Koszt bez przypisania do strony: {period.unassigned_usd.toFixed(4)} USD.</p>}
+        </div>)}
+        {data.video_stats.warning && <p role="alert" className="sc-clinic-notice">{data.video_stats.warning}</p>}
+      </section>}
       {error && <p role="alert" className="sc-clinic-empty">{error}</p>}
       {data && data.flagged.length > 0 && (
         <section className="sc-clinic-queue__flagged" aria-labelledby="flagged-title">
           <h2 id="flagged-title">Strażnik: warte sprawdzenia <span>{data.counts.flagged}</span></h2>
-          <p className="sc-clinic-empty">Darmowa ocena strażnika. „Zbadaj” uruchamia płatną diagnozę (Claude), „Pomiń” — nic nie kosztuje.</p>
+          <p className="sc-clinic-empty">Darmowa ocena strażnika. „Zbadaj” uruchamia płatną diagnozę (Claude), „Pomiń” - nic nie kosztuje.</p>
           <ul>{data.flagged.map(item => (
             <li key={item.id} className="sc-clinic-queue__flag">
               <span className="sc-clinic-queue__score" title={`Ocena strażnika (${item.screened_by || "brak"})`}>{item.score ?? "?"}</span>
@@ -85,7 +110,7 @@ export function ClinicQueue() {
       )}
       {data?.messages.map(message => (
         <article key={`m-${message.id}`} className="sc-clinic-queue__item">
-          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {message.posts_count} wpisów</p>
+          <p className="sc-clinic-kicker">Przekaz dnia · {message.camp_label} · {message.day} · {wpisy(message.posts_count)}</p>
           <p className="sc-clinic-message__text">{message.message}</p>
           <p>{message.themes.join(" · ")}</p>
           {buttons("message", message.id)}
@@ -104,10 +129,10 @@ export function ClinicQueue() {
       ))}
       {data && data.recent.length > 0 && (
         <section className="sc-clinic-queue__flagged" aria-labelledby="recent-title">
-          <h2 id="recent-title">Opublikowane — udostępnij na X</h2>
+          <h2 id="recent-title">Opublikowane - udostępnij na X</h2>
           <ul>{data.recent.map(item => (
             <li key={item.id} className="sc-clinic-queue__flag">
-              <span className="sc-clinic-queue__score" title="Siła spinu">{item.intensity}</span>
+              <span className="sc-clinic-queue__score sc-spin-num" style={spinVar(item.intensity)} title="Siła spinu">{item.intensity}</span>
               <div>
                 <SpinAuthorRow author={item.author} publishedAt={item.post.published_at} />
                 <p><strong>{item.verdict_label}:</strong> <Link href={`/klinika/${item.id}`}>{item.headline}</Link></p>

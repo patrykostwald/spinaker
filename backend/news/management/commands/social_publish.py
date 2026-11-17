@@ -35,7 +35,7 @@ class Command(BaseCommand):
                 raise CommandError('Brak poprawnej syntezy — materiał nie zostanie wysłany.')
             sent = social_publish._mail(social_publish._video_email(), f'spin.clinic: podgląd filmu diagnozy {preview}',
                                         f"Podgląd — nic nie zostało opublikowane.\n\nOpis na Facebooka:\n\n{text['facebook']}"
-                                        f"\n\nOpis na Instagram:\n\n{text['instagram']}\n\nBluesky:\n\n{text['bluesky']}", path)
+                                        f"\n\nOpis na Instagram:\n\n{text['instagram']}\n\nBluesky:\n\n{text['bluesky']}", path, important=True)
             self.stdout.write(f"Film: {path} ({path.stat().st_size // 1024} KB) — mail {'wysłany' if sent else 'NIE wysłany (SMTP / adres)'}")
             return
         result = social_publish.run(dry_run=dry_run)

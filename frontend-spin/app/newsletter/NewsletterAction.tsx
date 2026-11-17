@@ -7,7 +7,7 @@ import { apiWrite } from '@spin-clinic/ui';
 
 type Result = { kind: 'idle' | 'working' | 'ok' | 'error'; text?: string; token?: string };
 
-/** Potwierdzenie zapisu (od razu po wejściu z linku) albo wypisanie (dopiero po kliknięciu — skanery poczty otwierają linki). */
+/** Potwierdzenie zapisu (od razu po wejściu z linku) albo wypisanie (dopiero po kliknięciu - skanery poczty otwierają linki). */
 export function NewsletterAction({ mode }: { mode: 'confirm' | 'unsubscribe' }) {
   const token = useSearchParams().get('t') ?? '';
   const [result, setResult] = useState<Result>({ kind: 'idle' });
@@ -31,7 +31,7 @@ export function NewsletterAction({ mode }: { mode: 'confirm' | 'unsubscribe' }) 
   if (result.kind === 'error') return <p role="alert">{result.text} <Link href="/newsletter">Zapisz się ponownie</Link></p>;
   if (mode === 'confirm') {
     if (result.kind !== 'ok') return <p role="status">Potwierdzamy zapis…</p>;
-    return <p role="status">✓ Gotowe — jesteś na liście. Napiszemy, gdy wystartujemy. Rozmyślisz się? <Link href={`/newsletter/wypisz?t=${encodeURIComponent(result.token ?? token)}`}>Wypisz się</Link>.</p>;
+    return <p role="status">✓ Gotowe - jesteś na liście. Napiszemy, gdy wystartujemy. Rozmyślisz się? <Link href={`/newsletter/wypisz?t=${encodeURIComponent(result.token ?? token)}`}>Wypisz się</Link>.</p>;
   }
   if (result.kind === 'ok') return <p role="status">✓ Wypisaliśmy ten adres. Nie wyślemy już żadnej wiadomości.</p>;
   return <p><button type="button" className="sc-onas-mail" onClick={() => void run()} disabled={result.kind === 'working'}>{result.kind === 'working' ? 'Wypisuję…' : 'Wypisz mnie z newslettera'}</button></p>;

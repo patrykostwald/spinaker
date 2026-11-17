@@ -1,0 +1,35 @@
+/* Klauzula informacyjna (RODO art. 14) i formularz sprzeciwu - przeszłość.today, decyzja właściciela 13.10.2026.
+   Zwinięta: jedna linia + "Rozwiń"; bez ramek (tło tonalne), cele 44 px, fokus 2 px, czytelność mobilna 17/16/14. */
+.pt-v3 .pt-info { margin: 0; border: 0; border-radius: 12px; background: var(--sc-surface); color: var(--sc-text-2); }
+.pt-v3 .pt-info > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 18px; cursor: pointer; list-style: none; }
+.pt-v3 .pt-info > summary::-webkit-details-marker { display: none; }
+.pt-v3 .pt-info > summary:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+.pt-v3 .pt-info__line { min-width: 0; color: var(--sc-text); font: 600 15px/1.4 var(--sc-font-sans); }
+.pt-v3 .pt-info__more { flex: none; color: var(--sc-accent); font: 600 14px/1 var(--sc-font-sans); }
+.pt-v3 .pt-info[open] .pt-info__more { visibility: hidden; }
+.pt-v3 .pt-info__body { display: grid; gap: 14px; padding: 4px 18px 18px; }
+.pt-v3 .pt-info__body h4 { margin: 0 0 4px; color: var(--sc-text); font: 600 15px/1.4 var(--sc-font-sans); }
+.pt-v3 .pt-info__body p { margin: 0; max-width: 46em; font-size: 15px; line-height: 1.6; }
+.pt-v3 .pt-info__contact a, .pt-v3 .pt-info__body a { color: var(--sc-accent); }
+.pt-v3 .pt-info__obj form { display: grid; gap: 12px; max-width: 34em; }
+.pt-v3 .pt-info__obj label { display: grid; gap: 6px; color: var(--sc-text); font: 500 15px/1.4 var(--sc-font-sans); }
+.pt-v3 .pt-info__obj :is(textarea, input[type="email"]) { width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px; background: var(--sc-bg); color: var(--sc-text); font: 400 16px/1.5 var(--sc-font-sans); }
+.pt-v3 .pt-info__obj :is(textarea, input):focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 0; }
+.pt-v3 .pt-info__obj fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 2px; }
+.pt-v3 .pt-info__obj legend { margin-bottom: 4px; color: var(--sc-text); font: 500 15px/1.4 var(--sc-font-sans); }
+.pt-v3 .pt-info__radio { display: flex !important; grid-template-columns: none; align-items: center; gap: 10px; min-height: 44px; }
+.pt-v3 .pt-info__radio input { width: 18px; height: 18px; accent-color: var(--sc-accent); }
+.pt-v3 .pt-info__act { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.pt-v3 .pt-info__btn { min-height: 44px; padding: 0 16px; border: 1px solid var(--sc-accent); border-radius: 10px; background: var(--sc-bg); color: var(--sc-accent); font: 600 15px/1 var(--sc-font-sans); cursor: pointer; }
+.pt-v3 .pt-info__btn::before { content: "> "; }
+.pt-v3 .pt-info__btn:hover { background: var(--sc-accent-soft); }
+.pt-v3 .pt-info__btn:focus-visible, .pt-v3 .pt-info__ghost:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+.pt-v3 .pt-info__ghost { min-height: 44px; padding: 0 6px; border: 0; background: none; color: var(--sc-text-2); font: 600 15px/1 var(--sc-font-sans); cursor: pointer; }
+.pt-v3 .pt-info__err { color: var(--sc-negative); }
+.pt-v3 .pt-info__ok { color: var(--sc-text); }
+@media (max-width: 640px) {
+  .pt-v3 .pt-info > summary { padding: 6px 14px; }
+  .pt-v3 .pt-info__body { padding: 4px 14px 16px; }
+  .pt-v3 .pt-info__line, .pt-v3 .pt-info__body p { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .pt-v3 .pt-info * { transition: none !important; } }

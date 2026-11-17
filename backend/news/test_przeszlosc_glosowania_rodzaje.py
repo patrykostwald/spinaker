@@ -1,0 +1,137 @@
+"""Głosowania według rodzaju (dopisek 23.10): liczniki rodzajów, opis braków, filtry wyniku i zgodności z klubem."""
+from datetime import date
+
+import pytest
+from django.core.cache import cache
+from rest_framework.test import APIClient
+
+from news import przeszlosc_glosowania_rodzaje as gr
+from news.models import Article, Ballot, ParliamentaryVoting, Source
+from news.political_models import PublicFigure, PublicFigureRole
+from news.public_records_models import PublicRecord, PublicRecordPerson
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def _cache():
+    cache.clear()
+    yield
+    cache.clear()
+
+
+def world():
+    me = PublicFigure.objects.create(canonical_name='Anna Kowalska', role_category='parliamentary', role_title='Posłanka',
+                                     evidence_url='https://sejm.gov.pl')
+    PublicFigureRole.objects.create(public_figure=me, role_category='parliamentary', role_title='Posłanka X kadencji',
+                                    evidence_url='https://sejm.gov.pl', import_key='sejm-term:10:1', since=date(2023, 11, 13), party='KO')
+    source = Source.objects.create(name='Sejm', url='https://sejm.example')
+    for number, day, counts, votes in (
+        (1, '2026-03-01T10:00:00Z', {'yes': 3, 'majorityVotes': 2}, ['YES', 'YES', 'NO']),   # przyjęte, z klubem
+        (2, '2026-04-01T10:00:00Z', {'yes': 1, 'majorityVotes': 2}, ['NO', 'YES', 'YES']),   # odrzucone, inaczej niż klub
+    ):
+        article = Article.objects.create(source=source, title=f'Głosowanie {number}', url=f'https://sejm.example/{number}', published_date=day)
+        voting = ParliamentaryVoting.objects.create(article=article, term=10, sitting=40, number=number, motion='całość', kind='ELECTRONIC', counts=counts)
+        for mp_id, vote in enumerate(votes, start=1):
+            Ballot.objects.create(voting=voting, mp_id=mp_id, name=f'P{mp_id}', club='KO', vote=vote)
+    ep = PublicRecord.objects.create(source='howtheyvote', kind='ep_vote', external_id='e1', title='Rezolucja PE', date=date(2026, 2, 2),
+                                     source_url='https://howtheyvote.eu/votes/1', response_url='https://howtheyvote.eu/', response_sha256='0',
+                                     data={'result': 'ADOPTED', 'polish': {'FOR': 1}, 'votes': [{'ep_id': 9, 'position': 'FOR', 'group': 'EPP'}]})
+    PublicRecordPerson.objects.create(record=ep, term=0, mp_id=9, figure=me)
+    return me
+
+
+def test_kinds_counts_and_missing_notes():
+    me = world()
+    data = gr.person_payload(me, gr.params({}))
+    kinds = {k['key']: k for k in data['kinds']}
+    assert kinds['sejm']['count'] == 2 and kinds['pe']['count'] == 1
+    assert kinds['komisje']['count'] == 0 and 'Brak danych w źródle' in kinds['komisje']['note']
+    assert kinds['senat']['count'] == 0 and kinds['senat']['note']
+    assert data['terms'] == [10] and data['count'] == 2
+
+
+def test_filters_outcome_and_club():
+    me = world()
+    against = gr.person_payload(me, gr.params({'zgodnosc': 'inaczej'}))
+    assert [r['title'] for r in against['results']] == ['Głosowanie 2'] and against['results'][0]['with_club'] is False
+    assert gr.person_payload(me, gr.params({'wynik': 'przyjete'}))['results'][0]['title'] == 'Głosowanie 1'
+    assert gr.person_payload(me, gr.params({'od': '2026-03-15'}))['count'] == 1
+    pe = gr.person_payload(me, gr.params({'rodzaj': 'pe'}))
+    assert pe['results'][0]['vote'] == 'za' and pe['results'][0]['outcome'] == 'przyjete' and not pe['club_filter']
+    for bad in ({'rodzaj': 'x'}, {'wynik': 'x'}, {'zgodnosc': 'x'}, {'od': '2026-13-01'}, {'kadencja': 'x'}):
+        with pytest.raises(ValueError):
+            gr.params(bad)
+
+
+def test_endpoints(monkeypatch, settings):
+    me = world()
+    client = APIClient()
+    monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    settings.PRZESZLOSC_VOTES_LIST_ENABLED = True
+    body = client.get(f'/api/przeszlosc/osoba/{me.pk}/glosowania/?rodzaj=sejm').json()
+    assert body['count'] == 2
+    assert client.get(f'/api/przeszlosc/osoba/{me.pk}/glosowania/?rodzaj=x').status_code == 400
+    general = client.get('/api/przeszlosc/glosowania/?rodzaj=pe').json()
+    assert general['total'] == 1 and general['filter']['rodzaj'] == 'pe' and {k['key'] for k in general['kinds']} == set(gr.KINDS)
+    assert client.get('/api/przeszlosc/glosowania/?rodzaj=senat').json()['total'] == 0
+    assert client.get('/api/przeszlosc/glosowania/').json()['filter']['rodzaj'] == 'sejm'
+
+
+def test_ep_page_filters_result_and_pages():
+    world()
+    page = gr.ep_page({'wynik': 'przyjete'}, 10)
+    assert page['count'] == 1 and page['results'][0]['outcome'] == 'przyjete' and page['results'][0]['polish']
+    assert gr.ep_page({'wynik': 'odrzucone'}, 10)['count'] == 0
+
+
+def test_attendance_counts_voted_absent_and_ignores_outcome_and_club_filters():
+    rows = [{'vote': v} for v in ('za', 'przeciw', 'wstrzymał się', 'nieobecny', 'nieobecny', 'obecny, bez głosu')]
+    assert gr.attendance(rows) == {'total': 6, 'voted': 3, 'absent': 2, 'other': 1, 'share': 50.0}
+    assert gr.attendance([]) == {'total': 0, 'voted': 0, 'absent': 0, 'other': 0, 'share': None}
+    me = world()
+    p = gr.params({'rodzaj': 'sejm', 'wynik': 'odrzucone', 'zgodnosc': 'inaczej'})
+    payload = gr.person_payload(me, p)
+    assert payload['count'] == 1 and payload['attendance']['total'] == 2   # filtr zawęża listę, nie obecność
+    assert gr.person_payload(me, gr.params({'rodzaj': 'pe'}))['attendance'] is None
+
+
+def test_topic_labels_come_from_process_and_committee_records_not_from_words_in_titles():
+    from news import glosowania_tematy as gt
+    me = world()
+    PublicRecord.objects.create(source='committees', kind='committee', external_id='10/ZDR', title='Komisja Zdrowia', date=date(2023, 12, 1),
+                                source_url='https://api.sejm.gov.pl/sejm/term10/committees/ZDR', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'code': 'ZDR', 'name': 'Komisja Zdrowia'})
+    PublicRecord.objects.create(source='processes', kind='process', external_id='10/3300', print_number='3300', title='Projekt ustawy o zdrowiu',
+                                source_url='https://api.sejm.gov.pl/sejm/term10/processes/3300', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'number': '3300', 'documentType': 'projekt ustawy', 'titleFinal': 'Ustawa o zdrowiu publicznym',
+                                      'stages': [{'stageName': 'I czytanie', 'committeeCode': 'ZDR'}, {'stageName': 'II czytanie', 'committeeCode': 'ZDR'},
+                                                 {'stageName': 'Senat', 'committeeCode': 'XXX'}],
+                                      'votings': [{'key': '10/40/1', 'sitting': 40, 'votingNumber': 1}]})
+    cache.clear()
+    assert gt.topic_for(10, 40, 1) == {'druk': '3300', 'tytul': 'Ustawa o zdrowiu publicznym', 'rodzaj': 'projekt ustawy', 'komisje': ['Komisja Zdrowia']}
+    assert gt.topic_for(10, 40, 2) is None   # głosowanie bez procesu: brak etykiety, nic nie zgadujemy
+    rows = {r['id']: r for r in gr.person_rows(me)['sejm']}
+    assert rows['sejm:10/40/1']['topic']['komisje'] == ['Komisja Zdrowia'] and rows['sejm:10/40/2']['topic'] is None
+
+
+def test_general_votes_list_has_topic_labels_and_committee_filter(monkeypatch, settings):
+    settings.PRZESZLOSC_VOTES_LIST_ENABLED = True; monkeypatch.setenv('PRZESZLOSC_ENABLED', 'true')
+    world()
+    PublicRecord.objects.create(source='committees', kind='committee', external_id='10/ZDR', title='Komisja Zdrowia', date=date(2023, 12, 1),
+                                source_url='https://api.sejm.gov.pl/sejm/term10/committees/ZDR', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'code': 'ZDR', 'name': 'Komisja Zdrowia'})
+    PublicRecord.objects.create(source='processes', kind='process', external_id='10/3300', print_number='3300', title='Projekt ustawy o zdrowiu',
+                                source_url='https://api.sejm.gov.pl/sejm/term10/processes/3300', response_url='https://api.sejm.gov.pl/', response_sha256='0',
+                                data={'number': '3300', 'documentType': 'projekt ustawy', 'titleFinal': 'Ustawa o zdrowiu publicznym',
+                                      'stages': [{'stageName': 'I czytanie', 'committeeCode': 'ZDR'}],
+                                      'votings': [{'key': '10/40/1', 'sitting': 40, 'votingNumber': 1}]})
+    cache.clear()
+    client = APIClient()
+    every = client.get('/api/przeszlosc/glosowania/').json()
+    assert every['total'] == 2 and every['committees'] == [{'name': 'Komisja Zdrowia', 'votings': 1}]
+    topics = {r['id']: r['topic'] for r in every['results']}
+    assert topics['10/40/1']['druk'] == '3300' and topics['10/40/1']['komisje'] == ['Komisja Zdrowia'] and topics['10/40/2'] is None
+    only = client.get('/api/przeszlosc/glosowania/?komisja=komisja%20zdrowia').json()
+    assert only['total'] == 1 and only['results'][0]['id'] == '10/40/1' and only['filter']['komisja'] == 'komisja zdrowia'
+    assert client.get('/api/przeszlosc/glosowania/?komisja=Nieistniejaca').json()['total'] == 0   # nieznana komisja: pusto, nie „wszystko”

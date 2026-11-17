@@ -6,7 +6,7 @@ import { COLOR_TOKENS, RADIUS_TOKENS, SPACING_TOKENS } from "../../tokens";
 export const meta = {
   id: "tokeny",
   title: "Tokeny",
-  lead: "Wartości czytane na żywo z getComputedStyle — sekcja nie może rozjechać się z kit.css.",
+  lead: "Wartości czytane na żywo z getComputedStyle - sekcja nie może rozjechać się z kit.css.",
 };
 
 function useComputedTokens(names: readonly string[], prefix = "--sc-") {
@@ -70,7 +70,7 @@ export function Section() {
 
       <h3 className="sc-t-title-m sc-section__sub">Próba pierścienia fokusu i poświaty</h3>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-4)" }}>
-        Tab na kartę: pierścień musi być <strong>niebieski</strong>, nie bursztynowy ze starego motywu — to dowód, że kit.css wygrywa z globalnym :focus-visible. Najedź: niebieska poświata za kartą.
+        Tab na kartę: pierścień musi być <strong>niebieski</strong>, nie bursztynowy ze starego motywu - to dowód, że kit.css wygrywa z globalnym :focus-visible. Najedź: niebieska poświata za kartą.
       </p>
       <div className="sc-probe">
         <button type="button" className="sc-probe__card sc-hoverable" style={{ borderRadius: "var(--sc-r-xl)" }}>
@@ -79,7 +79,7 @@ export function Section() {
         </button>
         <button type="button" className="sc-probe__card sc-hoverable" data-lit="true" style={{ borderRadius: "var(--sc-r-xl)" }}>
           <span className="sc-t-title-s" style={{ display: "block" }}>Poświata na stałe</span>
-          <span className="sc-probe__note">data-lit=&quot;true&quot; — tak wygląda stopień A.</span>
+          <span className="sc-probe__note">data-lit=&quot;true&quot; - tak wygląda stopień A.</span>
         </button>
       </div>
     </div>

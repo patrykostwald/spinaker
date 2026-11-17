@@ -20,7 +20,7 @@ def source(db):
         source=source, version=1, status='approved', channel='api', allowed_scope='metadata',
         endpoint=SEARCH_URL, terms_url='https://ezamowienia.gov.pl/', evidence={'basis': 'test'},
         reviewed_at=timezone.now(), reviewed_by='test',
-        valid_until=timezone.now() + timedelta(days=30))
+        valid_until=timezone.now() + timedelta(days=30), daily_request_cap=1000)
     return source
 
 
@@ -98,8 +98,85 @@ def test_fetch_uses_official_endpoint_and_audited_get_transport(source):
 @override_settings(BZP_API_ENABLED=True)
 def test_malformed_or_out_of_window_page_does_not_advance(source):
     with patch('scraper.bzp_backfill.timezone.localdate', return_value=date(2026, 9, 14)), \
-            patch('scraper.bzp_backfill.fetch_page', return_value=[row('late', '2026-09-14T01:00:00+02:00')]):
+            patch('scraper.bzp_backfill.fetch_page', return_value=[row('late', '2026-09-16T10:00:00+02:00')]):
         result = bzp_backfill_cycle()
     assert result['status'] == 'error'
     assert ImportState.objects.get().cursor['page'] == 1
     assert not Article.objects.exists()
+
+
+@override_settings(BZP_API_ENABLED=True)
+def test_notice_after_utc_evening_is_accepted_when_api_day_is_utc(source):
+    """22:57 UTC 26.07 to 00:57 27.07 w Warszawie: API zwraca je dla 26.07, więc kursor nie może stanąć."""
+    now = datetime(2026, 7, 27, 8, tzinfo=dt_timezone.utc)
+    rows = [row('niegowa', '2026-07-26T22:57:40.9814811Z'), row('pionki', '2026-07-26T10:46:53.7454917Z')]
+    with patch('scraper.bzp_backfill.timezone.now', return_value=now), \
+            patch('scraper.bzp_backfill.fetch_page', return_value=rows):
+        result = bzp_backfill_cycle()
+    assert result['status'] == 'ok' and result['new_records'] == 2
+    assert Article.objects.count() == 2
+    assert ImportState.objects.get().last_error == ''
+
+
+def _run(results, **kwargs):
+    from scraper.bzp_backfill import bzp_backfill_run
+    sleeps, clock = [], {'t': 0.0}
+    def fake_sleep(seconds):
+        sleeps.append(seconds); clock['t'] += seconds
+    with patch('scraper.bzp_backfill.bzp_backfill_cycle', side_effect=results) as cycle:
+        out = bzp_backfill_run(sleep=fake_sleep, monotonic=lambda: clock['t'], **kwargs)
+    return out, sleeps, cycle
+
+
+def test_run_fetches_many_pages_spaced_at_most_20_per_minute_and_stops_when_complete(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until'); cache.delete('bzp:run_lock')
+    out, sleeps, cycle = _run([{'status': 'ok', 'new_records': 5}] * 3 + [{'status': 'complete', 'new_records': 0}])
+    assert out['status'] == 'complete' and out['pages'] == 3 and out['new_records'] == 15 and cycle.call_count == 4
+    assert len(sleeps) == 3 and all(s >= 3 for s in sleeps)   # co najmniej 3 s = najwyżej 20/min
+
+
+def test_run_waits_out_host_gate_then_continues(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until'); cache.delete('bzp:run_lock')
+    out, sleeps, _ = _run([{'status': 'error', 'error': 'host_rate_limited:1.500'}, {'status': 'ok', 'new_records': 1},
+                           {'status': 'complete', 'new_records': 0}])
+    assert out['pages'] == 1 and sleeps[0] == pytest.approx(1.7)
+
+
+def test_run_stops_on_429_and_pauses_until_retry_after(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until'); cache.delete('bzp:run_lock')
+    out, _, cycle = _run([{'status': 'ok', 'new_records': 1}, {'status': 'deferred', 'retry_after_seconds': 600}, {'status': 'ok'}])
+    assert out['status'] == 'deferred' and cycle.call_count == 2
+    out2, _, cycle2 = _run([{'status': 'ok', 'new_records': 1}])
+    assert out2['status'] == 'paused' and cycle2.call_count == 0
+    cache.delete('bzp:pause_until'); cache.delete('bzp:run_lock')
+
+
+def test_run_respects_time_budget_and_page_cap(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until'); cache.delete('bzp:run_lock')
+    out, _, cycle = _run([{'status': 'ok', 'new_records': 0}] * 500, budget_seconds=10)
+    assert 2 <= cycle.call_count <= 4   # ok. 3,2 s na stronę w budżecie 10 s
+
+
+@override_settings(BZP_API_ENABLED=True)
+def test_notice_record_failure_is_logged_not_silent(source, caplog):
+    import logging
+    from scraper.bzp_backfill import save_notice_record
+    with caplog.at_level(logging.WARNING), patch('news.public_records_models.PublicRecord.objects') as manager:
+        manager.update_or_create.side_effect = RuntimeError('boom')
+        save_notice_record(row('x'), 'x', '2026/BZP/x', 'Tytuł', datetime(2026, 9, 13, 8, tzinfo=dt_timezone.utc), DETAIL_URL + 'x')
+    assert 'bzp notice record not saved: RuntimeError: boom' in caplog.text
+
+
+def test_run_is_single_flight_and_releases_lock(db):
+    from django.core.cache import cache
+    cache.delete('bzp:pause_until'); cache.delete('bzp:run_lock')
+    cache.add('bzp:run_lock', 1, timeout=300)           # inny przebieg trwa
+    out, _, cycle = _run([{'status': 'ok', 'new_records': 1}])
+    assert out['status'] == 'busy' and cycle.call_count == 0
+    cache.delete('bzp:run_lock')
+    out, _, _ = _run([{'status': 'ok', 'new_records': 1}, {'status': 'complete', 'new_records': 0}])
+    assert out['pages'] == 1 and cache.get('bzp:run_lock') is None   # zwolniona po zakończeniu

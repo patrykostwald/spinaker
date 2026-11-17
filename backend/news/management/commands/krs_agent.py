@@ -19,7 +19,7 @@ class Command(BaseCommand):
         parser.add_argument('--debug', action='store_true', help='Pokaż wyszukiwania, znalezione strony i propozycje modelu.')
 
     def handle(self, *args, figure, limit, debug, **options):
-        if not krs_agent.clinic_ai._gemini_ready():
+        if not krs_agent.clinic_ai.paid_ready():
             raise CommandError('Brak GEMINI_API_KEY — agent korzysta z wyszukiwarki Gemini.')
         people = [PublicFigure.objects.get(pk=figure)] if figure else list(krs_agent.queue(limit))
         for person in people:

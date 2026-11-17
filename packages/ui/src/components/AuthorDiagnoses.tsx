@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { searchClinicSpins } from "../lib/clinic";
 import { verifiedXAccount, type PublicFigureDetail } from "../lib/publicFigures";
 import { SpinRow } from "./clinic/SpinParts";
+import { Loading } from "../kit/Loading";
 
 /** Chronology from the verified account's database ID; never a name search. */
 export function AuthorDiagnoses({ figure }: { figure: PublicFigureDetail }) {
@@ -23,7 +24,7 @@ export function AuthorDiagnoses({ figure }: { figure: PublicFigureDetail }) {
     </header>
     {!available ? <p>Brak powiązania z potwierdzonym kontem umożliwiającego pokazanie diagnoz.</p> : <>
       <p><a href={account!.url} target="_blank" rel="noopener noreferrer">@{account!.handle} ↗</a> · <Link href={href}>Wszystkie diagnozy tego konta w bazie →</Link></p>
-      {query.isPending ? <p role="status">Wczytywanie diagnoz…</p> : null}
+      {query.isPending ? <p role="status"><Loading label="Wczytywanie diagnoz" /></p> : null}
       {query.isError ? <p role="alert">Nie udało się pobrać diagnoz. <button type="button" onClick={() => void query.refetch()}>Spróbuj ponownie</button></p> : null}
       {query.isSuccess && !query.data.results.length ? <p>Nie ma jeszcze opublikowanych diagnoz wpisów z tego konta.</p> : null}
       <ol className="sc-author-diagnoses__list">{query.data?.results.slice(0, 6).map(spin => <li key={spin.id}>

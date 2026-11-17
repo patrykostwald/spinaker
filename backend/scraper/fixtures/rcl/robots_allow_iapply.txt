@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+User-agent: iapply-legislacja
+Allow: /
+Disallow: /projekt/*/komentarz

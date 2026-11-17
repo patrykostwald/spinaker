@@ -1,6 +1,9 @@
+from news.features import ThreadsEnabledMixin
 """Private aggregate activity unless the account owner explicitly opts in."""
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from datetime import timedelta
+from django.db import IntegrityError, transaction
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -30,8 +33,11 @@ def history(request, user):
 
 
 class ProfileInput(serializers.Serializer):
+    username = serializers.RegexField(r'^[A-Za-z0-9_]{3,30}$', max_length=30, required=False)
+    bio = serializers.CharField(max_length=160, allow_blank=True, required=False)
     public_activity = serializers.BooleanField(required=False)
     theme_preference = serializers.ChoiceField(choices=ProfilePreference.THEME_CHOICES, required=False)
+    nick_color = serializers.ChoiceField(choices=[''] + ProfilePreference.NICK_COLORS, required=False)
 
     def validate(self, attrs):
         if not attrs:
@@ -43,23 +49,38 @@ class ProfileInput(serializers.Serializer):
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response['Cache-Control'] = 'private, no-store'
+        return response
     def get(self, request):
-        value = ProfilePreference.objects.filter(user=request.user).values(
-            'public_activity', 'theme_preference').first()
-        return Response({
-            'username': request.user.username,
-            'public_activity': value['public_activity'] if value else False,
-            'theme_preference': value['theme_preference'] if value else 'auto',
-        })
+        from news.account_dashboard import profile_data
+        return Response(profile_data(request.user, private=True))
     def patch(self, request):
         serializer = ProfileInput(data=request.data)
         serializer.is_valid(raise_exception=True)
-        preference, _ = ProfilePreference.objects.get_or_create(user=request.user)
-        changed = []
-        for field, value in serializer.validated_data.items():
-            setattr(preference, field, value)
-            changed.append(field)
-        preference.save(update_fields=changed)
+        try:
+            with transaction.atomic():
+                user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
+                preference, _ = ProfilePreference.objects.get_or_create(user=user)
+                values = dict(serializer.validated_data)
+                if values.get('nick_color') and not hasattr(user, 'x_connection'):
+                    raise serializers.ValidationError({'nick_color': 'Kolor nicka jest dostępny po połączeniu konta z X.'})
+                nick = values.pop('username', user.username).lower()
+                if nick != user.username:
+                    if preference.nick_changed_at and timezone.now() < preference.nick_changed_at + timedelta(days=30):
+                        raise serializers.ValidationError({'username': 'Nick możesz zmienić raz na 30 dni.'})
+                    if get_user_model().objects.filter(username__iexact=nick).exclude(pk=user.pk).exists():
+                        raise serializers.ValidationError({'username': 'Ten nick jest niedostępny.'})
+                    user.username = nick
+                    user.save(update_fields=['username'])
+                    preference.nick_changed_at = timezone.now()
+                for field, value in values.items():
+                    setattr(preference, field, value)
+                preference.save()
+                request.user.username = user.username
+        except IntegrityError:
+            raise serializers.ValidationError({'username': 'Ten nick jest niedostępny.'})
         return self.get(request)
 
 
@@ -76,9 +97,10 @@ class PublicActivityView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [OpinionReadThrottle, AccountWriteThrottle]
     def get(self, request, username):
+        from news.x_accounts import public_identity
         user = get_object_or_404(get_user_model(), username=username, is_active=True,
                                 profile_preference__public_activity=True)
-        return Response({'id': user.pk, 'username': user.username, 'history': history(request, user)})
+        return Response({'id': user.pk, 'username': user.username, **public_identity(user), 'history': history(request, user)})
 
 
 def favorite_data(row):
@@ -90,8 +112,8 @@ class FavoriteInput(serializers.Serializer):
     thread_id = serializers.IntegerField(min_value=1)
 
 
-@json_view("Ulubione nitki", tags=["konto"])
-class FavoritesView(APIView):
+@json_view("Ulubione spinki", tags=["konto"])
+class FavoritesView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
     def get(self, request):
@@ -110,8 +132,8 @@ class FavoritesView(APIView):
         return Response(favorite_data(row), status=201 if created else 200)
 
 
-@json_view("Ulubiona nitka", tags=["konto"])
-class FavoriteDetailView(APIView):
+@json_view("Ulubiona spinka", tags=["konto"])
+class FavoriteDetailView(ThreadsEnabledMixin, APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [AccountWriteThrottle]
     def delete(self, request, thread_id):

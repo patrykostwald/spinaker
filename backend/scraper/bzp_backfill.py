@@ -8,9 +8,11 @@ from datetime import date, datetime, time, timedelta
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 import json
+import time
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -112,7 +114,11 @@ def _metadata(row, window_from, window_to):
     if timezone.is_naive(dt):
         dt = dt.replace(tzinfo=ZoneInfo('Europe/Warsaw'))
     local_day = timezone.localtime(dt, ZoneInfo('Europe/Warsaw')).date()
-    if not window_from <= local_day <= window_to:
+    utc_day = dt.astimezone(ZoneInfo('UTC')).date()
+    # API filtruje dni po dacie UTC, a nie warszawskiej: ogłoszenie z 22:57 UTC leży już w następnym dniu
+    # czasu polskiego. Wpis spoza okna w obu miarach nadal zatrzymuje kursor (zła odpowiedź).
+    # Błąd z 6.11.2026: wpis z 26.07 22:57 UTC (27.07 w Warszawie) blokował kursor od 6.10.
+    if not (window_from <= local_day <= window_to or window_from <= utc_day <= window_to):
         raise ValueError('BZP notice outside requested frozen window')
     url = DETAIL_URL + quote(notice_id, safe='')
     return notice_id, number, title, dt, url
@@ -120,11 +126,56 @@ def _metadata(row, window_from, window_to):
 
 def save_metadata(source, row, window_from, window_to):
     """Idempotently save only public notice metadata as a box."""
-    _, number, title, published, url = _metadata(row, window_from, window_to)
+    notice_id, number, title, published, url = _metadata(row, window_from, window_to)
     article, created = upsert_article(source=source, title=title, url=url,
         published_date=published, category=ArticleCategory.DOCUMENT,
         description=f'Ogłoszenie BZP {number}', ingestion_method='archive')
+    save_notice_record(row, notice_id, number, title, published, url)
     return bool(article and created)
+
+
+NOTICE_FIELDS = ('noticeType', 'orderType', 'cpvCode', 'organizationName', 'organizationCity', 'organizationProvince',
+                 'organizationNationalId', 'submittingOffersDate', 'isTenderAmountBelowEU', 'procedureResult', 'tenderId', 'bzpNumber')
+
+
+def save_notice_record(row, notice_id, number, title, published, url):
+    """Pola ogłoszenia z tej samej odpowiedzi (bez dodatkowych zapytań): CPV, zamawiający, termin ofert.
+    Czyta je pętla „Zamówienia publiczne” (news/zamowienia.py). Błąd zapisu nie zatrzymuje zbieracza."""
+    import hashlib
+    from news.public_records_models import PublicRecord
+    data = {key: row.get(key) for key in NOTICE_FIELDS if row.get(key) not in (None, '')}
+    data['noticeNumber'] = number
+    try:
+        with transaction.atomic():
+            PublicRecord.objects.update_or_create(source='bzp', kind='notice', external_id=notice_id[:256], defaults=dict(
+                source_url=url, response_url=SEARCH_URL,
+                response_sha256=hashlib.sha256(json.dumps(row, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest(),
+                date=timezone.localtime(published, ZoneInfo('Europe/Warsaw')).date(), title=title[:2000], data=data))
+    except Exception as exc:  # noqa: BLE001
+        # Błąd zapisu nie zatrzymuje zbieracza, ale nie może być niewidoczny (6.11.2026: 580 zaimportowanych, 9 rekordów w bazie).
+        import logging
+        logging.getLogger(__name__).warning('bzp notice record not saved: %s: %s', type(exc).__name__, str(exc)[:300])
+
+
+def history_floor(cursor):
+    """Najstarszy dzień przejścia (zasilanie bazy 6.10): pierwsze przejście sięga BZP_BACKFILL_DAYS wstecz
+    od dnia odcięcia (domyślnie 365, najwyżej 1095); kolejne przejścia kończą się na poprzednim odcięciu."""
+    if cursor.get('floor'):
+        return date.fromisoformat(cursor['floor'])
+    import os
+    days = min(1095, max(1, int(os.environ.get('BZP_BACKFILL_DAYS', '365'))))
+    return date.fromisoformat(cursor['cutoff']) - timedelta(days=days)
+
+
+def _next_pass(cursor, started):
+    """Po ukończonym przejściu: nowe, krótkie przejście od wczoraj do poprzedniego odcięcia (nowe ogłoszenia)."""
+    yesterday = timezone.localdate(started) - timedelta(days=1)
+    previous = date.fromisoformat(cursor['cutoff'])
+    if previous >= yesterday:
+        return None
+    return {'cutoff': yesterday.isoformat(), 'day': yesterday.isoformat(), 'page': 1, 'complete': False,
+            'floor': (previous + timedelta(days=1)).isoformat(),
+            'history_complete_at': cursor.get('history_complete_at') or started.isoformat()}
 
 
 def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
@@ -148,10 +199,21 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
         state.cursor = cursor
         state.save(update_fields=['cursor'])
     if cursor.get('complete'):
-        return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
+        fresh = _next_pass(cursor, started)
+        if fresh is None:
+            return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
+        cursor = state.cursor = fresh
+        state.save(update_fields=['cursor'])
     if cursor.get('cutoff') < cursor.get('day'):
         raise ValueError('Invalid BZP newest-to-oldest cursor')
     day = date.fromisoformat(cursor['day'])
+    if day < history_floor(cursor):
+        # Okno historii zebrane: koniec przejścia bez zapytania; następne zaczyna się od nowych dni.
+        cursor = {**cursor, 'complete': True, 'floor': history_floor(cursor).isoformat(),
+                  'history_complete_at': cursor.get('history_complete_at') or started.isoformat()}
+        state.cursor = cursor
+        state.save(update_fields=['cursor'])
+        return {'status': 'complete', 'new_records': 0, 'cutoff': cursor['cutoff']}
     try:
         rows = fetch_page(source=source, instruction=instruction, endpoint=endpoint,
             date_from=day.isoformat(), date_to=day.isoformat(),
@@ -186,3 +248,54 @@ def bzp_backfill_cycle(*, batch_size=MAX_BATCH_SIZE):
     except Exception as exc:
         ImportState.objects.filter(pk=state.pk).update(last_error=str(exc)[:200])
         return {'status': 'error', 'new_records': 0, 'error': str(exc)[:200]}
+
+
+PAUSE_CACHE_KEY = 'bzp:pause_until'
+RUN_LOCK_KEY = 'bzp:run_lock'
+RUN_BUDGET_SECONDS = 240      # jedno uruchomienie zadania; twardy limit zadania 360 s, harmonogram co 5 min
+MAX_PAGES_PER_RUN = 120
+PAGE_PAUSE_SECONDS = MIN_REQUEST_INTERVAL_SECONDS + 0.2   # 20 zapytań/min to dolna granica bramki (3 s) z zapasem
+
+
+def bzp_backfill_run(*, budget_seconds=RUN_BUDGET_SECONDS, sleep=time.sleep, monotonic=time.monotonic):
+    """Kilka stron w jednym uruchomieniu (6.11.2026, zgoda właściciela: najwyżej 20 zapytań/min).
+
+    Tempo wyznacza karta dostępu (bramka hosta: minimum_interval_seconds, dzienny limit) i pauza między stronami.
+    Odpowiedź 429 (deferred) wyłącza zbieracz do czasu Retry-After (cache), więc wraca do wolnego trybu zamiast naciskać."""
+    now = timezone.now()
+    paused_until = cache.get(PAUSE_CACHE_KEY)
+    if paused_until and paused_until > now.timestamp():
+        return {'status': 'paused', 'new_records': 0, 'pages': 0}
+    # Jedno uruchomienie naraz (6.11.2026: nakładające się przebiegi walczyły o bramkę hosta i zapisywały host_rate_limited).
+    # Blokada wygasa sama po budżecie z zapasem, więc przerwany przebieg nie blokuje następnych.
+    if not cache.add(RUN_LOCK_KEY, now.timestamp(), timeout=int(budget_seconds) + 90):
+        return {'status': 'busy', 'new_records': 0, 'pages': 0}
+    try:
+        return _run_loop(budget_seconds, sleep, monotonic, now)
+    finally:
+        cache.delete(RUN_LOCK_KEY)
+
+
+def _run_loop(budget_seconds, sleep, monotonic, now):
+    deadline = monotonic() + budget_seconds
+    pages = created = 0
+    result = {'status': 'ok', 'new_records': 0}
+    while pages < MAX_PAGES_PER_RUN and monotonic() < deadline:
+        result = bzp_backfill_cycle()
+        status = result.get('status')
+        error = str(result.get('error', ''))
+        if status == 'ok':
+            pages += 1
+            created += result.get('new_records', 0)
+            sleep(PAGE_PAUSE_SECONDS)
+            continue
+        if status == 'error' and error.startswith('host_rate_limited:'):
+            wait = float(error.split(':', 1)[1] or 3)
+            if wait > deadline - monotonic():
+                break
+            sleep(wait + 0.2)
+            continue
+        if status == 'deferred':
+            cache.set(PAUSE_CACHE_KEY, now.timestamp() + max(60, int(result.get('retry_after_seconds') or 60)), 86400)
+        break
+    return {**result, 'pages': pages, 'new_records': created}

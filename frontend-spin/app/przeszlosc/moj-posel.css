@@ -1,0 +1,20 @@
+/* „Mój poseł” (6.11.2026): jedna kolumna, wiersze o stałej wysokości 64 px (jak Odstępstwa), cele 44 px, odstępy 12/16/24. */
+.px-mp { --mp-row: 64px; display: grid; gap: 16px; min-width: 0; max-width: 760px; }
+.px-mp h1 { margin: 0; font: 600 clamp(28px, 3.4vw, 40px)/1.15 var(--sc-font-display); letter-spacing: -.03em; }
+.px-mp__lead { margin: 0; max-width: 56ch; font-size: 16px; line-height: 1.6; color: var(--sc-text-2); }
+.px-mp__pick { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 14px; color: var(--sc-text-2); }
+.px-mp__pick select { min-height: 44px; min-width: min(100%, 280px); padding: 0 36px 0 12px; border: 0; border-radius: 10px; background-color: var(--sc-surface); color: var(--sc-text); font: 500 15px/1.3 var(--sc-font-sans); }
+.px-mp__pick select:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+.px-mp .px-mp__card { display: grid; gap: 12px; padding: 20px 24px 16px; border: 0; border-radius: 12px; background: var(--sc-surface); }
+.px-mp__card .px-h3 { margin: 0; }
+.px-mp__card .px-h3 small { font-variant-numeric: tabular-nums; }
+.px-mp__list { list-style: none; margin: 0; padding: 0; display: grid; }
+.px-mp__list li { border-top: 1px solid var(--sc-line); min-width: 0; }
+.px-mp__list li:first-child { border-top: 0; }
+.px-mp__list a { min-height: var(--mp-row); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center; column-gap: 12px; row-gap: 2px; color: var(--sc-text); text-decoration: none; min-width: 0; }
+.px-mp__list a:hover b, .px-mp__list a:focus-visible b { color: var(--sc-accent); }
+.px-mp__list b { font-size: 15px; font-weight: 600; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.px-mp__club { font-size: 15px; font-weight: 600; color: var(--sc-text); white-space: nowrap; text-align: right; }
+.px-mp__list small { grid-column: 1 / -1; font-size: 14px; line-height: 1.45; color: var(--sc-text-3); }
+.px-mp .px-card__foot { font-size: 14px; color: var(--sc-text-3); }
+@media (max-width: 760px) { .px-mp .px-mp__card { padding: 16px; } }

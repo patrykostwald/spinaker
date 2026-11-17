@@ -5,9 +5,13 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(new URL('../../../../frontend-spin/package.json', import.meta.url));
 const ts = require('typescript');
-const code = ts.transpileModule(readFileSync(new URL('./api.ts', import.meta.url), 'utf8'), {
+const typography = ts.transpileModule(readFileSync(new URL('./typography.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+const typographyUrl = `data:text/javascript;base64,${Buffer.from(typography).toString('base64')}`;
+const code = ts.transpileModule(readFileSync(new URL('./api.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+}).outputText.replace("'./typography'", JSON.stringify(typographyUrl));
 const { apiWrite, ApiError } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 
 test('missing mutation endpoint retains 404, including non-JSON responses', async () => {

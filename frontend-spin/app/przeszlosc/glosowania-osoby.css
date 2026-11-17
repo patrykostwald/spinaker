@@ -1,0 +1,27 @@
+/* Głosowania osoby (dopisek 23.10): filtry w jednej linii (zawijane na telefonie), wiersze o stałej wysokości, cele 44 px. */
+.gv { display: grid; gap: 12px; margin-top: 24px; min-width: 0; }
+.gv .px-h3 { margin: 0; }
+.gv-filters { display: grid; gap: 8px; }
+.gv-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gv-chip { min-height: 44px; padding: 0 14px; border: 1px solid var(--px-line-2); border-radius: 999px; background: var(--px-card); color: var(--sc-text-2); font: inherit; font-size: 14px; cursor: pointer; }
+.gv-chip[aria-pressed="true"] { border-color: var(--sc-text); color: var(--sc-text); font-weight: 600; }
+.gv-chip:focus-visible, .gv-sel select:focus-visible, .gv-sel input:focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+.gv-sel { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: var(--sc-text-2); }
+.gv-sel select, .gv-sel input { min-height: 44px; padding: 0 10px; border: 1px solid var(--px-line-2); border-radius: 10px; background: var(--px-card); color: var(--sc-text); font: inherit; font-size: 14px; }
+.gv-empty { margin: 0; }
+.gv-count { margin: 0; font-size: 13px; color: var(--sc-text-3); }
+.gv-list { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--px-line); }
+.gv-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 120px minmax(0, 220px); align-items: center; gap: 12px; height: 52px; border-bottom: 1px solid var(--px-line); font-size: 14px; }
+.gv-date { color: var(--sc-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gv-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sc-text); }
+.gv-vote { white-space: nowrap; font-weight: 600; }
+.gv-meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--sc-text-3); }
+.gv-more { justify-self: start; }
+@media (max-width: 760px) {
+  .gv-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; height: 92px; gap: 2px 12px; align-content: center; }
+  .gv-date { grid-column: 1; font-size: 13px; }
+  .gv-vote { grid-column: 2; grid-row: 1; justify-self: end; }
+  .gv-title, .gv-meta { grid-column: 1 / -1; }
+  .gv-sel { flex: 1 1 140px; }
+  .gv-sel select, .gv-sel input { flex: 1; min-width: 0; }
+}

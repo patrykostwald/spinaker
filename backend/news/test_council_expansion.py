@@ -351,7 +351,8 @@ def test_failed_diagnosis_keeps_unanswered_members(monkeypatch):
     monkeypatch.setattr(clinic_ai, 'diagnose', lambda *a: council.diagnose({'text': 'tekst'}, 'tekst'))
     clinic.diagnose(row)
     row.refresh_from_db()
-    assert row.status == 'failed'
+    # Kworum (6.10): bez odpowiedzi wpis nie przepada jako nieudany - czeka w kolejce na pełniejszy skład
+    assert row.status == 'queued' and row.error.startswith('council_quorum')
     assert row.usage['council']['members'] == [failed]
 
 
@@ -482,3 +483,19 @@ def test_opinion_format_differences_are_normalized():
     raw = council._normalize_opinion({'verdict': 'Partial', 'intensity': '45/100', 'techniques': None, 'claims': []})
     assert raw['verdict'] == 'partial' and raw['intensity'] == 45 and raw['techniques'] == []
     assert council._normalize_opinion({'verdict': 'no-spin', 'intensity': 12.6, 'techniques': [], 'claims': []})['intensity'] == 13
+
+
+def test_escalation_with_gemini_instead_of_claude(monkeypatch):
+    """CLINIC_ESCALATE=gemini (właściciel 6.10): docisk sprawdza Gemini z głębszym myśleniem, Claude nie jest wołany."""
+    from types import SimpleNamespace
+    from news import clinic_council
+    monkeypatch.setenv('CLINIC_ESCALATE', 'gemini')
+    monkeypatch.setenv('GEMINI_API_KEY', 'k')
+    calls = []
+    monkeypatch.setattr(clinic_council.clinic_ai, '_call_gemini', lambda *a, **k: calls.append(k['task']) or SimpleNamespace(content=[]))
+    monkeypatch.setattr(clinic_council.clinic_ai, '_json_from_text', lambda content: {'claims': []})
+    monkeypatch.setattr(clinic_council.clinic_ai, '_search_results', lambda content: [])
+    monkeypatch.setattr(clinic_council.clinic_ai, '_usage', lambda r: {})
+    monkeypatch.setattr(clinic_council, 'claude_check', lambda claims: (_ for _ in ()).throw(AssertionError('Claude')))
+    assert clinic_council.escalate_claims(['Twierdzenie']) is not None
+    assert calls == ['escalate']

@@ -31,5 +31,6 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
+    path("api/spina3/", include("spina3.urls")),
     path("api/", include("news.urls")),
 ]

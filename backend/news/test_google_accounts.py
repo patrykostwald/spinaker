@@ -40,7 +40,7 @@ def claims(nonce='nonce'):
 
 def start(client, consent=True):
     response = client.get('/api/account/google/start/',
-                          {'accepted_terms': 'true', 'accepted_privacy': 'true'} if consent else {})
+                          {'accepted_terms': 'true', 'adult': 'true'} if consent else {})
     assert response.status_code == 302
     query = parse_qs(urlparse(response.url).query)
     assert query['code_challenge_method'] == ['S256']
@@ -66,6 +66,16 @@ def test_mocked_google_signup_and_replay():
         assert str(identity.user_id) == client.session['_auth_user_id']
         assert callback(client, flow).url.endswith('/konto/potwierdz?google_error=1')
         assert post.call_count == 1
+
+
+def test_google_new_account_requires_adult_declaration():
+    client = APIClient()
+    client.get('/api/account/google/start/', {'accepted_terms': 'true', 'adult': 'false'})
+    flow = client.session[SESSION_KEY]
+    with patch('news.google_accounts.requests.post', return_value=Mock(json=lambda: {'id_token': 'token'})), \
+            patch('news.google_accounts._verify_signature', return_value=claims(flow['nonce'])):
+        assert callback(client, flow).url.endswith('/konto/potwierdz?google_error=1')
+    assert not AccountIdentity.objects.exists()
 
 
 @pytest.mark.parametrize('consent,existing', [(False, False), (True, True)])
@@ -148,7 +158,8 @@ def test_jwks_signature_verified_and_tampering_rejected():
 
 
 def test_tokeninfo_fallback_still_validates_claims():
-    with patch.dict(sys.modules, {'cryptography': None}), \
+    with patch.dict(sys.modules, {'cryptography': None, 'cryptography.hazmat.primitives': None,
+                                 'cryptography.hazmat.primitives.asymmetric': None}), \
             patch('news.google_accounts.requests.get', return_value=Mock(json=lambda: claims())) as get:
         assert verify_id_token('provider-token', 'nonce')['email'] == 'reader@example.org'
         assert get.call_args.kwargs == {'params': {'id_token': 'provider-token'}, 'timeout': 10}

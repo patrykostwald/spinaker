@@ -5,13 +5,13 @@ import type { IconProps } from "./types";
 import { iconStroke, iconA11yProps } from "./types";
 
 export interface HeartIconProps extends IconProps {
-  /** Ulubione. Gdy true — kontur wypełnia się kolorem, ikona „strzela” scale 1→1.25→1. */
+  /** Ulubione. Gdy true - kontur wypełnia się kolorem, ikona „strzela” scale 1→1.25→1. */
   filled?: boolean;
 }
 
 /**
  * Ulubione. Włączenie: wypełnienie + jednorazowe „strzelenie” (`.sc-icon-heart[data-pop="run"]`
- * w kit.css) i lekka poświata — ten sam jednorazowy wzorzec co `.sc-sheen`, czysty CSS keyframe,
+ * w kit.css) i lekka poświata - ten sam jednorazowy wzorzec co `.sc-sheen`, czysty CSS keyframe,
  * nie framer: kill-switch prefers-reduced-motion w kit.css i tak go gasi.
  */
 export function HeartIcon({ size = 24, className, title, filled = false }: HeartIconProps) {

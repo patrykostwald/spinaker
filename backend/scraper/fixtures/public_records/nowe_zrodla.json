@@ -1,0 +1,75 @@
+{
+  "videos": [
+    {"committee": "ASW", "description": "Rozpatrzenie projektu ustawy (druk nr 123).", "endDateTime": "2026-10-05T12:00:00",
+     "playerLink": "https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=1356434EE1FC0BFEC1258A6E003C313B",
+     "room": "sala nr 118", "startDateTime": "2026-10-05T10:00:00", "title": "Komisja Administracji i Spraw Wewnętrznych (ASW)",
+     "transcribe": false, "type": "komisja", "unid": "1356434EE1FC0BFEC1258A6E003C313B",
+     "videoLink": "https://sejm.c.blueonline.tv/stream/ENC11/1356434EE1FC0BFEC1258A6E003C313B/playlist.m3u8?start=1&stop=2"},
+    {"description": "Posiedzenie Sejmu - dzień 1", "endDateTime": "2026-10-05T20:00:00",
+     "playerLink": "https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=9ECF13C00121BFBEC1258A8C0049C773",
+     "startDateTime": "2026-10-05T09:00:00", "title": "Posiedzenie Sejmu nr 40", "transcribe": true, "type": "posiedzenie",
+     "unid": "9ECF13C00121BFBEC1258A8C0049C773"}
+  ],
+  "committee_transcript": "<h2>Komisje:</h2><ul><li>Komisja Administracji i Spraw Wewnętrznych /nr 7/</li></ul><section class=\"transcript\">\n<p>Komisja obradująca pod przewodnictwem posła <b>Tomasza Szymańskiego</b>, rozpatrzyła projekt.\n<p><b>Przewodniczący poseł Tomasz Szymański (KO):</b><br>\nOtwieram posiedzenie Komisji.\n<p><b>Poseł Konrad Frysztak (KO):</b><br>\nPanie przewodniczący, ten projekt to najlepsza ustawa od lat.\n<p>Wszyscy eksperci są za.\n<p><b>Poseł Paweł Hreniak (PiS):</b><br>\nTo jest kompromitacja rządu, nikt w to nie wierzy.\n<p><b>Sekretarz Komisji Magda Jedynak:</b><br>\n28 osób za.\n</section>",
+  "htv_index": {"total": 3, "page": 1, "page_size": 50, "has_prev": false, "has_next": true, "results": [
+    {"id": "197352", "timestamp": "2026-10-06T12:39:46", "display_title": "Nadzór budżetowy"},
+    {"id": "197351", "timestamp": "2026-10-01T12:00:00", "display_title": "Inne"},
+    {"id": "190000", "timestamp": "2026-01-10T10:00:00", "display_title": "Stare"}
+  ]},
+  "htv_vote": {"id": "197352", "is_main": true, "timestamp": "2026-10-06T12:39:46", "display_title": "Nadzór budżetowy",
+    "description": "Accord provisoire - Am 2", "reference": "A10-0097/2026", "result": "ADOPTED",
+    "procedure": {"title": "Nadzór", "reference": "2025/0312(COD)", "url": "https://oeil.europarl.europa.eu/oeil/en/procedure-file?reference=2025/0312(COD)"},
+    "document": {"url": "https://www.europarl.europa.eu/doceo/document/A-10-2026-0097_EN.html"},
+    "stats": {"total": {"FOR": 458, "AGAINST": 138, "ABSTENTION": 61, "DID_NOT_VOTE": 62}},
+    "member_votes": [
+      {"member": {"id": 256810, "full_name": "Mika AALTOLA", "country": {"code": "FIN"}, "group": {"short_label": "EPP"}, "national_party": {"short_label": "KOK"}}, "position": "FOR"},
+      {"member": {"id": 197490, "full_name": "Magdalena ADAMOWICZ", "country": {"code": "POL"}, "group": {"short_label": "EPP"}, "national_party": {"label": "Independent"}}, "position": "AGAINST"},
+      {"member": {"id": 124877, "full_name": "Jan KOWALSKI", "country": {"code": "POL"}, "group": {"short_label": "ECR"}, "national_party": {"short_label": "PiS"}}, "position": "FOR"}
+    ]},
+  "wikidata": {"head": {"vars": []}, "results": {"bindings": [
+    {"item": {"value": "http://www.wikidata.org/entity/Q123177555"}, "itemLabel": {"value": "Konrad Frysztak"},
+     "url": {"value": "https://www.sejm.gov.pl/Sejm10.nsf/posel.xsp?id=082"}, "x": {"value": "KFrysztak"},
+     "wiki": {"value": "https://pl.wikipedia.org/wiki/Konrad_Frysztak"},
+     "party": {"value": "http://www.wikidata.org/entity/Q1129"}, "partyLabel": {"value": "Platforma Obywatelska"}, "start": {"value": "2010-01-01T00:00:00Z"}},
+    {"item": {"value": "http://www.wikidata.org/entity/Q123177555"}, "itemLabel": {"value": "Konrad Frysztak"},
+     "url": {"value": "https://www.sejm.gov.pl/Sejm10.nsf/posel.xsp?id=082"},
+     "party": {"value": "http://www.wikidata.org/entity/Q2000"}, "partyLabel": {"value": "Partia Testowa"}, "start": {"value": "2005-01-01T00:00:00Z"}, "end": {"value": "2009-12-31T00:00:00Z"}},
+    {"item": {"value": "http://www.wikidata.org/entity/Q555"}, "itemLabel": {"value": "Magdalena Adamowicz"},
+     "ep": {"value": "197490"}, "x": {"value": "bad handle!"}}
+  ]}},
+  "kohesio": [
+    {"operation_unique_identifier": {"url": "https://linkedopendata.eu/entity/Q92705"}, "operation_name_programme_language": "Staże dla studentów",
+     "beneficiary_name": "WYŻSZA SZKOŁA BANKOWA WE WROCŁAWIU", "operation_start_date": "2016-10-01T00:00:00.000",
+     "operation_end_date": "2017-10-31T00:00:00.000", "total_eligible_expenditure_amount": "55772.01", "project_eu_budget": "47004.65",
+     "fund_code": "ESF", "programme_name": "Wiedza Edukacja Rozwój", "region": "Trójmiejski", "nuts3_code": "PL633", "programming_period": "2014-2020"},
+    {"operation_unique_identifier": {"url": "https://linkedopendata.eu/entity/Q100"}, "operation_name_programme_language": "Rozwój firmy",
+     "beneficiary_name": "Testowa Spółka z ograniczoną odpowiedzialnością", "operation_start_date": "2019-01-01T00:00:00.000",
+     "project_eu_budget": "1000"},
+    {"operation_unique_identifier": {"url": "https://linkedopendata.eu/entity/Q101"}, "operation_name_programme_language": "Dotacja",
+     "beneficiary_name": "Jan Nowak", "project_eu_budget": "500"}
+  ],
+  "iw_meps": [
+    {"epid": "197490", "country": "Poland", "full_name": "Magdalena ADAMOWICZ", "eugroup": "EPP", "party": "Independent",
+     "committee": ["LIBE"], "email": "x@europarl.europa.eu", "birthdate": "01-01-1970", "events_declaration_num": 1,
+     "DPI_links": [{"title": "Original declaration - 16-07-2024", "url": "https://www.europarl.europa.eu/erpl-app-public/mep-documents/DPI/10/a.pdf"}]},
+    {"epid": "256810", "country": "Finland", "full_name": "Mika AALTOLA"}
+  ],
+  "iw_income": ",mep_id,mep_name,mep_group,activity_type,activity,holding_with_public_implication,holding_with_influence,income_amt,income_amt_clean,income_currency,income_none,benefit_nature,periodicity,periodicity_streamlined,changed_from_previous_dec,income_amt_total_eur_auto,income_amt_total_eur_manual,to_remove,comments\n0,197490,Magdalena ADAMOWICZ,EPP,A,1. Wykłady na uczelni,,,1000,1000,EUR,,,miesięcznie,monthly,,12000,,,\n1,197490,Magdalena ADAMOWICZ,EPP,C,2. Członkini rady,,,,,,X,,,N/A,,,,,\n2,256810,Mika AALTOLA,EPP,A,1. Other,,,5,5,EUR,,,,monthly,,60,,,\n",
+  "iw_meetings": [
+    {"date": "10-04-2025", "epid": "197490", "country": "Poland", "mep": "Magdalena ADAMOWICZ", "group": "EPP", "role": "Member",
+     "title": "Rail policy", "lobbyists": "EUROPEAN RAIL", "location": "Brussels", "dossier": ""},
+    {"date": "11-04-2025", "epid": "256810", "country": "Finland", "mep": "Mika AALTOLA", "lobbyists": "X"}
+  ],
+  "mileage": {"dataset": "kilometrowki", "term": 10, "count_records": 2, "records": [
+    {"mileage_id": 262, "member": {"id": 82, "first_name": "Konrad", "last_name": "Frysztak", "club": "KO"}, "term_number": 10,
+     "period_label": "2024", "period_start": "2024-01-01", "period_end": "2024-12-31", "amount_pln": 39763.5, "km_distance": 34576.95,
+     "source_name": "skrotpolityczny.pl", "source_url": "https://skrotpolityczny.pl/polityk/frysztak/"},
+    {"mileage_id": 263, "member": {"id": 999, "first_name": "Inny", "last_name": "Poseł", "club": "PiS"}, "period_label": "2024",
+     "period_end": "2024-12-31", "amount_pln": 10.0, "km_distance": 9}
+  ]},
+  "offices": {"dataset": "sprawozdania", "term": 10, "records": [
+    {"report_id": 866, "member": {"id": 82, "first_name": "Konrad", "last_name": "Frysztak", "club": "KO"}, "report_year": 2024,
+     "total_pln": 274377.74, "pdf_url": "https://orka.sejm.gov.pl/rozlicz10.nsf/lista/202482/$File/2024ryczalt_082.pdf?OpenElement",
+     "items": [{"label": "Wynagrodzenia pracowników", "number": 1, "amount_pln": 30842.92}]}
+  ]}
+}

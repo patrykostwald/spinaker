@@ -17,7 +17,8 @@ def approve_sitemap(source):
         source=source, version=version, status='approved', channel='sitemap',
         allowed_scope='metadata', endpoint=source.url,
         terms_url='https://example.org/terms', evidence={'basis': 'test'},
-        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_at=timezone.now(), reviewed_by='test', minimum_interval_seconds=3,
+        daily_request_cap=1000)
 
 
 def test_archive_map_matches_rss_source_and_requires_explicit_approval(tmp_path, monkeypatch):

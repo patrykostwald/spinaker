@@ -24,7 +24,7 @@ def enabled():
 class SubscriptionInput(serializers.Serializer):
     endpoint = serializers.URLField(max_length=2048)
     keys = serializers.DictField(child=serializers.CharField(max_length=128))
-    topics = serializers.ListField(child=serializers.ChoiceField(choices=TOPICS), max_length=3, allow_empty=False)
+    topics = serializers.ListField(child=serializers.ChoiceField(choices=TOPICS), max_length=len(TOPICS), allow_empty=False)
     consent_version = serializers.ChoiceField(choices=[CONSENT_VERSION])
 
     def validate_endpoint(self, value):
@@ -79,6 +79,9 @@ class SubscriptionsView(APIView):
         serializer = SubscriptionInput(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        # Alerty o obserwowanych osobach są przypisane do konta; anonimowa subskrypcja nigdy by ich nie dostała (zlecenie 116).
+        if 'obserwowani' in data['topics'] and not request.user.is_authenticated:
+            return Response({'detail': 'Alerty o obserwowanych osobach wymagają konta.'}, status=401)
         device = self._device(request)
         defaults = {**data, 'device': device,
                     'user': request.user if request.user.is_authenticated else None,

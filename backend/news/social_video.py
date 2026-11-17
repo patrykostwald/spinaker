@@ -2,7 +2,7 @@
 
 Sceny (tempo pod krótkie formaty): siła spinu z licznikiem → wpis polityka (nasza grafika, nie zrzut z X) → panel danych
 jak na stronie (siła spinu, Konsylium AI, twierdzenia, techniki — z rosnącymi paskami) → diagnoza → techniki z cytatami
-→ spin.clinic. Kolory i układ panelu są te same co na karcie skanera (SpinSummary.tsx): czarne tło, siła na niebiesko,
+→ spin.clinic. Kolory i układ panelu są te same co na karcie skanera (SpinSummary.tsx): czarne tło, siła na skali barw,
 rodziny technik w swoich kolorach, obóz rządzący niebieski, opozycja czerwona w paski. Klatki rysuje Pillow czcionką
 Montserrat (OFL), film składa ffmpeg z paczki imageio-ffmpeg. Bez muzyki (cicha ścieżka dźwiękowa, bo część serwisów
 odrzuca filmy bez audio). Treść diagnozy przechodzi bez zmian — skracamy tylko długość; tekst syntezy pokazujemy tylko
@@ -17,6 +17,8 @@ import subprocess
 from PIL import Image, ImageDraw
 
 from news.x_card import EMOJI, _font, _wrap
+from news.techniques import FAMILY_LABELS
+from news.spin_colors import CLAIM_COLORS, FAMILY_COLORS, VERDICT_COLORS, strength_bar, strength_color, tabular_score
 
 W, H, FPS = 1080, 1920, 30
 X0, X1 = 72, W - 72           # marginesy; dół i prawa krawędź są zasłonięte przyciskami TikToka i Reels
@@ -29,12 +31,11 @@ CROSS = 0.22                  # przejście między scenami (s)
 BG, SURF, SURF2, SURF3, LINE = (0, 0, 0), (15, 15, 15), (23, 23, 23), (38, 38, 38), (52, 52, 52)
 TEXT, TEXT2, TEXT3 = (255, 255, 255), (179, 179, 179), (140, 140, 140)
 ACCENT, GOV, OPP, OPP_DARK = (74, 158, 255), (91, 155, 255), (255, 107, 107), (201, 74, 74)
-POSITIVE, WARNING, NEGATIVE = (78, 209, 138), (242, 180, 65), (255, 107, 107)
-FAMILIES = [('dane', 'Dane i wnioskowanie', (85, 180, 255)), ('przedstawienie', 'Emocje i przedstawienie', (245, 165, 74)),
-            ('spor', 'Spór i odpowiedzialność', (181, 138, 216)), ('inne', 'Inne', TEXT3)]
+FAMILIES = [(key, label, FAMILY_COLORS[key]) for key, label in FAMILY_LABELS.items()]
 FAMILY_COLOR = {key: color for key, _, color in FAMILIES}
-CLAIM_KINDS = [('supported', POSITIVE, 'potwierdzone'), ('misleading', WARNING, 'mylące'), ('contradicted', NEGATIVE, 'sprzeczne'),
-               ('unverified', TEXT3, 'niezweryfikowane'), ('opinion', None, 'opinie')]
+CLAIM_KINDS = [(key, CLAIM_COLORS[key], label) for key, label in
+               [('supported', 'potwierdzone'), ('misleading', 'mylące'), ('contradicted', 'sprzeczne'),
+                ('unverified', 'niezweryfikowane')]] + [('opinion', None, 'opinie')]
 
 
 def _clean(text: str) -> str:
@@ -220,24 +221,26 @@ def presentation(data: dict) -> dict:
     scan = data.get('scan') or {}
     scanned = {t.get('category') or t.get('name'): t.get('family') for t in scan.get('techniques') or []}
     types, seen = [], set()
-    for item in data.get('techniques') or scan.get('techniques') or []:
+    from news.techniques import FAMILIES as TECHNIQUE_FAMILIES
+    family_of = {name.casefold(): family for family, names in TECHNIQUE_FAMILIES.items() for name in names}
+    source = data.get('techniques')
+    for item in (source if source is not None else scan.get('techniques') or []):
         key = (item.get('category') or item.get('name') or '').strip()
         if not key or key in seen:
             continue
         seen.add(key)
-        family = item.get('family') or scanned.get(key) or 'inne'
+        family = family_of.get(key.casefold()) or scanned.get(key) or item.get('family') or 'inne'
         types.append({**item, 'type': key, 'family': family if family in FAMILY_COLOR else 'inne'})
     families = [(key, label, color, sum(1 for t in types if t['family'] == key)) for key, label, color in FAMILIES]
     families = [row for row in families if row[0] != 'inne' or row[3]]
     claims = [(key, color, label, sum(1 for c in data.get('claims') or [] if c.get('assessment') == key))
               for key, color, label in CLAIM_KINDS]
     checked = sum(count for key, _, _, count in claims if key in ('supported', 'misleading', 'contradicted'))
-    council = scan.get('council') or {}
-    votes = [v for v in council.get('votes') or [] if v.get('verdict') in ('spin', 'partial', 'no_spin', 'unclear')]
-    if not votes:
-        votes = [{'model': m.get('model', '').split('/')[-1], **m} for m in (data.get('council') or {}).get('members') or []
-                 if m.get('verdict') in ('spin', 'partial', 'no_spin', 'unclear')]
-    same = max([sum(1 for o in votes if o.get('verdict') == v.get('verdict')) for v in votes] + [0])
+    members = (data.get('council') or {}).get('members')
+    votes = [v for v in (members if members is not None else (scan.get('council') or {}).get('votes') or [])
+             if v.get('status') != 'brak odpowiedzi' and v.get('verdict') in ('spin', 'partial', 'no_spin', 'unclear')]
+    same = (sum(v.get('verdict') == data['verdict'] for v in votes) if data.get('verdict') else
+            max([sum(o.get('verdict') == v.get('verdict') for o in votes) for v in votes] + [0]))
     return {'types': types, 'families': families, 'claims': claims, 'checked': checked, 'votes': votes,
             'agreement': f'{same}/{len(votes)}' if votes else '—'}
 
@@ -259,7 +262,7 @@ def _tile(label: str, number: str, suffix: str, graphic, number_color=TEXT):
             x += draw.textlength(char, font=_font(28, 800)) + 2
         shown = number(p) if callable(number) else number
         big = _font(120, 800)
-        draw.text((TILE_PAD, TILE_PAD + 44), shown, font=big, fill=number_color)
+        draw.text((TILE_PAD, TILE_PAD + 44), shown, font=big, fill=number_color(p) if callable(number_color) else number_color)
         width = draw.textlength(shown, font=big)
         draw.text((TILE_PAD, TILE_PAD + 44 + 178), suffix, font=_font(30, 600), fill=TEXT3, anchor='ls')
         graphic(draw, (TILE_PAD, 270, TILE_W - TILE_PAD, TILE_H - TILE_PAD), p)
@@ -272,11 +275,12 @@ def _strength_tile(value: int):
 
     def graphic(draw, box, p):
         x0, y0, x1, y1 = box
-        _track(draw, (x0, y1 - 84, x1, y1 - 54), value / 100 * p, ACCENT)
+        strength_bar(draw, (x0, y1 - 84, x1, y1 - 54), value * p, SURF3)
         for i, tick in enumerate(('0', '50', '100')):
             anchor = ('ls', 'ms', 'rs')[i]
             draw.text(((x0, (x0 + x1) // 2, x1)[i], y1), tick, font=_font(30, 700), fill=TEXT3, anchor=anchor)
-    return _tile('Siła spinu', lambda p: str(round(value * p)), '/100', graphic, ACCENT)
+    return _tile('Siła spinu', lambda p: str(round(value * p)), '/100', graphic,
+                 lambda p: strength_color(round(value * p)))
 
 
 def _council_tile(info: dict):
@@ -294,8 +298,8 @@ def _council_tile(info: dict):
             name = re.sub(r'\s+', ' ', str(vote.get('model', '')))[:13]
             draw.text((x0, y + 16), name, font=_font(27, 600), fill=TEXT2, anchor='lm')
             intensity = vote.get('intensity')
-            _track(draw, (x0 + 200, y + 9, x1 - 60, y + 23), (intensity or 0) / 100 * p, ACCENT)
-            draw.text((x1, y + 16), str(intensity if intensity is not None else '—'), font=_font(30, 800), fill=TEXT, anchor='rm')
+            tabular_score(draw, x1 - 28, y + 5, intensity if intensity is not None else '—', _font(30, 800), TEXT)
+            draw.ellipse((x1 - 14, y + 9, x1, y + 23), fill=VERDICT_COLORS.get(vote.get('verdict'), TEXT3))
     return _tile('Konsylium AI', info['agreement'], 'ten sam werdykt', graphic)
 
 
@@ -327,7 +331,7 @@ def _techniques_tile(info: dict):
 
     def graphic(draw, box, p):
         x0, y0, x1, y1 = box
-        row = 60
+        row = 48 if len(families) == 4 else 60
         top = y1 - row * len(families) + 16
         for i, (key, label, color, count) in enumerate(families):
             y = top + i * row
@@ -361,42 +365,93 @@ def _post_card(post: dict) -> Image.Image:
 
 # --- sceny ----------------------------------------------------------------------------------
 
-def build_scenes(data: dict, post: dict) -> list[Scene]:
+def cover_quote(text: str, limit: int = 190) -> str:
+    """Dosłowny początek wpisu, skrócony na granicy zdania lub słowa."""
+    text = _clean(text)
+    if len(text) > limit:
+        prefix = text[:limit - 1]
+        sentences = list(re.finditer(r'[.!?](?=\s|$)', prefix))
+        if sentences:  # pełne zdania + znak pominięcia, bez sklejania kropki z wielokropkiem
+            text = prefix[:sentences[-1].end()].rstrip() + ' […]'
+        else:
+            prefix = prefix.rsplit(' ', 1)[0] if ' ' in prefix else ''
+            text = prefix.rstrip(' ,;:-–') + '…' if prefix else ''
+    return f'„{text}”' if text else ''
+
+
+def cover_lead(data: dict) -> str:
+    from news.social_content import checked_claims
+    claims = data.get('claims') or []
+    if len(checked_claims(claims)) == len(claims):
+        return ((data.get('scan') or {}).get('synthesis') or {}).get('lead') or (data.get('x_thread') or [''])[0] or data.get('headline', '')
+    return data.get('headline', '')
+
+
+def _cover_panel(data: dict) -> Image.Image:
+    """Cztery zwarte kafelki; te same dane i kolory co rozwinięty panel."""
+    info = presentation(data)
+    width, height, gap = (X1 - X0 - 24) // 2, 220, 24
+    layer = Image.new('RGBA', (X1 - X0, 2 * height + gap))
+    draw = ImageDraw.Draw(layer)
+    value = max(0, min(100, int(data.get('intensity') or 0)))
+    unverified = next(count for key, _, _, count in info['claims'] if key == 'unverified')
+    rows = [('Siła spinu', f'{value}/100', ''), ('Konsylium AI', info['agreement'], 'ten sam werdykt'),
+            ('Twierdzenia', str(info['checked']), f'sprawdzone · {unverified} niezw.'),
+            ('Techniki', str(len(info['types'])), 'typy technik')]
+    for i, (label, number, caption) in enumerate(rows):
+        x, y = (i % 2) * (width + gap), (i // 2) * (height + gap)
+        draw.rounded_rectangle((x, y, x + width - 1, y + height - 1), radius=24, fill=SURF2, outline=LINE, width=2)
+        draw.text((x + 24, y + 20), label.upper(), font=_font(27, 800), fill=TEXT3)
+        number_font = _font(72, 800)
+        if i == 0:
+            draw.text((x + 24, y + 57), str(value), font=number_font, fill=strength_color(value))
+            offset = draw.textlength(str(value), font=number_font)
+            draw.text((x + 24 + offset, y + 57), '/100', font=number_font, fill=TEXT3)
+        else:
+            draw.text((x + 24, y + 57), number, font=number_font, fill=TEXT)
+        draw.text((x + 24, y + 148), caption, font=_font(25, 600), fill=TEXT3)
+        if i == 0:
+            strength_bar(draw, (x + 24, y + 175, x + width - 24, y + 187), value, SURF3)
+        if i == 3:
+            labels = [f'{family.split()[0]} {count}' for _, family, _, count in info['families']]
+            widths = [16 + draw.textlength(label, font=_font(18, 600)) for label in labels]
+            legend_gap = (width - 48 - sum(widths)) / max(1, len(labels) - 1)
+            fx = x + 24
+            for j, (_, family, color, count) in enumerate(info['families']):
+                draw.ellipse((fx, y + 190, fx + 10, y + 200), fill=color if count else None, outline=color)
+                draw.text((fx + 16, y + 183), labels[j], font=_font(18, 600), fill=color)
+                fx += 132 if len(labels) == 3 else widths[j] + legend_gap
+    return layer
+
+
+def cover_scene(data: dict, post: dict) -> Scene:
     from news.names import display_name
+    scene = Scene(2.6)
+    # Wszystkie elementy w bazie: żadnego zanikania ani licznika od zera.
+    parts = [(_label('spin.clinic · Diagnoza AI', ACCENT), 18),
+             (_camp_chip(data.get('camp', ''), data.get('camp_label', '')), 18),
+             (_wrapped(display_name(post.get('name', '')), 48, 800, TEXT, 2, 60, sentences=False), 20),
+             (_wrapped(cover_quote(post.get('text', '')), 40, 600, TEXT, 6, 52, sentences=False), 24),
+             (_wrapped(data.get('verdict_label', ''), 28, 800, ACCENT, 1, 36, sentences=False), 8),
+             (_wrapped(cover_lead(data), 42, 800, TEXT, 3, 54, sentences=False), 28),
+             (_cover_panel(data), 0)]
+    content = _stack(parts, X1 - X0)
+    if content.height > BOTTOM - TOP:
+        ratio = (BOTTOM - TOP) / content.height
+        content = content.resize((int(content.width * ratio), BOTTOM - TOP), Image.Resampling.LANCZOS)
+    scene.base.alpha_composite(content, (X0, TOP + (BOTTOM - TOP - content.height) // 2))
+    return scene
+
+
+def build_scenes(data: dict, post: dict) -> list[Scene]:
     from news.social_content import checked_claims
     scenes = []
     content = X1 - X0
     info = presentation(data)
     intensity = int(data.get('intensity') or 0)
-    camp = data.get('camp') or ''
 
-    # 0. Hak: kto, obóz i siła spinu z licznikiem
-    s = Scene(2.6)
-    _chrome(s, 'Diagnoza AI')
-    s.add(0.0, _camp_chip(camp, data.get('camp_label', '')), X0, TOP)
-    name = _wrapped(display_name(post.get('name', '')), 68, 800, TEXT, 2, 80)
-    s.add(0.1, name, X0, TOP + 96)
-    party = post.get('party', '') if (post.get('party') or '').lower() != (data.get('camp_label') or '').lower() else ''
-    meta = ' · '.join(part for part in [party, f"@{post['handle']}" if post.get('handle') else ''] if part)
-    y = TOP + 116 + name.height
-    if meta:
-        s.add(0.2, _wrapped(meta, 36, 600, TEXT2, 1), X0, y)
-        y += 70
-    s.add(0.35, _label('Siła spinu według Konsylium AI'), X0, y + 30)
-
-    def counter(p: float) -> Image.Image:
-        layer = Image.new('RGBA', (content, 300), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(layer)
-        shown = str(round(intensity * p))
-        big = _font(230, 800)
-        draw.text((0, 250), shown, font=big, fill=ACCENT, anchor='ls')
-        draw.text((draw.textlength(shown, font=big) + 16, 250), '/100', font=_font(72, 700), fill=TEXT3, anchor='ls')
-        _track(draw, (0, 276, content, 300), intensity / 100 * p, ACCENT)
-        return layer
-    s.add(0.35, counter, X0, y + 80, animate=1.3)
-    s.add(1.1, _pill(f"{data.get('verdict_label') or 'Spin'} · zgodność {info['agreement']}", ACCENT), X0, y + 420)
-    s.center()
-    scenes.append(s)
+    # 0. Pe?na, nieruchoma ok?adka ju? w pierwszej klatce.
+    scenes.append(cover_scene(data, post))
 
     # 1. Wpis polityka
     s = Scene(3.6)
@@ -496,6 +551,15 @@ def _frames(scenes: list[Scene]):
                 # przejście: przenikanie do pierwszej klatki następnej sceny
                 frame = Image.blend(frame, following, 1 - remaining / CROSS)
             yield frame.convert('RGB').tobytes()
+
+
+def first_frame_jpeg(path) -> bytes:
+    """Miniatura dokładnie tego filmu, także przy ponownej publikacji z cache."""
+    import imageio_ffmpeg
+    result = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-loglevel', 'error', '-i', str(path),
+                             '-frames:v', '1', '-f', 'image2pipe', '-c:v', 'mjpeg', '-'],
+                            capture_output=True, check=True, timeout=30)
+    return result.stdout
 
 
 def render(data: dict, post: dict, out_path: str) -> dict:

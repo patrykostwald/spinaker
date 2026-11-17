@@ -1,0 +1,330 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico">
+<title>Ankieta spin.clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<style>
+/* Ciemny wygląd spin.clinic, jak karta diagnozy. */
+:root { color-scheme: dark; --bg: #0b0d11; --surface: #14171d; --raise: #1b1f27; --ink: #eef0f4; --ink-2: #c5cad3; --muted: #8b93a1;
+  --line: #262b35; --accent: #4a9eff; --ok: #3cc98a; --bad: #ef6b72; --ease: cubic-bezier(.2,.7,.15,1);
+  --sans: "Montserrat", ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+body { padding-inline: 16px; padding-block: 0 72px; }
+.wrap { max-width: 880px; margin-inline: auto; }
+h1, h2, h3, p { margin: 0; }
+.bar-top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
+  display: flex; align-items: center; gap: 16px; padding-block: 16px; margin-inline: -16px; padding-inline: 16px; }
+.brand { font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+.brand i { font-style: normal; color: var(--accent); }
+.progress { flex: 1; height: 4px; border-radius: 2px; background: var(--raise); overflow: hidden; }
+.progress i { display: block; height: 100%; width: var(--p, 0%); background: var(--accent); transition: width .7s var(--ease); }
+.step-n { font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right; }
+.screen { padding-block: 28px 8px; display: grid; gap: 22px; }
+.screen[hidden] { display: none; }
+/* wejście: ramka wjeżdża, potem treść (jak dymki w ofercie) */
+.enter { opacity: 0; transform: translateY(18px); animation: rise .7s var(--ease) forwards; animation-delay: var(--d, 0s); }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.frame { position: relative; }
+.frame::before { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1px solid var(--accent); opacity: 0; pointer-events: none;
+  animation: frame 1.1s var(--ease) forwards; animation-delay: calc(var(--d, 0s) + .25s); clip-path: inset(0 100% 0 0); }
+@keyframes frame { 0% { opacity: 1; clip-path: inset(0 100% 0 0); } 60% { opacity: 1; clip-path: inset(0 0 0 0); } 100% { opacity: 0; clip-path: inset(0 0 0 0); } }
+.typed::after { content: "▍"; color: var(--accent); margin-left: 2px; animation: caret .9s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+/* ekran startowy */
+.intro { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 28px; display: grid; gap: 16px; }
+.intro h1 { font-size: clamp(26px, 4.2vw, 38px); font-weight: 800; line-height: 1.12; letter-spacing: -.02em; }
+.intro p { color: var(--ink-2); max-width: 60ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; }
+.facts span { font-size: 13px; font-weight: 600; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+.facts b { color: var(--accent); }
+.btn { font: 700 15px var(--sans); color: #06111f; background: var(--accent); border: 0; border-radius: 12px; padding: 14px 22px; cursor: pointer; width: fit-content; transition: transform .2s var(--ease); }
+.btn:hover { transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--line); }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+/* pytanie */
+.q-head { display: grid; gap: 8px; }
+.q-head .n { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.q-head h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; line-height: 1.2; letter-spacing: -.01em; min-height: 1.2em; }
+.q-head p { color: var(--muted); font-size: 14px; max-width: 64ch; }
+.opts { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.opts.two { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+/* Zasada boxu: pierwsza linia przy górnej krawędzi, ostatnia przy dolnej, środek się rozciąga; boxy w rzędzie równej wysokości. */
+.opt { position: relative; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; height: 100%; cursor: pointer; transition: border-color .2s, background .2s, transform .2s var(--ease); }
+.opt:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); transform: translateY(-2px); }
+.opt.mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.opt .top { display: flex; gap: 10px; align-items: baseline; }
+.opt .top b { color: var(--accent); font-size: 13px; font-weight: 800; }
+.opt .top strong { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.opt .top { min-width: 0; }
+.opt .mid { flex: 1; display: grid; }
+.opt .mid > * { height: 100%; }
+.opt .mid > img, .opt .mid > .mock { height: auto; align-self: start; }
+.cap { display: grid; gap: 2px; }
+.cap-t { font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opt .top small { margin-left: auto; font-size: 11px; color: var(--muted); }
+.opt .check { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 13px; color: #06111f; transition: background .2s, border-color .2s; }
+.opt.mine .check { background: var(--accent); border-color: var(--accent); }
+.opt.mine .check::after { content: "✓"; font-weight: 800; }
+.opt .top { padding-right: 30px; }
+.tw { background: #000; border: 1px solid #2f3336; border-radius: 12px; padding: 12px; color: #e7e9ea; font-size: 14px; line-height: 1.45; white-space: pre-line; }
+.tw a { color: #1d9bf0; }
+.desc { font-size: 13px; color: var(--ink-2); }
+.cnt { font-size: 11px; color: var(--muted); }
+.attach { display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 12px; }
+.attach img { width: 160px; border-radius: 8px; border: 1px solid #2f3336; flex: none; }
+.attach p { font-size: 16px; line-height: 1.5; color: var(--ink); }
+.hook { font-size: 17px; font-weight: 700; background: #000; border: 1px solid #2f3336; border-radius: 12px; padding: 14px; color: #e7e9ea; }
+.nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.4em; }
+.status.err { color: var(--bad); }
+/* makiety */
+.mock { aspect-ratio: 16 / 9; width: 100%; border-radius: 12px; border: 1px solid #2f3336; background: #121417; padding: 5% 5.5%; display: grid; grid-template-rows: auto 1fr auto; gap: 4%; container-type: inline-size; }
+.mock .h { display: flex; align-items: center; gap: 3cqw; }
+.mock .h i { width: 9cqw; height: 9cqw; border-radius: 50%; background: #2a2f38; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 3.4cqw; }
+.mock .h strong { font-size: 5.2cqw; display: block; line-height: 1.1; }
+.mock .h small { font-size: 3cqw; color: #aab1bd; }
+.mock .m { display: flex; align-items: center; gap: 5cqw; }
+.mock .num { font-size: 19cqw; font-weight: 800; color: var(--accent); line-height: .9; letter-spacing: -.03em; }
+.mock .num small { font-size: 5cqw; color: #aab1bd; font-weight: 600; letter-spacing: 0; }
+.mock .tags { display: grid; gap: 1.6cqw; }
+.mock .tags span { font-size: 3.2cqw; font-weight: 700; border: 1px solid #39404d; border-radius: 999px; padding: .8cqw 2.4cqw; width: fit-content; }
+.mock .tags span.v { color: var(--bad); border-color: var(--bad); }
+.mock .f { display: flex; justify-content: space-between; align-items: end; font-size: 2.4cqw; color: #aab1bd; }
+.mock .f b { font-size: 4cqw; color: #fff; display: block; }
+.mock .f b em { font-style: normal; color: var(--accent); }
+.full { width: 100%; border-radius: 12px; border: 1px solid #2f3336; display: block; }
+.dg { background: #0b0d11; border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+.dg .v { display: flex; align-items: center; gap: 10px; }
+.dg .v b { font-size: 32px; font-weight: 800; color: var(--accent); }
+.dg .v span { font-size: 13px; color: #aab1bd; }
+.dg .v em { font-style: normal; font-size: 13px; font-weight: 800; border: 1px solid var(--bad); color: var(--bad); border-radius: 999px; padding: 3px 10px; }
+.dg .v em.big { font-size: 20px; padding: 6px 16px; }
+.dg .track { height: 6px; background: #262b35; border-radius: 3px; overflow: hidden; }
+.dg .track i { display: block; height: 100%; width: 70%; background: var(--accent); }
+.dg h4 { margin: 0; font-size: 16px; }
+.dg p { font-size: 14px; color: var(--ink-2); }
+/* wyniki */
+.res { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: grid; gap: 10px; }
+.res h3 { font-size: 15px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; font-size: 13px; color: var(--ink-2); }
+.row i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--raise); overflow: hidden; }
+.row i::after { content: ""; display: block; height: 100%; width: var(--w, 0%); background: var(--accent); transition: width 1s var(--ease); }
+.row.mine span:first-child { color: var(--ink); font-weight: 700; }
+.row.mine i::after { background: var(--ok); }
+@media (max-width: 560px) { .attach { flex-direction: column; align-items: start; } .attach img { width: 100%; } .intro { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .enter, .frame::before { animation: none; opacity: 1; transform: none; } .typed::after { display: none; } }
+</style>
+</head><body>
+<div class="wrap">
+  <div class="bar-top"><span class="brand">spin<i>.</i>clinic</span><div class="progress" aria-hidden="true"><i id="prog"></i></div><span class="step-n" id="stepn"></span></div>
+
+  <section class="screen" id="s-intro">
+    <div class="intro frame enter">
+      <span class="facts"><span><b>4</b> pytania</span><span>ok. <b>2</b> minuty</span><span>bez logowania i&nbsp;maili</span></span>
+      <h1>Jak pokazywać diagnozy spin.clinic w&nbsp;mediach społecznościowych?</h1>
+      <p>spin.clinic to serwis, w&nbsp;którym AI ocenia wpisy polityków pod kątem spinu, według tych samych zasad dla rządzących i&nbsp;opozycji. Pytamy, która forma wpisu na X, karty z&nbsp;wynikiem i&nbsp;opisu jest dla Ciebie najczytelniejsza.</p>
+      <p>W&nbsp;każdym pytaniu wybierasz jedną odpowiedź. Możesz wrócić i&nbsp;ją zmienić. Na końcu zobaczysz wyniki.</p>
+      <button class="btn" type="button" id="start">Zaczynam</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-x" data-q="x" hidden>
+    <div class="q-head"><span class="n">Pytanie 1 z 4</span><h2 data-type="Który wpis na X najbardziej zachęca do kliknięcia?"></h2>
+      <p>Przykład na jednej diagnozie (Jan Kowalski, PiS, spin 70/100).</p></div>
+    <div class="attach enter"><img src="karta.png" alt="Karta diagnozy"><p>Każdy wpis ma dołączoną kartę diagnozy z&nbsp;wynikiem, jak ta obok.<br>Oceniasz sam tekst wpisu.</p></div>
+    <div class="opts"><button type="button" class="opt" data-o="p01"><span class="check"></span><span class="top"><b>01</b><strong>Wynik na początku</strong></span><span class="mid"><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
+
+Pięć zarzutów wobec rządu, żaden z dowodem. Błędy pojedynczych osób przypisane całej koalicji.
+
+Diagnoza AI: sposób mówienia, nie ocena faktów.
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Wynik, synteza i zastrzeżenie</span><span class="cap-s">czytelnik (domyślny) · 201/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p02"><span class="check"></span><span class="top"><b>02</b><strong>Jedno zdanie po ludzku</strong></span><span class="mid"><span class="tw">Jan Kowalski (PiS) wylicza pięć zarzutów wobec rządu i nie podaje dowodu na żaden.
+
+Dr. Spin (AI): spin 70/100.
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Bez technicznych słów</span><span class="cap-s">czytelnik · 135/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p03"><span class="check"></span><span class="top"><b>03</b><strong>Cytat i nazwa techniki</strong></span><span class="mid"><span class="tw">„Minister pozwala, by z kopalni soli zrobić śmietnik.”
+
+To sugerowanie złych zamiarów bez dowodu. Jan Kowalski (PiS), spin 70/100 według Dr. Spina (AI).
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Cytat polityka i nazwa chwytu</span><span class="cap-s">czytelnik · 176/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p04"><span class="check"></span><span class="top"><b>04</b><strong>Techniki w punktach</strong></span><span class="mid"><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
+
+Dr. Spin (AI) znalazł:
+- ukrywanie faktów
+- sugerowanie złych zamiarów
+- obwinianie całej grupy
+
+Cytaty i źródła:
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Trzy techniki i link do cytatów</span><span class="cap-s">czytelnik · 171/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p05"><span class="check"></span><span class="top"><b>05</b><strong>Pytanie na początku</strong></span><span class="mid"><span class="tw">Ile spinu jest w tym wpisie Jana Kowalskiego (PiS)?
+
+Dr. Spin (AI): 70 na 100. Głównie zarzuty bez dowodów i przypisywanie złych zamiarów.
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Zachęca do kliknięcia</span><span class="cap-s">czytelnik · 162/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p06"><span class="check"></span><span class="top"><b>06</b><strong>Odpowiedź pod wpisem</strong></span><span class="mid"><span class="tw">Dr. Spin (AI) przeanalizował ten wpis: spin 70/100.
+
+Najmocniej: zarzuty bez dowodów i obwinianie całej koalicji za błędy pojedynczych osób.
+
+Metoda i cytaty: <a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Nasze konto pod wpisem polityka</span><span class="cap-s">konto @spinclinic · 182/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p07"><span class="check"></span><span class="top"><b>07</b><strong>Cytat z komentarzem</strong></span><span class="mid"><span class="tw">Spin 70/100. Pięć zarzutów, zero dowodów, wina jednej osoby rozciągnięta na cały rząd.
+
+Pełna diagnoza Dr. Spina (AI): <a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Nasze konto cytuje wpis</span><span class="cap-s">konto @spinclinic · 142/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p08"><span class="check"></span><span class="top"><b>08</b><strong>Sama karta</strong></span><span class="mid"><span class="tw">Spin 70/100 · Jan Kowalski (PiS)
+
+Pięć zarzutów wobec rządu, żaden z dowodem.
+
+Diagnoza AI, ta sama miara dla rządzących i opozycji. Link w odpowiedzi.</span></span><span class="cap"><span class="cap-t">Link w pierwszej odpowiedzi</span><span class="cap-s">konto (co 4. wpis) · 151/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p09"><span class="check"></span><span class="top"><b>09</b><strong>Najczystszy wpis dnia</strong></span><span class="mid"><span class="tw">Najczystszy wpis dnia: Anna Nowak (KO), spin 8/100.
+
+Konkretna liczba, źródło, zero etykiet. Tak też się da.
+
+Dr. Spin (AI), ta sama miara dla wszystkich:
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Codziennie, nagradza rzetelność</span><span class="cap-s">konto (raz dziennie) · 178/280 znaków</span></span></button>
+<button type="button" class="opt" data-o="p10"><span class="check"></span><span class="top"><b>10</b><strong>Top 3 dnia</strong></span><span class="mid"><span class="tw">Trzy najbardziej podkręcone wpisy dnia według Dr. Spina (AI):
+
+1. 82/100 · polityk opozycji
+2. 76/100 · polityk koalicji
+3. 70/100 · polityk opozycji
+
+Ta sama miara dla obu stron. Szczegóły w wątku.
+<a>spin.clinic/klinika/1076</a></span></span><span class="cap"><span class="cap-t">Codziennie, obie strony sceny</span><span class="cap-s">konto (raz dziennie, wątek) · 222/280 znaków</span></span></button></div>
+  </section>
+
+  <section class="screen" id="s-card" data-q="card" hidden>
+    <div class="q-head"><span class="n">Pytanie 2 z 4</span><h2 data-type="Która karta lepiej działa na telefonie?"></h2>
+      <p>W aplikacji X karta ma około 500 pikseli szerokości. Porównaj czytelność wyniku i&nbsp;nazwiska.</p></div>
+    <div class="opts two">
+      <button type="button" class="opt" data-o="now"><span class="check"></span><span class="top"><b>A</b><strong>Obecna karta</strong></span><span class="mid"><img class="full" src="karta.png" alt="Obecna karta diagnozy"></span><span class="cap"><span class="cap-t">Pełna tabela technik, wynik mniejszy</span><span class="cap-s">dużo informacji naraz</span></span></button>
+      <button type="button" class="opt" data-o="big"><span class="check"></span><span class="top"><b>B</b><strong>Powiększona karta</strong><small>makieta</small></span>
+        <span class="mid"><span class="mock"><span class="h"><i>JK</i><span><strong>Jan Kowalski</strong><small>PiS · wpis na X</small></span></span>
+          <span class="m"><span class="num">70<small>/100</small></span><span class="tags"><span class="v">Spin</span><span>Sugerowanie złych zamiarów</span><span>Obwinianie całej grupy</span></span></span>
+          <span class="f"><span><b>spin<em>.</em>clinic</b>www.spin.clinic/klinika/1076</span><span>Analiza AI, nie ocena faktów</span></span></span></span>
+        <span class="cap"><span class="cap-t">Wynik i&nbsp;nazwisko czytelne w&nbsp;miniaturze</span><span class="cap-s">dwie techniki, szczegóły po kliknięciu</span></span></button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-hook" data-q="hook" hidden>
+    <div class="q-head"><span class="n">Pytanie 3 z 4</span><h2 data-type="Jak powinna brzmieć pierwsza linia wpisu?"></h2>
+      <p>To jedyne, co widać przy szybkim przewijaniu.</p></div>
+    <div class="opts">
+      <button type="button" class="opt" data-o="score"><span class="check"></span><span class="top"><b>A</b><strong>Wynik na początku</strong></span><span class="mid"><span class="hook">Spin 70/100 · Jan Kowalski (PiS)</span></span></button>
+      <button type="button" class="opt" data-o="brand"><span class="check"></span><span class="top"><b>B</b><strong>Najpierw Dr. Spin</strong></span><span class="mid"><span class="hook">Dr. Spin (AI): Jan Kowalski (PiS), spin 70/100</span></span></button>
+      <button type="button" class="opt" data-o="name"><span class="check"></span><span class="top"><b>C</b><strong>Najpierw polityk</strong></span><span class="mid"><span class="hook">Jan Kowalski (PiS): spin 70/100 według Dr. Spina (AI)</span></span></button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-score" data-q="score" hidden>
+    <div class="q-head"><span class="n">Pytanie 4 z 4</span><h2 data-type="Jak pokazać wynik na stronie diagnozy?"></h2>
+      <p>Pierwszy ekran na telefonie. Liczba to nasz znak rozpoznawczy, ale część osób woli samo słowo.</p></div>
+    <div class="opts two">
+      <button type="button" class="opt" data-o="number"><span class="check"></span><span class="top"><b>A</b><strong>Liczba i słowo</strong></span><span class="mid"><span class="dg">
+        <span class="v"><b>70</b><span>/100 siła spinu</span><em>wysoki</em></span><span class="track"><i></i></span>
+        <h4>Pięć zarzutów wobec rządu, żaden z&nbsp;dowodem</h4><p>Poseł wylicza błędy ministrów i&nbsp;przypisuje im złe zamiary.</p></span></span></button>
+      <button type="button" class="opt" data-o="word"><span class="check"></span><span class="top"><b>B</b><strong>Samo słowo</strong></span><span class="mid"><span class="dg">
+        <span class="v"><em class="big">Wysoki spin</em></span>
+        <h4>Pięć zarzutów wobec rządu, żaden z&nbsp;dowodem</h4><p>Poseł wylicza błędy ministrów i&nbsp;przypisuje im złe zamiary.</p></span></span></button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-end" hidden>
+    <div class="intro frame enter">
+      <span class="facts"><span><b>✓</b> odpowiedzi zapisane</span><span id="voters"></span></span>
+      <h1>Dziękujemy!</h1>
+      <p>Tak głosują wszyscy do tej pory. Twoje odpowiedzi są zaznaczone na zielono.</p>
+    </div>
+    <div id="results" class="opts two"></div>
+    <div class="nav"><button class="btn ghost" type="button" id="again">Zmień odpowiedzi</button></div>
+  </section>
+
+  <div class="nav" id="nav" hidden><button class="btn ghost" type="button" id="back">Wstecz</button><button class="btn" type="button" id="next" disabled>Dalej</button></div>
+  <p class="status" id="status" role="status"></p>
+</div>
+
+<script>
+(() => {
+  const nb = () => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('script, style') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    let n; while ((n = w.nextNode())) n.nodeValue = n.nodeValue.replace(/(^|[\s(„])([aiouwzAIOUWZ]|\d+)\s+/g, '$1$2 '); };
+  nb();
+  const API = '/api/polls/udostepnianie-x/';
+  const STEPS = ['s-intro', 's-x', 's-card', 's-hook', 's-score', 's-end'];
+  const LABELS = { x: 'Wpis na X', card: 'Karta', hook: 'Pierwsza linia', score: 'Wynik na stronie' };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let voter = '';
+  try { voter = localStorage.getItem('sc-poll-voter') || ''; } catch (_) {}
+  if (!/^[0-9a-f]{32}$/.test(voter)) {
+    voter = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+    try { localStorage.setItem('sc-poll-voter', voter); } catch (_) {}
+  }
+  let state = { counts: {}, mine: {}, voters: 0 }, step = 0, typing = null;
+  const $ = id => document.getElementById(id);
+  const status = (text, err) => { $('status').textContent = text || ''; $('status').classList.toggle('err', !!err); };
+
+  function type(h) {
+    const text = h.dataset.type; clearInterval(typing);
+    if (reduce) { h.textContent = text; return; }
+    h.textContent = ''; h.classList.add('typed'); let i = 0;
+    typing = setInterval(() => { h.textContent = text.slice(0, ++i); if (i >= text.length) { clearInterval(typing); setTimeout(() => h.classList.remove('typed'), 700); } }, 24);
+  }
+  function animate(sec) {
+    sec.querySelectorAll('.opt').forEach((o, i) => { o.classList.remove('enter', 'frame'); void o.offsetWidth; o.style.setProperty('--d', (0.35 + i * 0.07).toFixed(2) + 's'); o.classList.add('enter', 'frame'); });
+    const head = sec.querySelector('.q-head'); if (head) { head.classList.remove('enter'); void head.offsetWidth; head.classList.add('enter'); }
+    const h = sec.querySelector('h2[data-type]'); if (h) type(h);
+  }
+  function mark() { document.querySelectorAll('.screen[data-q]').forEach(sec => sec.querySelectorAll('.opt').forEach(o => o.classList.toggle('mine', state.mine[sec.dataset.q] === o.dataset.o))); }
+  function show(i) {
+    step = i;
+    STEPS.forEach((id, k) => { $(id).hidden = k !== i; });
+    const sec = $(STEPS[i]);
+    const inQ = i > 0 && i < STEPS.length - 1;
+    $('nav').hidden = !inQ;
+    $('prog').style.setProperty('--p', (i / (STEPS.length - 1) * 100) + '%');
+    $('stepn').textContent = inQ ? `${i} / 4` : i === 0 ? '' : 'koniec';
+    if (inQ) { $('next').disabled = !state.mine[sec.dataset.q]; $('next').textContent = i === 4 ? 'Zobacz wyniki' : 'Dalej'; animate(sec); }
+    if (i === STEPS.length - 1) { results(); try { localStorage.setItem('sc-survey-done', '1'); } catch (_) {} }
+    status('');
+    scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  }
+  function results() {
+    const box = $('results'); box.innerHTML = '';
+    $('voters').textContent = 'głosujących: ' + state.voters;
+    Object.entries(LABELS).forEach(([q, label], k) => {
+      const sec = document.querySelector(`.screen[data-q="${q}"]`);
+      const opts = [...sec.querySelectorAll('.opt')].map(o => ({ o: o.dataset.o, name: o.querySelector('.top b').textContent + ' · ' + o.querySelector('.top strong').textContent }));
+      const counts = state.counts[q] || {}; const total = opts.reduce((a, x) => a + (counts[x.o] || 0), 0);
+      const card = document.createElement('div'); card.className = 'res enter frame'; card.style.setProperty('--d', (0.2 + k * 0.12) + 's');
+      const h = document.createElement('h3'); h.textContent = label; card.appendChild(h);
+      opts.sort((a, b) => (counts[b.o] || 0) - (counts[a.o] || 0)).forEach(x => {
+        const c = counts[x.o] || 0, pct = total ? Math.round(100 * c / total) : 0;
+        const row = document.createElement('div'); row.className = 'row' + (state.mine[q] === x.o ? ' mine' : '');
+        const a = document.createElement('span'); a.textContent = x.name; const b = document.createElement('span'); b.textContent = pct + '% (' + c + ')';
+        const bar = document.createElement('i'); row.append(a, b, bar); card.appendChild(row);
+        requestAnimationFrame(() => setTimeout(() => bar.style.setProperty('--w', pct + '%'), 300 + k * 120));
+      });
+      box.appendChild(card);
+    });
+  }
+  fetch(API + '?voter=' + voter, { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { state = d; mark(); }).catch(() => {});
+  let saving = false;
+  document.querySelectorAll('.screen[data-q] .opt').forEach(o => o.addEventListener('click', async () => {
+    const q = o.closest('.screen').dataset.q;
+    if (saving) return;
+    const before = state.mine[q];
+    state.mine = { ...state.mine, [q]: o.dataset.o }; mark(); $('next').disabled = false;
+    if (before === o.dataset.o) return;
+    saving = true; status('Zapisywanie…');
+    try {
+      const r = await fetch(API + 'vote/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voter, question: q, option: o.dataset.o }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || 'Nie udało się zapisać odpowiedzi.');
+      state = data; mark(); status('Zapisano.');
+    } catch (e) { state.mine = { ...state.mine, [q]: before }; mark(); $('next').disabled = !before; status((e && e.message) || 'Nie udało się zapisać odpowiedzi.', true); }
+    finally { saving = false; }
+  }));
+  $('start').addEventListener('click', () => show(1));
+  $('next').addEventListener('click', () => show(Math.min(step + 1, STEPS.length - 1)));
+  $('back').addEventListener('click', () => show(Math.max(step - 1, 0)));
+  $('again').addEventListener('click', () => show(1));
+  show(0);
+})();
+</script>
+</body></html>

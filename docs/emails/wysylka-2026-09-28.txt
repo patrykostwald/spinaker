@@ -58,7 +58,7 @@ NAZWA: dzienniki regionalne Polska Press
 NAZWY: dzienników regionalnych Polska Press
 POWÓD: Wiele wypowiedzi polityków dotyczy spraw lokalnych — Państwa dzienniki pozwoliłyby czytelnikom zobaczyć, jak dany temat wygląda w Krakowie, Wrocławiu, Poznaniu, Gdańsku i na Śląsku.
 
-12. Gazeta.pl — redakcja_portalu@agora.pl
+12. Gazeta.pl — pomoc@agora.pl (redakcja_portalu@agora.pl odbity 28.09)
 NAZWA: Gazeta.pl
 NAZWY: Gazeta.pl
 POWÓD: Gazeta.pl to jedno z najczęściej czytanych źródeł wiadomości w polskim internecie — chcielibyśmy, by czytelnicy mogli trafiać do Państwa materiałów prosto z naszego zestawienia.
@@ -83,7 +83,7 @@ NAZWA: Demagog
 NAZWY: Demagogu
 POWÓD: Sprawdzają Państwo, czy wypowiedzi polityków są prawdziwe — my pokazujemy, jak je zbudowano. Oba podejścia się uzupełniają, a Państwa analizy są naturalnym źródłem dla naszej Kliniki.
 
-17. wPolityce.pl — wpolityce@fratria.pl
+17. wPolityce.pl — redakcja@fratria.pl, DW redakcja@wpolityce.pl (wpolityce@fratria.pl odbity 28.09)
 NAZWA: wPolityce.pl
 NAZWY: wPolityce.pl
 POWÓD: Rozmowy telewizji wPolsce24 są jednym ze źródeł naszego „wywiadu dnia” — chcielibyśmy, by obok nich czytelnicy widzieli też Państwa teksty z wPolityce.pl, zawsze z linkiem do oryginału.

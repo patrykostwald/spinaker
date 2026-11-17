@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Witryna Dropdown — trzy tryby obok siebie, `multi` domyślnie otwarty,
+ * Witryna Dropdown - trzy tryby obok siebie, `multi` domyślnie otwarty,
  * plus instancja blisko dołu panelu do pokazania odwrócenia w górę.
  * docs/UI_KIT_PLAN.md → «Компоненты» (Dropdown), «Дропдаун».
  */
@@ -64,7 +64,7 @@ function DropdownsPanel({ theme }: { theme: "dark" | "light" }) {
             onChange={(v) => setSingle(v as string)}
           />
         </div>
-        {/* R0: otwarty panel jest absolutny — rezerwujemy pod nim miejsce, żeby nie nachodził na kolejne demo. */}
+        {/* R0: otwarty panel jest absolutny - rezerwujemy pod nim miejsce, żeby nie nachodził na kolejne demo. */}
         <div style={{ minHeight: 380 }}>
           <p className="sc-t-caption sc-text-3" style={{ margin: "0 0 6px" }}>multi (domyślnie otwarty)</p>
           <Dropdown
@@ -86,7 +86,7 @@ function DropdownsPanel({ theme }: { theme: "dark" | "light" }) {
 
       <h4 className="sc-t-title-s sc-section__sub">Wyrównanie i odwrócenie w górę</h4>
       <p className="sc-t-body-s sc-text-2" style={{ margin: "0 0 var(--sc-s-3)" }}>
-        Wyzwalacz blisko dolnej krawędzi widoku — panel powinien wyrosnąć w górę, nie zostać obcięty.
+        Wyzwalacz blisko dolnej krawędzi widoku - panel powinien wyrosnąć w górę, nie zostać obcięty.
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <Dropdown label="Sortuj" mode="menu" items={MENU_ITEMS} align="end" onSelect={() => {}} />

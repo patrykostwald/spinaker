@@ -1,0 +1,6 @@
+{"data": [
+ {"id": "meta-llama/llama-4-scout:free", "context_length": 128000, "pricing": {"prompt": "0", "completion": "0"}, "supported_parameters": ["response_format", "temperature"]},
+ {"id": "openai/gpt-oss-120b", "context_length": 131072, "pricing": {"prompt": "0.00000005", "completion": "0.00000025"}, "supported_parameters": ["response_format"]},
+ {"id": "inception/mercury-2.5:free", "context_length": 128000, "pricing": {"prompt": "0", "completion": "0"}, "supported_parameters": ["response_format", "structured_outputs"]},
+ {"id": "qwen/qwen3-235b-a22b:free", "context_length": 40960, "pricing": {"prompt": "0", "completion": "0"}, "supported_parameters": ["response_format"]}
+]}

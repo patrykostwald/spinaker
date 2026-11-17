@@ -30,12 +30,13 @@ export type OrganisationVerification = 'editor' | 'krs_register' | 'public_sourc
 export type PublicFigureOrganisation = {
   id: number;
   name: string;
-  krs_number: string;
+  /** Tylko przeszłość.today; profil spin.clinic pokazuje z KRS wyłącznie nazwę funkcji i podmiotu (właściciel 6.10). */
+  krs_number?: string;
   kind: OrganisationKind;
   legal_form?: string;
   sector?: OrganisationSector;
   /** Publiczna strona podmiotu z danymi KRS. */
-  official_register_url: string;
+  official_register_url?: string;
   public_role: string;
   organ?: string;
   relation_status: 'current' | 'former';
@@ -44,8 +45,8 @@ export type PublicFigureOrganisation = {
   until?: string | null;
   verification_method?: OrganisationVerification;
   sources?: Array<{ url: string; title: string }>;
-  evidence_url: string;
-  verified_at: string | null;
+  evidence_url?: string;
+  verified_at?: string | null;
 };
 
 /** Oś kariery: funkcje publiczne i funkcje w spółkach Skarbu Państwa, komunalnych i innych publicznych (z KRS). */
@@ -84,7 +85,7 @@ export type PublicFigureVotes =
   | { available: false; reason?: string; results: PublicFigureVote[] };
 
 /**
- * Konto X z backend/news/public_figures.py::verified_x_account_data — obecne wyłącznie po
+ * Konto X z backend/news/public_figures.py::verified_x_account_data - obecne wyłącznie po
  * przeglądzie linku z oficjalnego profilu, potwierdzeniu przez oficjalne API X i potwierdzeniu
  * redakcyjnym. W innym wypadku `null`. Interfejs nigdy nie zgaduje handle'a.
  */
@@ -102,6 +103,8 @@ export type PublicFigureXPost = {
 export type PublicFigureDetail = PublicFigureSummary & {
   organisations: PublicFigureOrganisation[];
   employment_timeline?: EmploymentEntry[];
+  /** Odnośnik do pełnej historii KRS w przeszłość.today (tylko gdy przeszłość jest włączona). */
+  krs_full_profile?: { url: string; label: string } | null;
   /** Obecny klub lub partia (z rejestru Sejmu albo notatki). */
   party?: { code: string; short: string; name: string } | null;
   votes: PublicFigureVotes;
@@ -175,4 +178,18 @@ export function usePublicFigures(query: string, roleCategory: string, page = 1) 
 
 export function usePublicFigure(id: number | null) {
   return useQuery({ queryKey: ['public-figure', id], queryFn: () => getPublicFigure(id!), enabled: id !== null, retry: false, staleTime: 60_000 });
+}
+
+/** GET /api/public-figures/<id>/slad/ - bezpłatny „Ślad w dokumentach” (backend/news/przeszlosc_osoba.py: free_trace). */
+export type PublicFigureTrace = {
+  available: boolean;
+  reason: string;
+  votes: Array<{ date: string | null; title: string; vote: string; club: string; club_vote: string; relation: '' | 'zgodnie z klubem' | 'inaczej niż klub' | 'brak większości w klubie'; url: string }>;
+  documents: Array<{ kind: string; label: string; title: string; date: string | null; url: string; answered: boolean | null }>;
+  year: { votes: number; documents: number };
+  full_profile: { url: string; features: string[] } | null;
+};
+
+export function usePublicFigureTrace(id: number) {
+  return useQuery({ queryKey: ['public-figure-trace', id], queryFn: () => apiFetch<PublicFigureTrace>(`/api/public-figures/${id}/slad/`), retry: false, staleTime: 300_000 });
 }

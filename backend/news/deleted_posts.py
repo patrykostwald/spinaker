@@ -132,7 +132,8 @@ def deleted_data(days: int = 30, limit: int = 60) -> dict:
                 .select_related('account').order_by('-unavailable_at')[:limit])
     figures = figures_by_account({row.account_id for row in rows})
     from news.clinic_models import SpinDiagnosis
-    verdicts = dict(SpinDiagnosis.objects.filter(post__in=rows).exclude(verdict='').values_list('post_id', 'verdict'))
+    verdicts = dict(SpinDiagnosis.objects.filter(post__in=rows, status='approved', withdrawn_at__isnull=True,
+                                                hidden_at__isnull=True).exclude(verdict='').values_list('post_id', 'verdict'))
     items = [{
         'author': author_data(row, figures.get(row.account_id)),
         'camp': row.camp_at_collection, 'camp_label': CAMP_LABELS.get(row.camp_at_collection, ''),

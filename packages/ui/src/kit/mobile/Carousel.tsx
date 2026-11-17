@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * Carousel — pozioma lista z przyciąganiem (docs/UI_KIT_PLAN.md → «Mobilne rozkłady»,
+ * Carousel - pozioma lista z przyciąganiem (docs/UI_KIT_PLAN.md → «Mobilne rozkłady»,
  * «Karuzela» w opisie stoiska). `scroll-snap-type: x mandatory`, następny slajd wygląda na 16%
  * szerokości, `touch-action: pan-x` TYLKO na scrollerze. Slajd wyśrodkowany dostaje stopień A
  * (ta sama poświata `data-lit`, co w reszcie systemu) przez `useFocalBand` w osi poziomej.
  *
  * Uwaga właściciela (23.09), którą trzeba tu uszanować: rozwinięcie karty (stopień B) NIGDY nie
- * zmienia żadnego pudełka w potoku — również w karuzeli. Dlatego ten komponent sam niczego nie
+ * zmienia żadnego pudełka w potoku - również w karuzeli. Dlatego ten komponent sam niczego nie
  * rozszerza: dotknięcie wyśrodkowanego slajdu woła `onPreview(article, el)`, warstwa nad stroną
- * (R5 — PortalLayer) robi resztę, a karuzela nigdy nie zmienia swojej wysokości.
+ * (R5 - PortalLayer) robi resztę, a karuzela nigdy nie zmienia swojej wysokości.
  *
  * Drabina dotyku, bo telefon nie ma najechania:
  *  1. dotknięcie slajdu NIE wyśrodkowanego → przewija go do środka (staje się focalny);
@@ -41,13 +41,13 @@ export function Carousel({ articles, size = "medium", ariaLabel, onPreview, onOp
   const m = useMotionTokens();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   // `force: true` celowo, inaczej niż domyślne użycie w siatce: tu pasmo fokalne to nie tylko
-  // zamiennik najechania, ale JEDYNE źródło "który slajd jest bieżący" — napędza strzałki, licznik
+  // zamiennik najechania, ale JEDYNE źródło "który slajd jest bieżący" - napędza strzałki, licznik
   // dla czytnika ekranu i drabinę A/B/C. Na desktopie realne :hover i tak włącza tę samą poświatę
   // (ten sam atrybut `data-lit`/`.sc-hoverable`), więc podwójne źródło nie koliduje wizualnie.
   const focalId = useFocalBand(scrollerRef, { axis: "x", force: true });
   const [previewedId, setPreviewedId] = useState<number | null>(null);
 
-  // Zmiana slajdu focalnego (przewinięcie dalej) kasuje ślad "już podglądnięty" — kolejne
+  // Zmiana slajdu focalnego (przewinięcie dalej) kasuje ślad "już podglądnięty" - kolejne
   // dotknięcie nowego slajdu znów zaczyna od stopnia B, nie przeskakuje do C.
   useEffect(() => {
     setPreviewedId(null);

@@ -11,6 +11,7 @@ htmlcov/
 *.sqlite3
 staticfiles/
 media/
+backend/var/glosy/
 
 # Node
 node_modules/
@@ -47,3 +48,10 @@ celerybeat-schedule*
 
 # Generated reports from commands running inside the backend container
 backend/reports/
+frontend-spin/dev.log
+
+# Lokalne zrzuty kart diagnoz i pliki robocze (nie do repo)
+backend/clinic_cards/*.png
+.pytest-tmp/
+frontend-*.log
+lat.png

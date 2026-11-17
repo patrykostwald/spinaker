@@ -256,7 +256,9 @@ def sources():
                 'Liczba bieżących stanów z błędem; brak historycznego licznika błędów. RSS zablokowane = wyłączone źródło lub pobieranie.',
                 max(filter(None, [rss['last']] + [r['last_success'] for r in states]), default=None),
                 [metric('Importery z błędem', sum(bool(r['last_error']) for r in states)), metric('RSS aktywne', rss['active']),
-                 metric('RSS zablokowane', rss['blocked']), metric('RSS z błędem', rss['errors']), metric('Historyczna liczba błędów', None)], rows)
+                 metric('RSS zablokowane', rss['blocked']), metric('RSS z błędem', rss['errors']),
+                 metric('Źródła bez karty dostępu', Source.objects.filter(access_instructions__isnull=True).exclude(catalog_stage='excluded').count()),
+                 metric('Historyczna liczba błędów', None)], rows)
 
 
 @never_cache
@@ -285,7 +287,13 @@ def snapshot(now):
     collect('Konsylium / Rekruter', council)
     from news.council_auditor import panel_section as audit_section
     collect('Audytor-inkwizytor', lambda: audit_section(now))
+    from news.account_warden import panel_section as warden_section
+    collect('Strażnik kont', lambda: warden_section(now))
+    from news.review_status import panel_section as reviews_section
+    collect('Drugi klucz i Seba', lambda: reviews_section(now))
     collect('Media społecznościowe', lambda: social(today, tomorrow))
+    from news.social_api import panel_section as social_tasks_section
+    collect('Zadania od social media', social_tasks_section)
     collect('Kolejki', lambda: queues(now))
     collect('Źródła / harvestery', sources)
     def newsletter():
@@ -311,7 +319,11 @@ def snapshot(now):
         wallets = finance['wallets']
     except Exception:
         sections.append(card('AI i koszty', description='Nie udało się odczytać kosztów i portfeli.'))
+    from news.raport_petli import panel_section as loops_section
+    collect('Pętle agentów', lambda: loops_section(now))
     from news.repairer import panel_section, annotate_actions
+    from news.duty import panel_section as duty_section
+    collect('Dyżurny', lambda: duty_section(now))
     action_list = actions(sections, wallets)
     collect('Naprawiacz', lambda: panel_section(now, {'sections': sections, 'actions': action_list}))
     try:

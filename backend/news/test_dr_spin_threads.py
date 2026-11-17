@@ -1,4 +1,4 @@
-"""Nitki z lokalnej Bazy; model i sieć zastąpione w testach."""
+"""Spinki z lokalnej Bazy; model i sieć zastąpione w testach."""
 import json
 from datetime import timedelta
 from io import StringIO
@@ -13,6 +13,7 @@ from news import clinic_ai, dr_spin_threads as threads
 from news.clinic_models import SpinDiagnosis
 from news.models import Article, ArticleContent, EvidenceLink, Source, Thread, ThreadItem
 from news.test_clinic import account, post
+pytestmark = pytest.mark.usefixtures('auto_approve_threads')
 
 
 @pytest.fixture
@@ -243,7 +244,7 @@ def test_same_army_subject_creates_thread(context, monkeypatch, relevance):
     monkeypatch.setattr(clinic_ai, '_free_chat', lambda *a, **kw: ({'title': 'Wyposażenie armii',
         'items': [{'id': row.pk, 'relevance': relevance, 'why': row.title} for row in rows[:3]]}, {}))
     result = threads.build_daily_thread()
-    assert result['status'] == 'created' and not result['fallback']
+    assert result['status'] == 'pending_review' and not result['fallback']  # created, then checked before publication
     assert len(result['items']) == 3
 
 
@@ -284,3 +285,8 @@ def test_keywords_include_post_claims_and_ignore_general_words():
     assert threads._hits('Błaszczak Błaszczaka Błaszczak', keywords) == 1
     assert threads._hits('Rządu Polsce program programu ministra nowy', keywords) == 0
     assert threads._hits('Dostawy amunicji', keywords) == 2
+
+
+@pytest.fixture(autouse=True)
+def threads_feature(settings):
+    settings.THREADS_ENABLED = True

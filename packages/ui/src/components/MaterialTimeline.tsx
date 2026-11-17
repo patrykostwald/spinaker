@@ -2,7 +2,7 @@
 
 /**
  * Oś czasu powiększonego boxa: do 15 najważniejszych powiązanych materiałów w jednej poziomej taśmie,
- * od NAJNOWSZEGO (lewa) do coraz starszych (prawa). Otwarty box stoi na swoim miejscu według daty —
+ * od NAJNOWSZEGO (lewa) do coraz starszych (prawa). Otwarty box stoi na swoim miejscu według daty -
  * jeśli jest najnowszy, jest pierwszy. Kolejność ważności przy wyborze 14 sąsiadów: najpierw
  * `/api/articles/<id>/related/` (dopasowanie po słowach tytułu, ±7 dni, posortowane wg trafności),
  * potem pierwsza strona `/api/articles/<id>/context/` (dopasowanie po słowach kluczowych).

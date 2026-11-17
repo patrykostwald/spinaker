@@ -1,5 +1,5 @@
 """Account notification endpoints; all queries are scoped to their owner."""
-from news.features import accounts_enabled
+from news.features import accounts_enabled, threads_enabled
 from urllib.parse import quote
 from django.contrib.auth import get_user_model
 from django.http import Http404
@@ -32,13 +32,19 @@ def follow_data(row):
     elif row.target_user_id:
         label, url = row.target_user.username, f'/profile/{quote(row.target_user.username, safe="")}'
     else:
-        label, url = row.thread.title, f'/nitki/{row.thread_id}'
-    return {'id': row.pk, 'kind': row.kind, 'target_id': row.target_id, 'label': label, 'url': url}
+        label, url = row.thread.title, f'/spinki/{row.thread_id}'
+    return {'id': row.pk, 'kind': row.kind, 'target_id': row.target_id, 'label': label, 'url': url, 'mode': row.mode if row.figure_id else None}
 
 
 class FollowInput(serializers.Serializer):
     kind = serializers.ChoiceField(choices=['figure', 'user', 'thread'])
     target_id = serializers.IntegerField(min_value=1)
+    mode = serializers.ChoiceField(choices=Follow.MODES, required=False)
+
+    def validate(self, attrs):
+        if attrs['kind'] != 'figure' and 'mode' in attrs:
+            raise serializers.ValidationError({'mode': 'Tryb dotyczy tylko osób publicznych.'})
+        return attrs
 
 
 @json_view('Obserwowani', tags=['konto'])
@@ -63,14 +69,23 @@ class FollowsView(AccountNotificationView):
             if not threads_enabled():
                 raise Http404
             target = {'thread': get_object_or_404(public_threads(), pk=pk)}
-        row, created = Follow.objects.get_or_create(user=request.user, **target)
+        row, created = Follow.objects.get_or_create(user=request.user, **target,
+            defaults={'mode': data.validated_data.get('mode', 'diagnoses')})
         return Response(follow_data(row), status=201 if created else 200)
 
 
 @json_view('Przestań obserwować', tags=['konto'])
 class FollowDetailView(AccountNotificationView):
+    def patch(self, request, follow_id):
+        row = get_object_or_404(Follow.objects.all() if threads_enabled() else Follow.objects.filter(thread__isnull=True), user=request.user, pk=follow_id)
+        data = FollowInput(data={'kind': row.kind, 'target_id': row.target_id, 'mode': request.data.get('mode')})
+        data.is_valid(raise_exception=True)
+        row.mode = data.validated_data['mode']
+        row.save(update_fields=['mode'])
+        return Response(follow_data(row))
+
     def delete(self, request, follow_id):
-        get_object_or_404(Follow, user=request.user, pk=follow_id).delete()
+        get_object_or_404(Follow.objects.all() if threads_enabled() else Follow.objects.filter(thread__isnull=True), user=request.user, pk=follow_id).delete()
         return Response(status=204)
 
 
@@ -78,7 +93,8 @@ class FollowDetailView(AccountNotificationView):
 class NotificationsView(AccountNotificationView):
     def get(self, request):
         rows = Notification.objects.filter(user=request.user)
-        return Response({'results': list(rows.values('id', 'kind', 'title', 'url', 'created_at', 'read_at')[:100]), 'unread': rows.filter(read_at__isnull=True).count()})
+        from news.followed_posts import notification_data
+        return Response({'results': [notification_data(row) for row in rows.prefetch_related('posts__post__spin_diagnosis')[:100]], 'unread': rows.filter(read_at__isnull=True).count()})
 
 
 class ReadInput(serializers.Serializer):
@@ -104,9 +120,26 @@ class NotificationReadView(AccountNotificationView):
 
 
 class SettingsSerializer(serializers.ModelSerializer):
+    wake_person_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=500, required=False)
+
+    def validate_wake_person_ids(self, value):
+        ids = set(value)
+        allowed = set(Follow.objects.filter(user=self.instance.user, figure_id__in=ids).values_list('figure_id', flat=True))
+        if ids != allowed:
+            raise serializers.ValidationError('Wybierz osoby z listy obserwowanych.')
+        return sorted(ids)
+
+    def validate(self, attrs):
+        start = attrs.get('quiet_hours_start', self.instance.quiet_hours_start)
+        end = attrs.get('quiet_hours_end', self.instance.quiet_hours_end)
+        if start == end:
+            raise serializers.ValidationError('Początek i koniec ciszy muszą się różnić. Ciszę możesz wyłączyć przełącznikiem.')
+        return attrs
+
     class Meta:
         model = NotificationSettings
-        fields = ['email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies']
+        fields = ['email_digest', 'push_spin_of_day', 'push_followed', 'push_thread_replies', 'service_enabled', 'social_enabled',
+            'quiet_hours_enabled', 'quiet_hours_start', 'quiet_hours_end', 'wake_person_ids']
 
 
 @json_view('Ustawienia powiadomień', tags=['konto'])

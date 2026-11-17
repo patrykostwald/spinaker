@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
+from news.spin_colors import strength_color
 
 EMOJI = re.compile('[\U0001F000-\U0001FAFF☀-➿️‍⬀-⯿]')
 FONT = Path(__file__).resolve().parent / 'assets' / 'fonts' / 'Montserrat[wght].ttf'
@@ -26,11 +27,23 @@ def _font(size: int, weight: int = 500) -> ImageFont.FreeTypeFont:
     return font
 
 
+def glue_short(words: list[str]) -> list[str]:
+    """Polska typografia: jednoliterowe słowo (a, i, o, u, w, z…) nie zostaje na końcu wiersza,
+    tylko przechodzi do następnego razem z kolejnym słowem (decyzja właściciela 1.10.2026)."""
+    out: list[str] = []
+    for word in words:
+        if out and len(out[-1].split(' ')[-1]) == 1 and out[-1].split(' ')[-1].isalpha():
+            out[-1] = f'{out[-1]} {word}'
+        else:
+            out.append(word)
+    return out
+
+
 def _wrap(draw: ImageDraw.ImageDraw, text: str, font, width: int, max_lines: int) -> list[str]:
     """Zawija tekst do szerokości w pikselach; ostatnia linia z wielokropkiem, gdy się nie mieści."""
     lines: list[str] = []
     for paragraph in (text or '').split('\n'):
-        words, line = paragraph.split(), ''
+        words, line = glue_short(paragraph.split()), ''
         for word in words:
             candidate = f'{line} {word}'.strip()
             if draw.textlength(candidate, font=font) <= width:
@@ -75,7 +88,13 @@ def render(*, name: str, handle: str, party: str, published: str, text: str, int
     tag_font = _font(22, 700)
     tag_width = draw.textlength(tag, font=tag_font) + 28
     draw.rounded_rectangle((PAD, footer_y - 6, PAD + tag_width, footer_y + 32), radius=19, outline=SPIN, width=2)
-    draw.text((PAD + 14, footer_y + 13), tag, font=tag_font, fill=SPIN, anchor='lm')
+    prefix = f'{verdict_label} · '
+    tag_x = PAD + 14
+    draw.text((tag_x, footer_y + 13), prefix, font=tag_font, fill=SPIN, anchor='lm')
+    tag_x += draw.textlength(prefix, font=tag_font)
+    draw.text((tag_x, footer_y + 13), str(intensity), font=tag_font, fill=strength_color(intensity), anchor='lm')
+    tag_x += draw.textlength(str(intensity), font=tag_font)
+    draw.text((tag_x, footer_y + 13), '/100', font=tag_font, fill=MUTED, anchor='lm')
     draw.text((WIDTH - PAD, footer_y + 13), 'Wpis z X · diagnoza: spin.clinic', font=_font(22, 600), fill=ACCENT, anchor='rm')
     buffer = io.BytesIO()
     image.save(buffer, format='PNG', optimize=True)

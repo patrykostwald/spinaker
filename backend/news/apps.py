@@ -9,6 +9,8 @@ class NewsConfig(AppConfig):
     verbose_name = "Wiadomości"
 
     def ready(self):
+        from news.przeplyw_cache import connect
+        connect()
         from news import push_events  # noqa: F401
         from news import signals  # noqa: F401
         from news import task_heartbeat  # noqa: F401

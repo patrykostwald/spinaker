@@ -37,7 +37,7 @@ def make_source(url='https://example.pl', **overrides):
         allowed_scope=SourceAccessInstruction.Scope.METADATA,
         endpoint=ENDPOINT, terms_url='https://example.pl/terms',
         evidence={'basis': 'test'}, reviewed_at=timezone.now(),
-        reviewed_by='test', minimum_interval_seconds=3)
+        reviewed_by='test', minimum_interval_seconds=3, daily_request_cap=1000)
     return source
 
 

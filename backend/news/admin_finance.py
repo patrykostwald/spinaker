@@ -18,7 +18,7 @@ from rest_framework.response import Response
 
 from news.clinic_models import ClinicInterview, SpinDiagnosis
 from news.models import AIResearchCall
-from news.political_models import PoliticalRead
+from news.political_models import PoliticalRead, AccountWardenRun
 from news.wallet_models import WalletBalance, PROVIDERS
 
 WARSAW = ZoneInfo('Europe/Warsaw')
@@ -109,6 +109,9 @@ def recorded_events(start, now):
         else:
             cost = float(row['reserved_usd'])  # w toku albo błąd — górny szacunek jak w budżecie
         events.append((row['started_at'], 'x', cost, 1))
+    for row in bounded_rows(AccountWardenRun.objects.filter(started_at__gte=start, started_at__lte=now)
+                            .values('started_at', 'lookups')):
+        events.append((row['started_at'], 'x', float(USER_PRICE * row['lookups']), None))
     return events
 
 

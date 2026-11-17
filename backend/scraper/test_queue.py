@@ -29,7 +29,7 @@ def test_requested_urls_preserve_archive_slots():
     historical = [ArchiveJob.objects.create(source=source, url=f'https://example.org/old-{i}', kind='page', available_at=old) for i in range(5)]
     urgent = [enqueue_requested_url(f'https://example.org/requested-{i}', source) for i in range(5)]
     handled = []
-    with patch('scraper.archive.process', side_effect=lambda job: handled.append(job.pk)), patch('scraper.archive.time.sleep'):
+    with patch('scraper.archive.process', side_effect=lambda job, **_: handled.append(job.pk)), patch('scraper.archive.time.sleep'):
         assert run_batch(4) == 4
     assert handled == [urgent[0].pk] + [job.pk for job in historical[:3]]
 
@@ -43,7 +43,7 @@ def test_small_new_source_gets_a_turn_alongside_large_old_queue():
         ArchiveJob.objects.create(source=big, url=f'https://big.example.org/{i}', kind='page', available_at=old)
     new = ArchiveJob.objects.create(source=small, url='https://small.example.org/new', kind='page')
     handled = []
-    with patch('scraper.archive.process', side_effect=lambda job: handled.append(job.pk)), patch('scraper.archive.time.sleep'):
+    with patch('scraper.archive.process', side_effect=lambda job, **_: handled.append(job.pk)), patch('scraper.archive.time.sleep'):
         assert run_batch(2, source_ids=[big.pk, small.pk]) == 2
     assert new.pk in handled
 
