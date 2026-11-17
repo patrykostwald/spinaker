@@ -353,6 +353,19 @@ def test_real_niw_file_headers_and_repeated_contract_numbers(monkeypatch):
     assert records[0]['subject'] == 'Zadanie A' and records[0]['contract_no'] == '75'
 
 
+def test_niw_file_21_10_2026_numbered_beneficiary_header(monkeypatch):
+    """Plik NIW z 21.10.2026 ma kolumnę „Nazwa oferenta 1” (było „Nazwa oferenta”); od tego dnia parser nie rozpoznawał nagłówka."""
+    import sys
+    headers = ['Numer wniosku', 'Tytuł wniosku', 'Program', 'Konkurs', 'Priorytet', 'Kwota dotacji', 'Rozpoczęcie zadania',
+               'Zakończenie zadania', 'Numer umowy', 'Data zawarcia umowy', 'Nazwa oferenta 1', 'NIP', 'Nazwa rejestru',
+               'Numer w rejestrze', 'Kod pocztowy', 'Miejscowość', 'Województwo', 'Powiat']
+    rows = [['3_FIO2018', 'Zadanie A', 'Program FIO', 'Konkurs FIO 2018', '', 36770, 43283, 43465, '75', 43285,
+             'Stowarzyszenie A', '5260250995', 'KRS', '336434', '05-306', 'Miasto', 'MAZOWIECKIE', 'miński']]
+    monkeypatch.setattr(sys.modules[__name__], 'HEADERS', headers)
+    records, stats = niw.parse_xlsx(xlsx(rows), NAME)
+    assert len(records) == 1 and records[0]['beneficiary'] == 'Stowarzyszenie A' and records[0]['krs'] == '0000336434'
+
+
 def test_missing_contract_date_is_kept_without_date(monkeypatch):
     """142 wiersze prawdziwego pliku NIW mają KRS i kwotę, ale pustą datę umowy: nie są błędne, tylko bez daty."""
     import sys

@@ -164,7 +164,7 @@ ALIASES = {
                'wysokosc dotacji', 'kwota umowy'),
     'contract_no': ('numer umowy', 'nr umowy'),
     'signed': ('data umowy', 'data zawarcia umowy', 'data podpisania umowy'),
-    'beneficiary': ('nazwa oferenta', 'oferent', 'nazwa organizacji', 'beneficjent', 'nazwa podmiotu'),
+    'beneficiary': ('nazwa oferenta', 'nazwa oferenta 1', 'oferent', 'oferent 1', 'nazwa organizacji', 'beneficjent', 'nazwa podmiotu'),  # „Nazwa oferenta 1” od pliku z 21.10.2026
     'nip': ('nip', 'nip oferenta'),
     'register': ('rejestr', 'nazwa rejestru', 'rodzaj rejestru'),
     'krs': ('krs', 'numer krs', 'nr krs', 'numer w rejestrze', 'nr w rejestrze', 'numer rejestru',
