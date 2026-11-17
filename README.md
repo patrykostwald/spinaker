@@ -1,18 +1,59 @@
-# spin.clinic
+# spin.clinic · przeszłość.today
 
-Repozytorium projektu: portal Next.js, backend Django, importery źródeł oraz dokumentacja. Kod został dołączony do osobnej gałęzi roboczej po skanowaniu sekretów; lokalna baza SQLite, pliki środowiskowe, logi, zależności i zbudowane artefakty pozostają poza repozytorium.
+Two public-interest products on one codebase, built by [iapply](https://iapply.pl).
 
-## Aktualny plan
+- **[spin.clinic](https://spin.clinic)** shows how political messages are built. Dr. Spin, an AI analyst, tags persuasion techniques in politicians' posts and checks each claim against sources. The same yardstick applies to everyone.
+- **[przeszłość.today](https://przeszlosc.today)** puts public figures on one timeline: statements, Sejm votes, companies from the KRS register and public money, with every link backed by a source. Public persons and entities only.
 
-Zacznij od [PLAN_AKTUALNY.md](PLAN_AKTUALNY.md): trzy etapy rozwoju, Supabase, kontrola uprawnień, harvestery i współpraca Codex/Claude.
+## Architecture
 
-`plan_pelny.md` jest materiałem wejściowym użytkownika. `project.md`, `roadmap.md` i `infrastructure.md` zachowują starsze założenia; ich terminy, ceny i ustawienia nie są potwierdzeniem bieżącego wdrożenia. `sources.md` wymaga uzgodnienia z nowym katalogiem Supabase.
+| Layer | Technology |
+|---|---|
+| API and domain logic | Django 5, Django REST Framework, drf-spectacular |
+| Background work | Celery and Redis: source harvesters, daily analysis, cache warm-up |
+| Data | PostgreSQL |
+| Frontends | Next.js 14 and React 18: `frontend-spin`, `frontend-przeszlosc` |
+| AI | Structured LLM outputs, reviewed by a council of independent models before publication |
+| Delivery | Docker Compose behind Caddy, GitHub Actions for CI |
 
-## Stan integracji
+Every automated result is a proposal with evidence. Publication passes deterministic gates: source checks, identity safeguards for people and a human review where the stakes require it.
 
-- Lokalny portal i wcześniejsze harvestery są zachowane w katalogach `frontend-spin`, `backend` i `packages`.
-- Aktualny zakres produktu opisuje [PLAN_AKTUALNY.md](PLAN_AKTUALNY.md).
-- Odczyt istniejącego Supabase i wykryte blokery opisuje [audyt Supabase](docs/SUPABASE_AUDIT_2026-09-14.md).
-- Nie uruchamiać starszych instrukcji migracji i importu bez sprawdzenia zgodności ze schematem Supabase.
+## Repository layout
 
-Ta gałąź nie zmienia automatycznie bazy Supabase ani środowiska publicznego.
+```
+backend/              Django project: apps, harvesters, analysis pipeline, tests
+frontend-spin/        spin.clinic web app
+frontend-przeszlosc/  przeszłość.today web app
+packages/             shared code
+deploy/               production compose file, Caddy config, backup and runbooks
+docs/                 architecture notes and audits
+scripts/              local tooling
+```
+
+## Running locally
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Backend tests:
+
+```bash
+cd backend
+pytest
+```
+
+Tests run offline by default: a guard blocks outgoing network calls, so no real API is hit during a test run.
+
+## Data and privacy
+
+Only publicly available sources with a lawful basis are used. Private individuals are not profiled. Each connection shown in przeszłość.today points to its source document.
+
+## Status
+
+Both products are live. Active development happens on feature branches and is merged through pull requests.
+
+## License
+
+All rights reserved. © iapply sp. z o.o.
