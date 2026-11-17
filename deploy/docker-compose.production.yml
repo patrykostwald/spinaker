@@ -51,6 +51,7 @@ services:
     environment:
       DATABASE_URL: postgres://spin:${POSTGRES_PASSWORD}@db:5432/spin_clinic
       REDIS_URL: redis://redis:6379/0
+      TERAZ_REDIS_URL: ${TERAZ_REDIS_URL:-redis://redis:6379/2}
       DJANGO_DEBUG: "false"
     depends_on:
       db:
@@ -74,6 +75,27 @@ services:
     environment:
       DATABASE_URL: postgres://spin:${POSTGRES_PASSWORD}@db:5432/spin_clinic
       REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+    restart: unless-stopped
+
+  worker-teraz:
+    build:
+      context: ../backend
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        BUILD_TIME: ${BUILD_TIME:-}
+    command: celery -A config worker -l info -Q teraz --concurrency=2
+    mem_limit: 768m
+    cpus: 1.0
+    env_file: ../.env.production
+    volumes:
+      - teraz_zrzuty:/app/media/private/teraz
+    environment:
+      DATABASE_URL: postgres://spin:${POSTGRES_PASSWORD}@db:5432/spin_clinic
+      REDIS_URL: redis://redis:6379/0
+      TERAZ_REDIS_URL: ${TERAZ_REDIS_URL:-redis://redis:6379/2}
     depends_on:
       - backend
       - redis
@@ -119,5 +141,6 @@ volumes:
   social_media:
   zbudujmi_uwagi:  # załączniki do uwag klientów zbudujmi (29.10), poza katalogiem publicznym
   council_votes:
+  teraz_zrzuty:
   caddy_data:
   caddy_config:
