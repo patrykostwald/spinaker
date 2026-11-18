@@ -1,5 +1,5 @@
 import type { Okres } from './typy';
-import { OKRES_DOMYSLNY, OKRESY } from './warstwy';
+import { KOLEJNOSC_WARSTW, OKRES_DOMYSLNY, OKRESY } from './warstwy';
 import { WOJEWODZTWA } from './teryt';
 
 /**
@@ -30,16 +30,27 @@ const pierwszy = (w: Wejscie, klucz: string): string | undefined => {
   return Array.isArray(v) ? v[0] : v;
 };
 
-const KOD_WARSTWY = /^[a-z][a-z_]{1,24}$/;
+/**
+ * Wspólna walidacja wartości widoku: ta sama dla adresu URL (parsuj) i dla pamięci przeglądarki (pamiec.ts).
+ * Dozwolone są tylko znane kody warstw, okresy z listy i kody województw ze słownika; reszta jest odrzucana, nigdy nie trafia do adresu.
+ */
+export const KODY_WARSTW: ReadonlySet<string> = new Set(KOLEJNOSC_WARSTW);
+export const poprawnyOkres = (x: unknown): x is Okres => OKRESY.some(o => o.id === x);
+export const poprawneWojewodztwo = (x: unknown): x is string => typeof x === 'string' && WOJEWODZTWA.some(w => w.kod === x);
+
+/** Tablica unikalnych dozwolonych kodów warstw; cokolwiek innego niż tablica daje null (czyli „wszystkie aktywne”). */
+export function oczyscWarstwy(x: unknown): string[] | null {
+  if (!Array.isArray(x)) return null;
+  return [...new Set(x.filter((k): k is string => typeof k === 'string' && KODY_WARSTW.has(k.trim())).map(k => k.trim()))];
+}
 
 export function parsuj(wejscie: Wejscie): Parametry {
   const warstwyTekst = pierwszy(wejscie, 'warstwy');
-  const warstwy = warstwyTekst === undefined ? null
-    : [...new Set(warstwyTekst.split(',').map(s => s.trim()).filter(s => KOD_WARSTWY.test(s)))];
+  const warstwy = warstwyTekst === undefined ? null : oczyscWarstwy(warstwyTekst.split(','));
   const okresTekst = pierwszy(wejscie, 'okres');
-  const okres = OKRESY.find(o => o.id === okresTekst)?.id ?? OKRES_DOMYSLNY;
+  const okres = poprawnyOkres(okresTekst) ? okresTekst : OKRES_DOMYSLNY;
   const wojTekst = pierwszy(wejscie, 'woj');
-  const woj = WOJEWODZTWA.some(w => w.kod === wojTekst) ? wojTekst ?? null : null;
+  const woj = poprawneWojewodztwo(wojTekst) ? wojTekst : null;
   const wpisTekst = pierwszy(wejscie, 'wpis');
   const wpis = wpisTekst && /^[0-9]{1,12}$/.test(wpisTekst) ? Number(wpisTekst) : null;
   const widok = WIDOKI.find(v => v === pierwszy(wejscie, 'widok')) ?? 'mapa';

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Warstwa, WidokWpisu } from './typy';
 import { dataIGodzina, host } from './czas';
+import { adresZrodla } from './link';
 import { etykietaDokladnosci, opisMiejsca } from './teryt';
 import { nazwaZrodla } from './model';
 import { kopiujDoSchowka } from './schowek';
@@ -59,9 +60,11 @@ export function KartaWpisu({ widok, warstwy, adres, onZamknij }: KartaWpisuProps
     </dl>
 
     <p className="tz-karta__oryginal">
-      <a className="tz-przycisk tz-przycisk--glowny" href={wpis.link} target="_blank" rel="noopener noreferrer">
-        Otwórz oryginał u źródła{host(wpis.link) ? ` (${host(wpis.link)})` : ''}
-      </a>
+      {adresZrodla(wpis.link)
+        ? <a className="tz-przycisk tz-przycisk--glowny" href={adresZrodla(wpis.link) as string} target="_blank" rel="noopener noreferrer">
+          Otwórz oryginał u źródła{host(wpis.link) ? ` (${host(wpis.link)})` : ''}<span className="tz-sr"> (otwiera się w nowej karcie)</span>
+        </a>
+        : <span className="tz-brak-linku">Źródło nie podało poprawnego odnośnika do oryginału.</span>}
     </p>
     <div className="tz-karta__kopiuj">
       <button type="button" className="tz-przycisk" onClick={kopiuj}>Kopiuj link do wpisu</button>

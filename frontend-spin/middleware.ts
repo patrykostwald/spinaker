@@ -5,6 +5,8 @@ import { NextResponse, type NextRequest } from 'next/server';
  * pozostałe adresy spin.clinic pod tą domeną przekierowujemy na spin.clinic, żeby nie dublować treści.
  */
 // /przeszlosc obejmuje też public/przeszlosc (ikony PWA, strona offline); /sw.js musi być z tej samej domeny (bez przekierowania).
+// dokładne ścieżki plików z public/teraz (granica Polski dla mapy i słownik powiatów); reszta /teraz/... dalej idzie na spin.clinic
+const TERAZ_PLIKI = ['/teraz/polska.geojson', '/teraz/teryt-powiaty.json'];
 const OWN = ['/przeszlosc', '/_next', '/api', '/fonts', '/icons', '/favicon', '/robots.txt', '/sw.js'];
 
 export function middleware(request: NextRequest) {
@@ -15,6 +17,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   const { pathname, search } = request.nextUrl;
+  // statyczne dane strony „Teraz” (public/teraz): mapa pobiera je z tej samej domeny, więc te dwa dokładne adresy nie są przekierowywane
+  if (TERAZ_PLIKI.includes(pathname)) return NextResponse.next();
   if (pathname === '/') return NextResponse.rewrite(new URL(`/przeszlosc${search}`, request.url));
   // PWA (port v3, 13.10): własny manifest przeszłości pod standardowym adresem; spin.clinic dalej dostaje app/manifest.ts
   if (pathname === '/manifest.webmanifest') return NextResponse.rewrite(new URL('/przeszlosc/manifest.webmanifest', request.url));

@@ -32,7 +32,7 @@ export interface MapaProps {
   onStan: (s: StanMapy) => void;
 }
 
-const KSZTALTY = ['kolo', 'romb', 'kwadrat', 'trojkat', 'krzyzyk', 'pierscien'] as const;
+const KSZTALTY = ['kolo', 'romb', 'kwadrat', 'trojkat', 'krzyzyk', 'pierscien', 'szesciokat'] as const;
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ROZMIAR = 44;
 const BRAK_ID = -1;
@@ -74,12 +74,16 @@ function rysujObraz(id: string, m: Motyw): ImageData | null {
     else if (ksztalt === 'romb') { x.moveTo(s, 4); x.lineTo(s + 17, s); x.lineTo(s, ROZMIAR - 4); x.lineTo(s - 17, s); x.closePath(); }
     else if (ksztalt === 'kwadrat') x.rect(9, 9, ROZMIAR - 18, ROZMIAR - 18);
     else if (ksztalt === 'trojkat') { x.moveTo(s, 6); x.lineTo(s + 17, ROZMIAR - 8); x.lineTo(s - 17, ROZMIAR - 8); x.closePath(); }
+    else if (ksztalt === 'szesciokat') {
+      for (let i = 0; i < 6; i++) { const a = (Math.PI / 3) * i - Math.PI / 6; const px = s + 14 * Math.cos(a); const py = s + 14 * Math.sin(a); if (i) x.lineTo(px, py); else x.moveTo(px, py); }
+      x.closePath();
+    }
     else { x.moveTo(11, 11); x.lineTo(ROZMIAR - 11, ROZMIAR - 11); x.moveTo(ROZMIAR - 11, 11); x.lineTo(11, ROZMIAR - 11); }
   };
   if (ksztalt === 'krzyzyk') {
     sciezka(); x.lineWidth = 10; x.strokeStyle = m.aureola; x.stroke();
     sciezka(); x.lineWidth = 5; x.strokeStyle = kolor; x.stroke();
-  } else if (ksztalt === 'pierscien') {
+  } else if (ksztalt === 'pierscien' || ksztalt === 'szesciokat') {
     sciezka(); x.lineWidth = 9; x.strokeStyle = m.aureola; x.stroke();
     sciezka(); x.fillStyle = m.tlo; x.fill();
     x.lineWidth = 5; x.strokeStyle = kolor; x.stroke();

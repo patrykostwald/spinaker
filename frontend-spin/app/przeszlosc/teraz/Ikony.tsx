@@ -23,6 +23,7 @@ export function KsztaltStatusu({ ksztalt, rozmiar = 16 }: { ksztalt: Ksztalt; ro
     {ksztalt === 'trojkat' && <polygon points="12,4 21,20 3,20" {...wspolne} />}
     {ksztalt === 'krzyzyk' && <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />}
     {ksztalt === 'pierscien' && <circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" strokeWidth={3} />}
+    {ksztalt === 'szesciokat' && <polygon points="12,3.5 19.5,7.75 19.5,16.25 12,20.5 4.5,16.25 4.5,7.75" fill="none" stroke="currentColor" strokeWidth={3} />}
   </svg>;
 }
 

@@ -59,8 +59,12 @@ export function stylZPmtiles(pmtilesUrl: string, glifyUrl: string, m: Motyw): St
 }
 
 /** Siatka co 1 stopień nad Polską i okolicami (linie południków i równoleżników). */
-export function siatka(): GeoJSON.FeatureCollection<GeoJSON.LineString> {
-  const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+export interface SiatkaGeoJson {
+  type: 'FeatureCollection';
+  features: { type: 'Feature'; properties: Record<string, never>; geometry: { type: 'LineString'; coordinates: number[][] } }[];
+}
+export function siatka(): SiatkaGeoJson {
+  const features: SiatkaGeoJson['features'] = [];
   for (let lon = 12; lon <= 26; lon++) features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[lon, 47], [lon, 57]] } });
   for (let lat = 47; lat <= 57; lat++) features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[12, lat], [26, lat]] } });
   return { type: 'FeatureCollection', features };

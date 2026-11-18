@@ -142,8 +142,10 @@ test('tabela (render): nagłówki z aria-sort, nagłówek wiersza, caption, przy
   assert.match(html, /aria-pressed="true">Przykład: zagrożenie z powietrza/, 'wybrany wiersz oznaczony');
   assert.match(html, /rel="noopener noreferrer"/);
   assert.match(html, /Wiersze: 14\./);
-  const pusty = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: '1 godz., cała Polska, włączone warstwy: 0' }));
+  const pusty = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: '1 godz., cała Polska, włączone warstwy: 0', pusta: 'Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: nie mamy pewności, sprawdź Alert RCB i 112.' }));
   assert.match(tekstZHtml(pusty), /Brak komunikatów w wybranym czasie i regionie\. To nie znaczy, że nic się nie dzieje: nie mamy pewności, sprawdź Alert RCB i 112\./);
+  const niedostepna = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: 'x', pusta: 'Dane niedostępne, nie pokazujemy listy: nie mamy pewności, sprawdź Alert RCB i 112.' }));
+  assert.ok(!/Brak komunikatów/.test(tekstZHtml(niedostepna)), 'awaria nie udaje braku komunikatów');
   assert.match(pusty, /<button[^>]*disabled[^>]*>Pobierz widok jako CSV \(0\)/);
   assert.ok(!/<table/.test(pusty));
   assert.ok(!/spokojn|bezpieczn/i.test(tekstZHtml(html + pusty)));
@@ -154,7 +156,7 @@ test('linia stanu: stałe zdanie i ostrzeżenie widoczne bez dotykania, „Dane 
   const { m, d, teraz } = dane();
   const podsumowanie = m.podsumujStan(d.probneStan(teraz), d.probneWarstwy(teraz));
   const w = load(`${dir}/warstwy`);
-  const render = props => renderToStaticMarkup(React.createElement(LiniaStanu, { probne: true, podsumowanie, online: true, blad: false, odswiezono: teraz, ladowanie: false, ...props }));
+  const render = props => renderToStaticMarkup(React.createElement(LiniaStanu, { probne: true, podsumowanie, online: true, blad: false, odswiezonoWpisy: teraz, odswiezonoStan: teraz, ladowanie: false, ...props }));
   const html = render({});
   const przelacznik = html.indexOf('tz-stan__przelacznik');
   const szczegoly = html.indexOf('id="tz-stan-szczegoly"');
@@ -175,12 +177,12 @@ test('linia stanu: stałe zdanie i ostrzeżenie widoczne bez dotykania, „Dane 
   const zdrowe = { ...podsumowanie, ostrzezenia: [] };
   const spokojna = render({ probne: false, podsumowanie: zdrowe });
   assert.ok(!/Dane przykładowe\./.test(spokojna.slice(0, spokojna.indexOf('id="tz-stan-szczegoly"'))));
-  assert.match(tekstZHtml(spokojna), /Alert RCB: ostatnie pobranie: \d{2}:\d{2}, komunikatów: 3/);
+  assert.match(tekstZHtml(spokojna), /Alert RCB: ostatnie pobranie: \d{2}:\d{2}, komunikatów z 24 h: 3/);
   assert.ok(!/tz-stan__ostrz/.test(spokojna), 'brak luk: brak ramki ostrzeżenia');
   // brak połączenia: ostrzeżenie w regionie alert, ostatnie dane z godziną
   const offline = render({ online: false });
   const alert = offline.slice(offline.indexOf('role="alert"'), offline.indexOf('role="status"'));
-  assert.match(tekstZHtml(alert), /Brak połączenia z internetem: nie mamy pewności, sprawdź Alert RCB i 112\. Ostatnie dane z godz\. \d{2}:\d{2}\./);
+  assert.match(tekstZHtml(alert), /Brak połączenia z internetem: nie mamy pewności, sprawdź Alert RCB i 112\. Ostatnie komunikaty pobraliśmy o godz\. \d{2}:\d{2}\./);
   const blad = render({ blad: true });
   assert.match(tekstZHtml(blad.slice(blad.indexOf('role="alert"'), blad.indexOf('role="status"'))), /Brak połączenia z serwerem/);
   assert.ok(!/spokojn|bezpieczn/i.test(tekstZHtml(html + offline + blad + spokojna)));
@@ -192,6 +194,7 @@ test('dostępność w kodzie: fokus, nazwy, ruch ograniczony, kontrast wysoki, b
   const panel = read(`${dir}/PanelWarstw.tsx`);
   const mapa = read(`${dir}/Mapa.tsx`);
   const stan = read(`${dir}/LiniaStanu.tsx`);
+  const powiatKod = read(`${dir}/MojPowiat.tsx`);
   // ruch ograniczony: przejścia i animacje wyłączone, mapa bez animacji
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*transition-duration: \.01ms !important[^}]*animation-duration: \.01ms !important/);
   assert.match(mapa, /fadeDuration: reduced\(\) \? 0 : 200/);
@@ -205,10 +208,14 @@ test('dostępność w kodzie: fokus, nazwy, ruch ograniczony, kontrast wysoki, b
   assert.match(css, /\.tz-mp-podpowiedzi\[hidden\] \{ display: none; \}/);
   // przyciski widoków: stan w aria-pressed, cztery widoki, pełna nazwa „Mój powiat” w nazwie dostępnej
   assert.equal((strona.match(/aria-pressed=\{widok === '/g) ?? []).length, 4);
-  assert.match(strona, /<span className="tz-widok__dodatek">Mój <\/span>powiat/);
+  assert.match(strona, /aria-label="Mój powiat"/, 'przycisk ma pełną nazwę dostępną niezależnie od skrótu na telefonie');
+  assert.match(strona, /tz-widok__skrot" aria-hidden="true">Powiat<\/span><span className="tz-widok__pelna" aria-hidden="true">Mój powiat/);
   assert.match(strona, /className="tz-marka__tekst">przeszłość\.today/);
-  assert.ok(!/role="radio"/.test(panel), 'przełącznik okresu nie udaje grupy radio bez obsługi strzałek');
-  assert.match(panel, /role="group" aria-label="Okres/);
+  const okres = read(`${dir}/WyborOkresu.tsx`);
+  assert.ok(!/role="radio"/.test(okres + panel), 'okres to natywne pola radiowe, bez udawanego wzorca ARIA');
+  assert.match(okres, /role="radiogroup" aria-labelledby=\{opisanePrzez\}/);
+  assert.match(okres, /<input type="radio" name=\{nazwa\}/, 'natywne radia: strzałki zmieniają opcję');
+  assert.match(panel, /WyborOkresu/); assert.match(powiatKod, /WyborOkresu/);
   // skok do tabeli z mapy i przeniesienie fokusu na panel po otwarciu
   assert.match(strona, /Przejdź do tabeli komunikatów \(pełny odpowiednik mapy\)/);
   assert.match(strona, /getElementById\('tz-panel-tytul'\)\?\.focus\(\)/);
@@ -234,14 +241,15 @@ test('dostępność w kodzie: fokus, nazwy, ruch ograniczony, kontrast wysoki, b
   assert.match(powiat, /role="combobox"/); assert.match(powiat, /aria-activedescendant/); assert.match(powiat, /aria-controls=\{idListy\}/);
   assert.match(powiat, /e\.key === 'ArrowDown'/); assert.match(powiat, /e\.key === 'Escape'/); assert.match(powiat, /e\.key === 'Enter'/);
   // zapis wyboru powiatów w przeglądarce w try/catch, bez nadpisywania pamięci zestawem z cudzego linku
-  assert.match(strona, /try \{ window\.localStorage\.setItem/);
+  assert.match(read(`${dir}/pamiec.ts`), /try \{ window\.localStorage\.setItem/);
   assert.match(strona, /zmienPowiaty = useCallback/);
   assert.ok(!/zapiszPamiec\(\{[^}]*powiaty[^}]*\}\);\s*\}, \[pamiecGotowa/.test(strona), 'efekt automatyczny nie zapisuje powiatów');
 });
 
 test('telefon: nagłówek mieści cztery widoki w jednym wierszu, bez poziomego przewijania strony', () => {
   const css = read(`${dir}/teraz.css`);
-  assert.match(css, /@media \(max-width: 559\.98px\)\s*\{[^}]*\.tz-marka__tekst[^}]*\.tz-widok__dodatek/);
+  assert.match(css, /@media \(max-width: 559\.98px\)\s*\{[^}]*\.tz-marka__tekst/);
+  assert.match(css, /\.tz-widok__pelna \{ display: none; \}\s*@media \(min-width: 560px\) \{ \.tz-widok__skrot \{ display: none; \} \.tz-widok__pelna \{ display: inline; \} \}/, 'telefon: skrót „Powiat”, od 560 px pełne „Mój powiat”');
   assert.match(css, /@media \(max-width: 380px\)\s*\{[\s\S]*?\.tz-widok button \{ min-width: 46px/);
   assert.match(css, /\.tz-tabela__przewijanie \{ overflow: auto; max-width: 100%/, 'szeroka tabela przewija się w ramce, nie strona');
   assert.match(css, /\.tz-stan__jedna \{[^}]*text-overflow: ellipsis; white-space: nowrap/, 'zwinięta linia stanu to jedna linia');

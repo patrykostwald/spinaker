@@ -69,6 +69,8 @@ export interface Zrodlo extends Swiezosc {
 export interface Warstwa extends Swiezosc {
   warstwa: KodWarstwy;
   nazwa: string;
+  /** Wyłącznik redakcji (WylacznikKategorii): wyłączona warstwa znika z całego interfejsu, także z pamięci i cache klienta. */
+  wylaczona: boolean;
   zrodla: Zrodlo[];
 }
 
@@ -99,7 +101,10 @@ export interface Strona<T> {
 export type Okres = '1h' | '24h' | '7d';
 
 /** Wpis z wyliczonym statusem i kolorem, gotowy do narysowania. */
-export type StatusKlucz = StatusZdarzenia | 'brak';
+export type StatusKlucz = StatusZdarzenia | 'brak' | 'niedostepny';
+
+/** Wynik pobrania listy (wpisów, zdarzeń): `uciete` = są starsze rekordy poza limitem stron, `pominiete` = rekordy o nieznanym formacie. */
+export interface WynikListy<T> { wyniki: T[]; uciete: boolean; pominiete: number }
 
 export interface WidokWpisu {
   wpis: Wpis;
