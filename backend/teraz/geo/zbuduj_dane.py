@@ -20,7 +20,7 @@ Surowych plików PRG nie dodajemy do repozytorium.
 
 Użycie (z katalogu `backend`):
 
-    python -m teraz.geo.zbuduj_dane KATALOG_Z_SHP [--stan RRRR-MM-DD] [--tolerancja 0.002]
+    python -m teraz.geo.zbuduj_dane KATALOG_Z_SHP --stan RRRR-MM-DD [--tolerancja 0.002]
 
 Wynik trafia do `teraz/geo/dane/`:
   - `teryt.json`: słownik województw, powiatów i gmin (kody, nazwy, rodzaje, środki);
@@ -187,7 +187,7 @@ def zbuduj(katalog: Path, stan: str, tolerancja: float) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("katalog", type=Path, help="katalog z plikami .shp/.dbf/.prj z PRG")
-    parser.add_argument("--stan", default="2026-11-10", help="data stanu PRG (RRRR-MM-DD)")
+    parser.add_argument("--stan", required=True, help="data stanu PRG (RRRR-MM-DD); trafia do atrybucji, więc bez wartości domyślnej")
     parser.add_argument("--tolerancja", type=float, default=0.002, help="tolerancja uproszczenia w stopniach")
     args = parser.parse_args(argv)
     zbuduj(args.katalog, args.stan, args.tolerancja)

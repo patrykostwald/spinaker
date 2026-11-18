@@ -76,7 +76,7 @@ class Slownik:
                 dodaj(Jednostka(kod, nazwa, POWIAT, rodzaj, szer, dl))
             for kod, nazwa, rodzaj, szer, dl in surowe["gminy"]:
                 dodaj(Jednostka(kod, nazwa, GMINA, rodzaj, szer, dl))
-        except (KeyError, TypeError, ValueError) as blad:
+        except Exception as blad:  # każdy błąd w treści pliku (zły typ, układ, długość wiersza) to błąd danych
             raise BladDanych(f"teryt.json: zły układ danych ({type(blad).__name__}: {blad})") from blad
         self.wojewodztwa = [j for j in self.jednostki.values() if j.poziom == WOJEWODZTWO]
         self.powiaty = [j for j in self.jednostki.values() if j.poziom == POWIAT]
@@ -157,17 +157,28 @@ def _sprawdz_granice(nazwa_pliku: str, katalog: Path, oczekiwane: set[str]) -> N
         raise BladDanych(f"{nazwa_pliku}: kody niezgodne ze słownikiem (brakuje: {brakuje[:5]}, nadmiar: {nadmiar[:5]}, powtórzeń: {len(kody) - len(set(kody))})")
 
 
+def _jako_blad_danych(nazwa_pliku: str, kontrola, *argumenty):
+    """Wykonuje kontrolę pliku; każdy błąd w treści danych (też TypeError, np. niehashowalny kod) to `BladDanych`."""
+    try:
+        return kontrola(*argumenty)
+    except BladDanych:
+        raise
+    except Exception as blad:
+        raise BladDanych(f"{nazwa_pliku}: zły układ danych ({type(blad).__name__}: {blad})") from blad
+
+
 def sprawdz_dane(katalog: Path | None = None) -> Slownik:
     """Sprawdza spójność plików `dane/` (słownik TERYT i granice); `BladDanych` z czytelnym opisem.
 
     Wywołaj raz przy starcie workera, żeby uszkodzony plik wyszedł od razu, a nie przy pierwszym komunikacie.
+    Każdy błąd w treści plików jest zgłaszany jako `BladDanych` (nie surowy TypeError czy KeyError).
     Nie wymaga shapely. Zwraca wczytany słownik.
     """
     katalog = Path(katalog) if katalog is not None else DANE
     s = slownik() if katalog == DANE else wczytaj_slownik(katalog)
-    _sprawdz_slownik(s)
-    _sprawdz_granice("granice_powiaty.geojson", katalog, {j.kod for j in s.powiaty})
-    _sprawdz_granice("granice_wojewodztwa.geojson", katalog, {j.kod for j in s.wojewodztwa})
+    _jako_blad_danych("teryt.json", _sprawdz_slownik, s)
+    for plik, kody in (("granice_powiaty.geojson", {j.kod for j in s.powiaty}), ("granice_wojewodztwa.geojson", {j.kod for j in s.wojewodztwa})):
+        _jako_blad_danych(plik, _sprawdz_granice, plik, katalog, kody)
     return s
 
 

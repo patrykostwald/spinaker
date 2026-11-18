@@ -156,9 +156,11 @@ def test_leszno_z_obcym_powiatem_zostawia_slad_a_kontekst_powiatu_rozstrzyga_hom
     w = geokoduj("Leszno (pow. warszawski zachodni): pożar.")
     assert any(d.fraza == "Leszno" for d in w.dopasowania)
     assert "1432" in kody(w)
+    # powiat z tekstu wyklucza wszystkich kandydatów (miasto Leszno leży poza powiatem leszczyńskim, gmina Leszno w
+    # innym województwie): wynik to sam powiat, bez gminy (trzecia recenzja, P1-2)
     w = geokoduj("UWAGA! POŻAR W LESZNIE. MIESZKAŃCY POWIATU LESZCZYŃSKIEGO PROSZENI O ZAMKNIĘCIE OKIEN.")
-    assert kody(w) == {"3013", "3063011"}  # powiat leszczyński i miasto Leszno
-    assert dopasowanie(w, "LESZNIE").teryt == ("3063011",)
+    assert kody(w) == {"3013"}
+    assert dopasowanie(w, "LESZNIE").teryt == ()
 
 
 @pytest.mark.parametrize("tekst, oczekiwane, dokladnosc", [
@@ -181,7 +183,8 @@ def test_leszno_z_obcym_powiatem_zostawia_slad_a_kontekst_powiatu_rozstrzyga_hom
     ("Tomaszów: zatrzymano złodzieja.", set(), BRAK),
     ("Pożar w miejscowości Wola, gmina Pszczyna.", {"2410053"}, "gmina"),
     ("Wypadek w Łodzi. Zasięg ostrzeżenia: powiat łódzki wschodni.", {"1006", "1061011"}, "powiat"),
-    ("Alert RCB dla województwa podkarpackiego - powiaty: bieszczadzki, leski.", {"1801", "1821"}, "powiat"),
+    # kod po „dla” nigdy nie znika: województwo zostaje obok powiatów (trzecia recenzja, P2-1)
+    ("Alert RCB dla województwa podkarpackiego - powiaty: bieszczadzki, leski.", {"18", "1801", "1821"}, "wojewodztwo"),
     ("Utrudnienia w powiatach limanowskim i nowosądeckim.", {"1207", "1210"}, "powiat"),
     ("Alert RCB dla powiatu chełmskiego. Utrudnienia w Rejowcu.", {"0603", "0603153"}, "powiat"),
 ])

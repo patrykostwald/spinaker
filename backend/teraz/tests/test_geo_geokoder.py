@@ -210,8 +210,10 @@ POLICJA = [
     # powiat tarnowski to osobna wzmianka (zasięg), więc zostaje obok gminy Tuchów; dokładność opisuje zasięg
     ("Dzielnicowy związany z Tuchowem i jego mieszkańcami to jeden z najdłużej służących w powiecie tarnowskim.",
      {"gmina Tuchów, powiat tarnowski, woj. małopolskie", "powiat tarnowski, woj. małopolskie"}, "powiat"),
+    # Rzeszów to miejsce pochodzenia („mężczyzny z Rzeszowa”), a jednostka (KPP w Garwolinie) jest miejscem w zdaniu:
+    # pochodzenie nie trafia do wyniku (trzecia recenzja, P2-6), zostaje w `dopasowania`
     ("Policjanci z Komendy Powiatowej Policji w Garwolinie ustalili tożsamość mężczyzny z Rzeszowa, który oszukiwał metodą na legendę.",
-     {"powiat garwoliński, woj. mazowieckie", "miasto Rzeszów, woj. podkarpackie"}, "powiat"),
+     {"powiat garwoliński, woj. mazowieckie"}, "powiat"),
     ("Centrum Szkolenia Policji w Legionowie i uczelnia podpisały w Warszawie porozumienie o współpracy.",
      {"miasto Legionowo, powiat legionowski, woj. mazowieckie", "miasto Warszawa, woj. mazowieckie"}, "gmina"),
     ("Policja stawia na dialog z młodzieżą. Kampania profilaktyczna, hejt w sieci i kryzysy emocjonalne.", set(), "brak"),

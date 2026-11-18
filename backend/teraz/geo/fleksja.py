@@ -18,6 +18,7 @@ Wszystko po złożeniu do małych liter bez polskich znaków, więc „Łódź�
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 _SKLADANIE = str.maketrans({"ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n", "ó": "o", "ś": "s", "ź": "z", "ż": "z"})
@@ -64,22 +65,46 @@ def zloz_pozycyjnie(tekst: str) -> str:
 _NIEWIDOCZNE = frozenset("­​‌‍﻿")  # miękki łącznik, spacja zerowej szerokości, łączniki zerowej szerokości, BOM
 
 
-def usun_niewidoczne(tekst: str) -> tuple[str, list[int] | None]:
-    """Usuwa znaki niewidoczne („Wroc\\u00adławiu” - miękki łącznik z kopiowanego tekstu) przed tokenizacją.
+@dataclass(frozen=True, slots=True)
+class MapaPozycji:
+    """Pozycje znaków czystego tekstu w oryginale: `poczatki[i]` i `konce[i]` dotyczą i-tego znaku czystego tekstu."""
 
-    Zwraca (czysty tekst, mapa): `mapa[i]` to pozycja i-tego znaku czystego tekstu w oryginale, a ostatni element
-    to długość oryginału. Gdy nic nie usunięto, mapa to `None` (pozycje się zgadzają).
+    poczatki: tuple[int, ...]
+    konce: tuple[int, ...]
+
+    def na_oryginal(self, start: int, koniec: int) -> tuple[int, int]:
+        """Pozycje [start, koniec) czystego tekstu jako pozycje w oryginale."""
+        return self.poczatki[start], self.konce[koniec - 1]
+
+
+def normalizuj_wejscie(tekst: str) -> tuple[str, MapaPozycji | None]:
+    """Normalizacja NFC i usunięcie znaków niewidocznych przed tokenizacją.
+
+    Tekst w postaci rozłożonej (NFD: „o” i akcent zamiast „ó”, np. z komputerów Apple) jest składany do NFC, żeby
+    tokenizer nie dzielił wyrazu na znaku łączącym. Znaki niewidoczne („Wroc\\u00adławiu” - miękki łącznik z
+    kopiowanego tekstu) są usuwane. Zwraca (czysty tekst, mapa pozycji w oryginale); gdy nic się nie zmieniło,
+    mapa to `None` (pozycje się zgadzają). Złożony znak wskazuje w oryginale cały ciąg (litera i znaki łączące),
+    więc fraza nie traci akcentu na końcu.
     """
-    if _NIEWIDOCZNE.isdisjoint(tekst):
+    if _NIEWIDOCZNE.isdisjoint(tekst) and unicodedata.is_normalized("NFC", tekst):
         return tekst, None
     znaki: list[str] = []
-    mapa: list[int] = []
-    for pozycja, znak in enumerate(tekst):
-        if znak not in _NIEWIDOCZNE:
-            znaki.append(znak)
-            mapa.append(pozycja)
-    mapa.append(len(tekst))
-    return "".join(znaki), mapa
+    poczatki: list[int] = []
+    konce: list[int] = []
+    dlugosc = len(tekst)
+    i = 0
+    while i < dlugosc:
+        j = i + 1
+        while j < dlugosc and unicodedata.combining(tekst[j]):
+            j += 1
+        kawalek = unicodedata.normalize("NFC", tekst[i:j]) if j - i > 1 else tekst[i]
+        for znak in kawalek:
+            if znak not in _NIEWIDOCZNE:
+                znaki.append(znak)
+                poczatki.append(i)
+                konce.append(j)
+        i = j
+    return "".join(znaki), MapaPozycji(tuple(poczatki), tuple(konce))
 
 
 @dataclass(slots=True)
@@ -139,10 +164,31 @@ def kandydaci_rdzeni(zlozony: str) -> dict[str, str]:
 
 # Dla rdzeni po wymianie głosek dopuszczamy tylko końcówki celownika i miejscownika (Rudzie, Górze, Sopocie).
 KONCOWKI_PO_WYMIANIE = frozenset({"e", "ie", "i"})
+# Końcówki liczby mnogiej (pusta: sam rdzeń, dopełniacz „Zawad”); tylko one pasują do nazw w liczbie mnogiej.
+KONCOWKI_MNOGIE = frozenset({"", "y", "i", "e", "ach", "om", "ami"})
+
+# Skróty członów nazw z kropką: „Ostrowie Wlkp.”, „Mińsk Maz.”, „Bielsk Podl.”, „woj. małop.”. Wartość: rdzeń
+# członu w nazwie (po złożeniu, bez końcówki mianownika). Osobno dla gmin (drugi człon) i województw (pierwszy człon).
+SKROTY_CZLONOW_GMIN = {
+    "wlkp": "wielkopolsk", "wielkp": "wielkopolsk", "maz": "mazowieck", "mazow": "mazowieck",
+    "podl": "podlask", "lub": "lubelsk", "sl": "slask",
+}
+# „lub.” jest wieloznaczne (lubelskie, lubuskie), więc nie skraca województwa.
+SKROTY_WOJEWODZTW = {
+    "wlkp": "wielkopolsk", "wielkop": "wielkopolsk", "malop": "malopolsk", "mazow": "mazowieck", "podl": "podlask",
+    "podkarp": "podkarpack", "pomor": "pomorsk", "dolnosl": "dolnoslask", "swietokrz": "swietokrzysk",
+    "zachpom": "zachodniopomorsk", "lubel": "lubelsk", "lubus": "lubusk", "lodz": "lodzk", "opol": "opolsk",
+    "sl": "slask",
+}
 
 
-def rdzenie_mianownika(zlozony: str) -> dict[str, frozenset[str] | None]:
-    """Rdzenie nazwy w mianowniku (jeden wyraz, już złożony): {rdzeń: dozwolone końcówki albo None (dowolne)}."""
+def rdzenie_mianownika(zlozony: str, mnoga: bool = False) -> dict[str, frozenset[str] | None]:
+    """Rdzenie nazwy w mianowniku (jeden wyraz, już złożony): {rdzeń: dozwolone końcówki albo None (dowolne)}.
+
+    `mnoga`: cała nazwa jest w liczbie mnogiej („Zawady”, „Kozy”, „Mrozy”, „Marki”). Rdzeń po odcięciu końcówki
+    pasuje wtedy tylko do końcówek liczby mnogiej (`KONCOWKI_MNOGIE`) i nie ma wymian głosek liczby pojedynczej:
+    „w Zawadzie” czy „w Kozie” to miejscownik liczby pojedynczej, a nie gmina Zawady lub Kozy.
+    """
     wynik: dict[str, frozenset[str] | None] = {}
 
     def dodaj(rdzen: str, dozwolone: frozenset[str] | None) -> None:
@@ -155,7 +201,9 @@ def rdzenie_mianownika(zlozony: str) -> dict[str, frozenset[str] | None]:
     dodaj(zlozony, None)
     for koncowka in _MIANOWNIK:
         if zlozony.endswith(koncowka):
-            dodaj(zlozony[: -len(koncowka)], None)
+            dodaj(zlozony[: -len(koncowka)], KONCOWKI_MNOGIE if mnoga else None)
+    if mnoga:
+        return wynik
     for rdzen in list(wynik):
         for koniec, zamiana in _WYMIANY:
             if rdzen.endswith(koniec) and not (koniec == "t" and rdzen.endswith(("st", "szt"))):
@@ -170,6 +218,11 @@ def rdzenie_mianownika(zlozony: str) -> dict[str, frozenset[str] | None]:
 def wyrazy_nazwy(nazwa: str) -> list[str]:
     """Złożone wyrazy nazwy (łącznik i spacja rozdzielają wyrazy)."""
     return [zloz(w) for w in _WYRAZ.findall(nazwa)]
+
+
+def wyrazy_oryginalne(nazwa: str) -> tuple[str, ...]:
+    """Wyrazy nazwy małymi literami, z polskimi znakami (do porównania „ó” w tekście i w nazwie)."""
+    return tuple(w.lower() for w in _WYRAZ.findall(nazwa))
 
 
 def wyglada_na_wielkie_litery(tekst: str) -> bool:

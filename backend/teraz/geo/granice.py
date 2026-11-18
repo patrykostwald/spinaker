@@ -38,12 +38,12 @@ class _Warstwa:
             cechy = dane["features"]
             self.kody: list[str] = [c["properties"]["kod"] for c in cechy]
             self.geometrie = [shape(c["geometry"]) for c in cechy]
-        except (KeyError, TypeError, ValueError, AttributeError) as blad:
+            for g in self.geometrie:
+                prepare(g)
+            self.drzewo = STRtree(self.geometrie)
+            self.indeks = {kod: i for i, kod in enumerate(self.kody)}
+        except Exception as blad:  # zły układ, zły typ, błąd shapely (GEOSException, ShapelyError): to błąd danych
             raise BladDanych(f"{nazwa_pliku}: zły układ danych ({type(blad).__name__}: {blad})") from blad
-        for g in self.geometrie:
-            prepare(g)
-        self.drzewo = STRtree(self.geometrie)
-        self.indeks = {kod: i for i, kod in enumerate(self.kody)}
 
 
 @lru_cache(maxsize=None)
