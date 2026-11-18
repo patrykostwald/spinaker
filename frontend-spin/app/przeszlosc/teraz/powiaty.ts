@@ -1,6 +1,6 @@
 import type { Okres, Wpis } from './typy';
-import { POWIATY, WOJEWODZTWA_SLOWNIK, dopelniaczWojewodztwa, powiatOKodzie, type PowiatTeryt } from './slownik';
-import { wojewodztwoOKodzie } from './teryt';
+import { POWIATY, dopelniaczWojewodztwa, powiatOKodzie, type PowiatTeryt } from './slownik';
+import { rozbierzMiejsce, wojewodztwoOKodzie } from './teryt';
 
 /**
  * „Mój powiat”: logika bez Reacta. Wyszukiwanie powiatu i miasta na prawach powiatu (także w odmienionej formie:
@@ -99,11 +99,13 @@ const odmianaNazwy = (linia: string, nazwa: string): boolean => {
   const b = nazwa.split(' ');
   return a.length === b.length && a.every((s, i) => odmianaSlowa(s, b[i]));
 };
+/** Z kilku dopasowań odmiany zostają te o najdłuższym rdzeniu nazwy (suma długości rdzeni jej słów). */
+const najdokladniejsze = <T extends { nazwa: string }>(kandydaci: T[]): T[] => {
+  const waga = (k: T) => k.nazwa.split(' ').reduce((suma, slowo) => suma + rdzen(slowo).length, 0);
+  const max = Math.max(0, ...kandydaci.map(waga));
+  return kandydaci.filter(k => waga(k) === max);
+};
 const bezSlowPomijanych = (tekst: string): string => normalizuj(tekst).split(' ').filter(s => s && !POMIJANE.has(s)).join(' ');
-
-/** Linia z nazwą województwa w dowolnym przypadku („lubelskiego”, „woj. lubelskie”), a nie powiatu („lubelski”). */
-const WOJ_WZORCE = WOJEWODZTWA_SLOWNIK.map(w => normalizuj(w.nazwa).replace(/ie$/, ''));
-const jestWojewodztwem = (linia: string): boolean => WOJ_WZORCE.some(r => new RegExp(`^${r}(?:ie|iego|iem|ich)$`).test(linia));
 
 /** Miasto na prawach powiatu i powiat ziemski o tej samej nazwie (Chełm i chełmski, Biała Podlaska i bialski). */
 const paraMiastoPowiat = (a: PowiatTeryt, b: PowiatTeryt): boolean => {
@@ -113,34 +115,55 @@ const paraMiastoPowiat = (a: PowiatTeryt, b: PowiatTeryt): boolean => {
   return odmianaSlowa(ziemski, miasto);
 };
 
-/** Czy powiat jest na liście jednostek z `miejsce` (po jednej w linii); dopasowanie z odmianą, tylko w obrębie województwa. */
-export function dopasujDoListy(miejsce: string, kodPowiatu: string): 'wymieniony' | 'mozliwy' | 'pozaLista' | 'bezListy' {
+/**
+ * Czy powiat jest na liście jednostek z `miejsce` (po jednej w linii); dopasowanie z odmianą, tylko w obrębie województwa.
+ * Jednostka podpisana przez źródło innym województwem nie dotyczy tego powiatu (dolnośląski powiat świdnicki to nie lubelski).
+ * „Wymieniony” wymaga pewnego związku jednostki z województwem: podpisu ze źródła albo komunikatu o jednym województwie
+ * (`liczbaWojewodztw` ≤ 1). Jednostka bez województwa przy kilku województwach oraz gmina dają najwyżej „mozliwy”.
+ */
+export function dopasujDoListy(miejsce: string, kodPowiatu: string, liczbaWojewodztw = 1): 'wymieniony' | 'mozliwy' | 'pozaLista' | 'bezListy' {
   const powiat = powiatOKodzie(kodPowiatu);
-  const linie = miejsce.split(/\r?\n/).map(bezSlowPomijanych).filter(l => l && !jestWojewodztwem(l));
-  if (!powiat || !linie.length) return 'bezListy';
+  const jednostki = rozbierzMiejsce(miejsce);
+  if (!powiat || !jednostki.length) return 'bezListy';
   const kandydaci = POWIATY.filter(p => p.woj === powiat.woj).map(p => ({ p, nazwa: normalizuj(p.nazwa) }));
   const wymienione = new Set<PowiatTeryt>();
   let mozliwy = false;
-  for (const linia of linie) {
+  for (const jednostka of jednostki) {
+    if (jednostka.woj && jednostka.woj !== powiat.woj) continue;
+    const linia = bezSlowPomijanych(jednostka.nazwa);
+    if (!linia) continue;
+    const pewna = jednostka.typ !== 'gmina' && (jednostka.woj !== null || liczbaWojewodztw <= 1);
+    const trafione: PowiatTeryt[] = [];
     const dokladne = kandydaci.filter(k => k.nazwa === linia);
-    if (dokladne.length) { dokladne.forEach(k => wymienione.add(k.p)); continue; }
-    const odmienione = kandydaci.filter(k => odmianaNazwy(linia, k.nazwa));
-    if (odmienione.length === 1) wymienione.add(odmienione[0].p);
-    else if (odmienione.some(k => k.p === powiat)) mozliwy = true;
+    if (dokladne.length) trafione.push(...dokladne.map(k => k.p));
+    else {
+      // „chełmskim” pasuje do powiatu chełmskiego i (przez krótki rdzeń) do miasta Chełm: wygrywa dłuższe dopasowanie rdzenia
+      const odmienione = najdokladniejsze(kandydaci.filter(k => odmianaNazwy(linia, k.nazwa)));
+      if (odmienione.length === 1) trafione.push(odmienione[0].p);
+      else if (odmienione.some(k => k.p === powiat)) mozliwy = true;
+    }
+    if (pewna) trafione.forEach(p => wymienione.add(p));
+    else if (trafione.some(p => p === powiat || paraMiastoPowiat(p, powiat))) mozliwy = true;
   }
   if (wymienione.has(powiat)) return 'wymieniony';
   if (mozliwy || [...wymienione].some(p => paraMiastoPowiat(p, powiat))) return 'mozliwy';
   return 'pozaLista';
 }
 
+/** Kod powiatu przy zasięgu przybliżonym: „wymieniony” tylko gdy nazwa i województwo z `miejsce` się zgadzają, inaczej „możliwe”. */
+const potwierdzonyPowiat = (wpis: Partial<Pick<Wpis, 'miejsce'>>, kodPowiatu: string, liczbaWojewodztw: number): Zakres =>
+  dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw) === 'wymieniony' ? 'wymieniony' : 'mozliwy';
+
 /** Najwęższy zakres, w jakim wpis dotyczy powiatu (po kodach TERYT wpisu i jego zasięgu), albo null, gdy go nie dotyczy. */
 export function zakresDlaPowiatu(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 'zasieg' | 'miejsce'>>, kodPowiatu: string): Zakres | null {
   let wynik: Zakres | null = null;
+  const liczbaWojewodztw = new Set(wpis.teryt.map(k => k.slice(0, 2))).size;
   for (const k of wpis.teryt) {
     let z: Zakres | null = null;
-    if (k === kodPowiatu) z = 'powiat';
+    // przy zasięgu przybliżonym kod 4-cyfrowy nie jest potwierdzeniem: potrzebna zgodność nazwy i województwa z danymi wpisu
+    if (k === kodPowiatu) z = wpis.zasieg === 'przyblizony' ? potwierdzonyPowiat(wpis, kodPowiatu, liczbaWojewodztw) : 'powiat';
     else if (k.length > 4 && k.startsWith(kodPowiatu)) z = 'gmina';
-    else if (k.length === 2 && kodPowiatu.startsWith(k)) z = wpis.zasieg === 'obszar' ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu);
+    else if (k.length === 2 && kodPowiatu.startsWith(k)) z = wpis.zasieg === 'obszar' ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
     if (z && (wynik === null || WAGA[z] > WAGA[wynik])) wynik = z;
   }
   return wynik;

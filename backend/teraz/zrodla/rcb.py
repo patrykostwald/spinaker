@@ -26,20 +26,37 @@ WOJEWODZTWA = {
     "podkarpack": "18", "podlask": "20", "pomorsk": "22", "śląsk": "24",
     "świętokrzysk": "26", "warmińsko-mazursk": "28", "wielkopolsk": "30", "zachodniopomorsk": "32",
 }
+WOJ_NOMINATYW = {kod: nazwa + "ie" for nazwa, kod in WOJEWODZTWA.items()}
 NAZWA_WOJ = re.compile(r"(?<![\w-])(" + "|".join(WOJEWODZTWA) + r")(?:ie(?:go|m)?|ich)\b", re.I)
+# „w woj. lubelskim”: miejscownik tylko po „woj.” lub „województwie”, bo „w powiecie lubelskim” to powiat, nie województwo
+WOJ_MIEJSCOWNIK = re.compile(r"\b(?:woj\.|województwie)\s+(" + "|".join(WOJEWODZTWA) + r")im\b", re.I)
 TEKST_MIEJSCA = re.compile(r"^alert rcb .*?(?:odbiorc|teren|województw|powiat)|^[-•]\s", re.I)
-NAGLOWEK_JEDNOSTEK = re.compile(r"\b(?:powiat(?:y|ów)?|gmin(?:a|y|ę)?|miast(?:o|a)?|województw(?:o|a)?)\s*:", re.I)
+# Nagłówek listy jednostek: z dwukropkiem („powiaty: A, B”) albo bez („w powiatach A i B”, „powiat świdnicki”).
+NAGLOWEK_JEDNOSTEK = re.compile(
+    r"(?:\b(?:w|we)\s+)?\b(?P<typ>powiat|powiec|gmin|miast)[^\W\d_]*(?:\s*:\s*|\s+(?=[^\W\d_]))", re.I,
+)
+NAGLOWEK_WOJEWODZTW = re.compile(r"\bwojewództw(?:o|a)?\s*:", re.I)
+TYPY_JEDNOSTEK = {"powiat": "", "powiec": "", "gmin": "gmina ", "miast": "miasto "}
+KONIEC_ZDANIA = re.compile(r"(?<!woj)\.(?:\s|$)", re.I)
+KONCOWKA_SEGMENTU = re.compile(
+    r"[\s,;:\-\u2013\u2014]*(?:\b(?:oraz|i|a|także|w|we|woj|województwie|województwa|województwo)\b\.?[\s,;:\-\u2013\u2014]*)*$", re.I,
+)
+PODZIAL_ELEMENTOW = re.compile(r"[,;]|\s+(?:i|oraz)\s+", re.I)
 ADRES = re.compile(r"\d|\b(?:ul(?:ica|icy|icę)?|al(?:eja|ei|eję)?|plac|os(?:iedle)?|nr)\b", re.I)
 NAZWA_JEDNOSTKI = re.compile(r"[^\W\d_]+(?:[ -][^\W\d_]+){0,4}")
 ODSTEP_KARTY = timedelta(minutes=10)
 CZESC_REGIONU = re.compile(r"\bczęś(?:ć|ci)\s+(?:woj\.|województw)", re.I)
+WZMIANKA_JEDNOSTKI = re.compile(r"\b(?:powiat|powiec|gmin|miast)[^\W\d_]*", re.I)
 
 
 def zasieg_czesciowy(miejsce, tresc=""):
-    """Komunikat obejmuje tylko część województwa: wymienia jednostki węższe (powiaty, gminy, miasta) albo mówi o „części
-    województwa”. Kod województwa jest wtedy przybliżeniem położenia, nie potwierdzonym zasięgiem alertu."""
+    """Komunikat obejmuje tylko część województwa: wymienia jednostki węższe (powiaty, gminy, miasta), mówi o „części
+    województwa” albo w zdaniu o odbiorcach zawęża zasięg do powiatów, gmin lub miast. Kod województwa jest wtedy
+    przybliżeniem położenia, nie potwierdzonym zasięgiem alertu."""
     jednostki = [linia.strip() for linia in (miejsce or "").splitlines() if linia.strip()]
-    return any(not NAZWA_WOJ.fullmatch(nazwa) for nazwa in jednostki) or bool(CZESC_REGIONU.search(tresc or ""))
+    if any(not NAZWA_WOJ.fullmatch(nazwa) for nazwa in jednostki) or CZESC_REGIONU.search(tresc or ""):
+        return True
+    return any(TEKST_MIEJSCA.match(linia) and WZMIANKA_JEDNOSTKI.search(linia) for linia in (tresc or "").splitlines())
 
 
 def adres_karty(adres):
@@ -76,24 +93,50 @@ def _klucz_cytatu(tekst):
     return tekst.strip('\"„”«» ').casefold()
 
 
+def _elementy(segment):
+    """Nazwy jednostek z fragmentu po nagłówku listy (do następnego nagłówka lub nazwy województwa)."""
+    segment = KONCOWKA_SEGMENTU.sub("", KONIEC_ZDANIA.split(segment, maxsplit=1)[0])
+    for czesc in PODZIAL_ELEMENTOW.split(segment):
+        nazwa = czesc.strip(" .-")
+        if NAZWA_JEDNOSTKI.fullmatch(nazwa) and not ADRES.search(nazwa) and not NAZWA_WOJ.fullmatch(nazwa):
+            yield nazwa
+
+
 def _jednostki(linie):
-    wynik = []
+    """Linie pola `miejsce`: nazwy województw („lubelskiego”) i jednostki węższe, każda z województwem, pod które
+    podpada w treści: „lubelskie: świdnicki”, „lubelskie: gmina Świdnik”, „dolnośląskie: miasto Świdnica”. Powiat jest
+    bez przedrostka typu. Jednostka bez rozpoznanego województwa zostaje sama („Chełm”): odbiorca czyta ją jako
+    niejednoznaczną, gdy komunikat obejmuje więcej niż jedno województwo (recenzja PR #38, R38b P1-1)."""
+    wojewodztwa, jednostki = [], []
     for linia in linie:
+        przypisane = None  # województwo wiążemy tylko w obrębie linii: kolejna linia może dotyczyć czegoś innego
         naglowki = list(NAGLOWEK_JEDNOSTEK.finditer(linia))
-        if not naglowki and not TEKST_MIEJSCA.match(linia):
+        if not naglowki and not TEKST_MIEJSCA.match(linia) and not NAGLOWEK_WOJEWODZTW.search(linia):
             continue
-        prefiks = linia[:naglowki[0].start()] if naglowki else linia
-        adres = ADRES.search(prefiks)
-        if adres:
-            prefiks = prefiks[:adres.start()]
-        wynik.extend(dopasowanie[0] for dopasowanie in NAZWA_WOJ.finditer(prefiks))
-        for i, naglowek in enumerate(naglowki):
-            koniec = naglowki[i + 1].start() if i + 1 < len(naglowki) else len(linia)
-            for czesc in re.split(r"[,;]", linia[naglowek.end():koniec]):
-                nazwa = czesc.strip(" .-")
-                if NAZWA_JEDNOSTKI.fullmatch(nazwa) and not ADRES.search(nazwa):
-                    wynik.append(nazwa)
-    return list(dict.fromkeys(wynik))
+        poczatek = naglowki[0].start() if naglowki else len(linia)
+        adres = ADRES.search(linia[:poczatek])
+        koniec_nazw = adres.start() if adres else poczatek  # w adresie („ul. Lubelska”) nazwa nie jest województwem
+        nazwy = [(m.start(), m.group(1), m.group(0)) for m in NAZWA_WOJ.finditer(linia)]
+        nazwy += [(m.start(1), m.group(1), m.group(1) + "ie") for m in WOJ_MIEJSCOWNIK.finditer(linia)]
+        zdarzenia = sorted([(pozycja, "woj", (rodzaj, tekst)) for pozycja, rodzaj, tekst in nazwy
+                            if pozycja < koniec_nazw or pozycja >= poczatek]
+                           + [(m.start(), "lista", m) for m in naglowki], key=lambda zdarzenie: zdarzenie[0])
+        grupa, po_liscie = [], False
+        for i, (_, rodzaj, m) in enumerate(zdarzenia):
+            if rodzaj == "woj":
+                if po_liscie:  # nazwa po liście zaczyna nową grupę („…: powiat A; w woj. dolnośląskim: powiat B”)
+                    grupa, po_liscie = [], False
+                grupa.append(WOJEWODZTWA[m[0].lower()])
+                wojewodztwa.append(m[1])
+                continue
+            if grupa:  # kilka województw przed listą („lubelskiego i podkarpackiego - powiaty: …”): nie wiadomo, które
+                przypisane = grupa[0] if len(set(grupa)) == 1 else None
+            po_liscie = True
+            koniec = zdarzenia[i + 1][0] if i + 1 < len(zdarzenia) else len(linia)
+            typ = TYPY_JEDNOSTEK[m.group("typ").lower()]
+            for nazwa in _elementy(linia[m.end():koniec]):
+                jednostki.append(f"{WOJ_NOMINATYW[przypisane]}: {typ}{nazwa}" if przypisane else f"{typ}{nazwa}")
+    return list(dict.fromkeys([*wojewodztwa, *jednostki]))
 
 
 def _sekcje(akapity):

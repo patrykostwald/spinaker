@@ -121,7 +121,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const wiersze = useMemo(() => new Map<string, WierszStanu>((podsumowanie?.wiersze ?? []).map(w => [w.warstwa, w])), [podsumowanie]);
   const wlaczone = useMemo(() => wlaczoneWarstwy(wybor, warstwyQ.data ?? []), [wybor, warstwyQ.data]);
   const polityka = useMemo(() => politykaStatusu(zdarzeniaQ.data), [zdarzeniaQ.data]);
-  const zdarzenia = useMemo(() => tylkoPotwierdzone([], zdarzeniaQ.data?.wyniki ?? [], potwierdzone, wylaczone).zdarzenia, [zdarzeniaQ.data, potwierdzone, wylaczone]);
+  const zdarzeniaPotw = useMemo(() => tylkoPotwierdzone([], zdarzeniaQ.data?.wyniki ?? [], potwierdzone, wylaczone), [zdarzeniaQ.data, potwierdzone, wylaczone]);
+  const zdarzenia = zdarzeniaPotw.zdarzenia;
   const mapaPotw = useMemo(() => tylkoPotwierdzone(wpisyQ.data?.wpisy ?? [], [], potwierdzone, wylaczone), [wpisyQ.data, potwierdzone, wylaczone]);
   const powiatyPotw = useMemo(() => tylkoPotwierdzone(powiatyQ.data?.wpisy ?? [], [], potwierdzone, wylaczone), [powiatyQ.data, potwierdzone, wylaczone]);
   const wpisyMapy = mapaPotw.wpisy;
@@ -234,7 +235,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const adresPowiatow = useCallback(() => adresZestawu(window.location.origin, window.location.pathname, powiaty, okres, probne), [powiaty, okres, probne]);
   const opisFiltrow = `${OKRESY.find(o => o.id === okres)?.etykieta ?? okres}, ${woj ? `województwo ${WOJEWODZTWA.find(w => w.kod === woj)?.nazwa ?? woj} (granice przybliżone)` : 'cała Polska'}, włączone warstwy: ${wlaczone.size}`;
 
-  const ukryteWarstwy = warstwyQ.isPending ? 0 : (wMapie ? mapaPotw.ukryte : powiatyPotw.ukryte);
+  // ukryte wpisy główne i same powiązania ze zdarzeń: oba przypadki dostają ostrzeżenie (R38b, P2-4)
+  const ukryteWarstwy = warstwyQ.isPending ? 0 : (wMapie ? mapaPotw.ukryte : powiatyPotw.ukryte) + zdarzeniaPotw.ukrytePowiazane;
   const stanWarstw = { niedostepne: warstwyQ.isError && !warstwyQ.data, nieaktualne: warstwyQ.isError && !!warstwyQ.data, niepotwierdzone: ukryteWarstwy };
   const stanZdarzen = {
     niedostepne: zdarzeniaQ.isError && !zdarzeniaQ.data, nieaktualne: zdarzeniaQ.isError && !!zdarzeniaQ.data,
@@ -319,7 +321,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
           <MojPowiat powiaty={powiaty} onZmien={zmienPowiaty} okres={okres} onOkres={setOkres}
             widoki={widokiPowiatow} warstwy={warstwyDlaNazw}
             ladowanie={powiatyQ.isPending || warstwyQ.isPending} blad={powiatyQ.isError && !powiatyQ.data} uciete={powiatyQ.data?.uciete ?? false} pominiete={powiatyQ.data?.pominiete ?? 0}
-            pobrane={powiatyQ.data?.wpisy.length ?? 0} niepotwierdzone={warstwyQ.isPending ? 0 : powiatyPotw.ukryte} nieaktualne={powiatyQ.isError && !!powiatyQ.data}
+            pobrane={powiatyQ.data?.wpisy.length ?? 0} niepotwierdzone={ukryteWarstwy} warstwyPotwierdzone={warstwyQ.isSuccess} nieaktualne={powiatyQ.isError && !!powiatyQ.data}
             lukaWDanych={(podsumowanie?.ostrzezenia.length ?? 0) > 0} poczatekOkresu={poczatekOkresu} adres={adresPowiatow} />
         </div>}
 

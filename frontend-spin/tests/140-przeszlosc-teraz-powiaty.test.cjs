@@ -258,7 +258,7 @@ function renderuj(props) {
   const wpisy = props.probne === false ? [] : d.probneWpisy(teraz);
   const domyslne = {
     powiaty: ['1813'], onZmien() {}, okres: '7d', onOkres() {}, widoki: m.zbudujWidoki(wpisy, d.probneZdarzenia(teraz)), warstwy: d.probneWarstwy(teraz),
-    ladowanie: false, blad: false, uciete: false, pominiete: 0, pobrane: wpisy.length, niepotwierdzone: 0, nieaktualne: false, lukaWDanych: false, poczatekOkresu: new Date(teraz - 7 * 86_400_000).toISOString(), adres: () => 'x',
+    ladowanie: false, blad: false, uciete: false, pominiete: 0, pobrane: wpisy.length, niepotwierdzone: 0, warstwyPotwierdzone: true, nieaktualne: false, lukaWDanych: false, poczatekOkresu: new Date(teraz - 7 * 86_400_000).toISOString(), adres: () => 'x',
   };
   const { probne, ...reszta } = props; void probne;
   return renderToStaticMarkup(React.createElement(MojPowiat, { ...domyslne, ...reszta }));
@@ -331,11 +331,16 @@ test('„Mój powiat”: alert RCB z 10.11 dla wybranych powiatów: Chełm wymie
   const { POWIATY_ALERTU_RCB_1011 } = load(`${dir}/dane-probne/index`);
   const p = powiaty();
   // `miejsce` dokładnie w formie z parsera RCB dla próbki backend/teraz/tests/fixtures/alert-rcb-2026-11-10-zagrozenie-z-powietrza.html
-  const miejsce = ['lubelskiego', ...POWIATY_ALERTU_RCB_1011].join('\n');
+  const miejsce = ['lubelskiego', ...POWIATY_ALERTU_RCB_1011.map(nazwa => `lubelskie: ${nazwa}`)].join('\n');
+  const miejsceStarsze = ['lubelskiego', ...POWIATY_ALERTU_RCB_1011].join('\n'); // wiersze sprzed podpisywania jednostek województwem
   const fs2 = require('node:fs');
   const html = fs2.readFileSync(path.join(root, '..', 'backend', 'teraz', 'tests', 'fixtures', 'alert-rcb-2026-11-10-zagrozenie-z-powietrza.html'), 'utf8');
   for (const nazwa of POWIATY_ALERTU_RCB_1011) assert.ok(html.includes(nazwa), `próbka wymienia: ${nazwa}`);
   const alert = { teryt: ['06'], zasieg: 'przyblizony', miejsce };
+  for (const m of [miejsce, miejsceStarsze]) {
+    assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: m }, '0662'), 'wymieniony', 'Chełm tak (oba formaty)');
+    assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: m }, '0663'), 'pozaLista', 'Lublin nie (oba formaty)');
+  }
   assert.equal(p.zakresDlaPowiatu(alert, '0662'), 'wymieniony', 'Chełm (miasto na prawach powiatu)');
   assert.equal(p.zakresDlaPowiatu(alert, '0603'), 'wymieniony', 'powiat chełmski');
   assert.equal(p.zakresDlaPowiatu(alert, '0661'), 'wymieniony', 'Biała Podlaska');

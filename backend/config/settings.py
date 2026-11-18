@@ -106,6 +106,7 @@ PREVIEW_KEY = env("PREVIEW_KEY", default="")
 
 MIDDLEWARE = [
     "news.preview.PreviewMiddleware",
+    "teraz.middleware.PrywatneOdpowiedziPrzedStartem",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",

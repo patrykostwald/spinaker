@@ -112,6 +112,43 @@ def test_zly_naglowek_uwierzytelnienia_tez_daje_404(client, dane, settings):
     assert client.get(reverse("teraz:wpisy"), HTTP_AUTHORIZATION="Basic ???").status_code == 404
 
 
+def test_flaga_wylaczona_preflight_cors_ma_naglowek_prywatny(client, dane, settings):
+    # pusta 200 z CorsMiddleware nie dochodzi do widoku, więc nagłówek dokłada middleware z teraz/middleware.py (R38b, P2-3)
+    settings.TERAZ_PUBLICZNE = False
+    for adres in adresy(dane):
+        odpowiedz = client.options(adres, HTTP_ORIGIN="https://example.org", HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET")
+        assert odpowiedz.status_code == 200 and odpowiedz.content == b"", adres
+        assert odpowiedz["Cache-Control"] == "private, no-store", adres
+
+
+def test_flaga_wylaczona_przekierowanie_bez_ukosnika_ma_naglowek_prywatny(client, dane, settings):
+    settings.TERAZ_PUBLICZNE = False
+    for adres in adresy(dane):
+        odpowiedz = client.get(adres.rstrip("/"))
+        assert odpowiedz.status_code == 301 and odpowiedz["Location"].endswith(adres), adres
+        assert odpowiedz["Cache-Control"] == "private, no-store", adres
+
+
+def test_flaga_wylaczona_zly_accept_nie_zdradza_api_i_ma_naglowek_prywatny(client, dane, settings, django_user_model):
+    settings.TERAZ_PUBLICZNE = False
+    for adres in adresy(dane):
+        odpowiedz = client.get(adres, HTTP_ACCEPT="text/html")
+        assert odpowiedz.status_code == 404, adres  # nie 406: bez dostępu nie zdradzamy istnienia
+        assert odpowiedz["Cache-Control"] == "private, no-store", adres
+    client.force_login(django_user_model.objects.create_user("redakcja", password="x", is_staff=True))
+    odpowiedz = client.get(reverse("teraz:wpisy"), HTTP_ACCEPT="text/html")
+    assert odpowiedz.status_code == 406 and odpowiedz["Cache-Control"] == "private, no-store"
+
+
+def test_flaga_wlaczona_odpowiedzi_poboczne_bez_naglowka_prywatnego(client, dane, settings):
+    settings.TERAZ_PUBLICZNE = True
+    adres = reverse("teraz:wpisy")
+    assert client.get(adres, HTTP_ACCEPT="text/html")["Cache-Control"] == "no-store"
+    assert client.get(adres.rstrip("/")).status_code == 301
+    assert "private" not in client.get(adres.rstrip("/")).get("Cache-Control", "")
+    assert client.options(adres, HTTP_ORIGIN="https://example.org", HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET").status_code == 200
+
+
 def test_flaga_wlaczona_anonim_200(client, dane, settings):
     settings.TERAZ_PUBLICZNE = True
     for adres in adresy(dane):
