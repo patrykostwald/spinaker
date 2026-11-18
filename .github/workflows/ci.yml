@@ -22,6 +22,7 @@ jobs:
       - run: >-
           python -m pytest -q
           news/test_public_figures_api.py
+          news/test_terminy_zewnetrzne.py
           news/test_sync_highest_state_offices.py
           scraper/test_source_catalog_completion_audit.py
           scraper/test_source_terms_discovery.py

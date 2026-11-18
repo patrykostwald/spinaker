@@ -82,8 +82,8 @@ Powyższe zasady (triaż, design, pętle, język) obowiązują każdego wykonawc
   poziomem Dyrygenta (`with dyrygent.tier('rozwój')`), tanim trybem bez zmian wejścia (`news/petle_koszty.py`: watermark) i testem;
   każdy alarm najpierw próbuje naprawy automatycznej. Zadania poboczne idą drogą tanią (Inception/Mercury najpierw), nigdy z rezerwy
   Konsylium na treść.
-- Wgranie robi właściciel: raport kończy się pełną komendą od `ssh ubuntu@148.113.242.109`, potem `cd /srv/spin-clinic && git fetch
-  && git checkout --detach origin/codex/mvp-public-frontend && docker compose --env-file .env.production -f
+- Wgranie robi właściciel: raport kończy się pełną komendą od `ssh vps` (alias z `~/.ssh/config` właściciela; adresu serwera nie wpisujemy do repo), potem `cd /srv/spin-clinic && git fetch
+  && git checkout --detach origin/main && docker compose --env-file .env.production -f
   deploy/docker-compose.production.yml up -d --build --force-recreate`.
 
 ### Kolejka budowy

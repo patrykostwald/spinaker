@@ -25,12 +25,13 @@ def isolated(monkeypatch):
     for name in ('OPENROUTER_API_KEY', 'X_POLITICAL_BEARER_TOKEN', 'GITHUB_ISSUES_TOKEN', 'GITHUB_ISSUES_TOKEN_CREATED', 'HEALTHCHECK_URL',
                  'HEALTHCHECK_PING_URL'):
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv('EXPECTED_SERVER_IP', '203.0.113.10')
     with patch('django.utils.timezone.now', return_value=NOW), patch('requests.get', side_effect=AssertionError('Bez sieci')), \
          patch('requests.post', side_effect=AssertionError('Bez sieci')), patch('requests.request', side_effect=AssertionError('Bez sieci')):
         yield
 
 
-def probes(monkeypatch, domain_days=300, tls_days=60, ips=('148.113.242.109',), bad=False, credits=None, usage=None):
+def probes(monkeypatch, domain_days=300, tls_days=60, ips=('203.0.113.10',), bad=False, credits=None, usage=None):
     expires = NOW + timedelta(days=domain_days)
     monkeypatch.setattr(tz, 'rdap', lambda d: {'expires': expires, 'status': ['client hold'] if bad else ['active']})
     monkeypatch.setattr(tz, 'tls_expiry', lambda h: NOW + timedelta(days=tls_days))
@@ -59,7 +60,7 @@ def test_collect_levels_and_missing_keys(monkeypatch):
     found = by_key(items)
     assert found['domena:spin.clinic']['level'] == 'warning' and found['domena:spin.clinic']['days'] == 10
     assert found['tls:spin.clinic']['level'] == 'warning' and found['tls:spin.clinic']['days'] == 5
-    assert found['dns:spin.clinic']['level'] == 'critical' and '148.113.242.109' in found['dns:spin.clinic']['detail']
+    assert found['dns:spin.clinic']['level'] == 'critical' and '203.0.113.10' in found['dns:spin.clinic']['detail']
     assert 'dns:zbudujmi.com' not in found and found['saldo:openrouter']['level'] == 'na' and found['saldo:x']['level'] == 'na'
     assert found['token:github']['level'] == 'na' and found['manual:Gemini']['level'] == 'manual'
     assert {it['label'] for it in items if it['kind'] == 'domena'} == set(tz.DOMAINS)
@@ -122,7 +123,7 @@ def test_report_lines_and_table(monkeypatch):
     lines = tz.report_lines(NOW)
     assert lines[0] == 'Terminy zewnętrzne (stan 07.10 06:15):'
     spin = next(l for l in lines if l.startswith('- spin.clinic:'))
-    assert '(341 dni)' in spin and 'TLS do' in spin and 'DNS A -> 148.113.242.109' in spin
+    assert '(341 dni)' in spin and 'TLS do' in spin and 'DNS A -> 203.0.113.10' in spin
     assert any('OpenRouter: kredyty 12.50 USD' in l for l in lines) and any('Ręcznie raz w miesiącu' in l for l in lines)
     assert 'spin.clinic' in tz.table(NOW)
     from news import duty, duty_extra, raport_petli
@@ -166,3 +167,12 @@ def test_pulse_pings_only_when_duty_is_fresh(monkeypatch):
     from news import raport_petli
     from news.daily_schedule import BEAT_PLAN
     assert BEAT_PLAN['puls-zewnetrzny-5m'] == ('puls_zewnetrzny_task', {'minute': '2-59/5'}) and raport_petli.BY_KEY['puls']['registry'] == 'puls-zewnetrzny'
+
+
+def test_missing_expected_ip_warns_instead_of_guessing(monkeypatch):
+    probes(monkeypatch)
+    monkeypatch.delenv('EXPECTED_SERVER_IP', raising=False)
+    items, _ = tz.collect(NOW, {})
+    dns = by_key(items)['dns:spin.clinic']
+    assert dns['level'] == 'warning' and 'EXPECTED_SERVER_IP' in dns['detail']
+    assert 'EXPECTED_SERVER_IP' in dns['instruction']
