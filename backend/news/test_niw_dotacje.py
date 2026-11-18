@@ -294,10 +294,10 @@ def test_identifier_matching_company_view_notes_and_export(monkeypatch):
     csv = dp.export_csv(company, full)
     assert 'dotacja krajowa' in csv and 'Źródło: NIW-CRSO, Lista dotacji, stan na 2026-07-30' in csv
     assert 'Nie oceniamy osób ani decyzji.' in csv and niw.SUMS_NOTE in csv
-    # Bez osoby publicznej: brak zastrzeżenia; bez NIW: zwykła notatka.
+    # Bez osoby publicznej: bez zastrzeżenia o powiązaniu, tylko wyjaśnienie zakresu listy (6.11.2026); bez NIW: zwykła notatka.
     from news.political_models import PublicFigureOrganisationRelation
     PublicFigureOrganisationRelation.objects.filter(public_figure=figure).delete()
-    assert dp.branches(company)['people']['note'] == ''
+    assert dp.branches(company)['people']['note'] == dp.PEOPLE_SCOPE
     PublicRecord.objects.filter(source='niw').delete()
     assert dp.branches(company)['grants']['note'] == dp.NOTE
 

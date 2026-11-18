@@ -9,7 +9,7 @@ import requests
 from news.models import FetchAttempt, ImportState, RclFetchEvent, SourceAccessInstruction
 from scraper import rcl_guard, utils
 from scraper.management.commands.configure_rcl_source import configure
-from scraper.rcl_client import RclClient, RclStop, RclTransient, absolute_url
+from scraper.rcl_client import RclClient, RclStop, RclTransient, RobotsPolicy, absolute_url
 from scraper.rcl_guard import RCL_USER_AGENT
 from scraper.rcl_testsupport import Clock, at, fixture_text, http_error, no_network, ok_response  # noqa: F401
 from scraper.utils import HostRateLimited
@@ -283,6 +283,17 @@ def test_robots_rule_for_our_agent_is_followed_and_override_is_explicit(access, 
         robots_ok(transport, fixture_text('robots_disallow_all.txt'))
         overridden = make_client(access, clock, robots_override=True)
         assert overridden.get('/projekt/1').status == 200 and overridden.robots_override_used
+
+
+def test_robots_policy_wildcards_longest_rule_and_default_group():
+    base = 'https://legislacja.rcl.gov.pl'
+    policy = RobotsPolicy(['User-agent: *', 'Disallow: /a/*/x$', 'Allow: /a/b/x$', 'Disallow: /p', 'Allow: /p'])
+    assert policy.can_fetch('iapply-legislacja', base + '/a/c/x') is False  # `*` i `$`
+    assert policy.can_fetch('iapply-legislacja', base + '/a/c/xy') is True  # `$` kończy wzorzec
+    assert policy.can_fetch('iapply-legislacja', base + '/a/b/x') is True  # remis długości: Allow
+    assert policy.can_fetch('iapply-legislacja', base + '/p') is True  # remis: Allow
+    assert RobotsPolicy(['User-agent: *', 'Disallow: /']).can_fetch('iapply-legislacja', base + '/x') is False
+    assert RobotsPolicy([]).can_fetch('iapply-legislacja', base + '/x') is True
 
 
 def test_only_https_rcl_host_can_be_requested():
