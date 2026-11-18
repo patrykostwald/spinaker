@@ -13,21 +13,26 @@ from django.utils import timezone
 
 from .models import Klasa, Pobranie, Wpis, Zrodlo
 from .retencja import wyczysc_wpisy
-from .zbieranie import ADAPTERY
+from .zbieranie import AdapterTestowy
+from .zrodla.rejestr import ADAPTERY
 
 log = logging.getLogger(__name__)
-WAZNOSC_POBRANIA = 120
+WAZNOSC_POBRANIA = 10
 LIMIT_CZASU_POBRANIA = 50
 MIEKKI_LIMIT_CZASU_POBRANIA = 40
 
 
 def nalezne_zrodla():
-    return (Zrodlo.objects.exclude(tryb=Zrodlo.Tryb.WYLACZONY).filter(slug__in=ADAPTERY)
+    testowe = [slug for slug, adapter in ADAPTERY.items() if adapter is AdapterTestowy]
+    return (Zrodlo.objects.exclude(tryb=Zrodlo.Tryb.WYLACZONY)
+            .exclude(sposob_dostepu=Zrodlo.SposobDostepu.WEBSOCKET)
+            .filter(slug__in=ADAPTERY, blokada_dostepu=False)
+            .filter(Q(zrodlo_dostepu__isnull=False) | Q(slug__in=testowe))
             .alias(czas_od_proby=Now() - F("ostatnie_pobranie_at"),
                    interwal=ExpressionWrapper(Cast("czestotliwosc_s", IntegerField()) * timedelta(seconds=1),
                                               output_field=DurationField()))
-            .filter(Q(ostatnie_pobranie_at__isnull=True) | Q(
-                czas_od_proby__gte=F("interwal")
+            .filter(Q(kontynuacja_at__lte=Now()) | Q(kontynuacja_at__isnull=True) & (
+                Q(ostatnie_pobranie_at__isnull=True) | Q(czas_od_proby__gte=F("interwal"))
             )))
 
 

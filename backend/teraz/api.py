@@ -5,7 +5,7 @@ from django.core.cache import caches
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import BooleanField, Count, FloatField, Func, Prefetch, Q
 from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Cast
+from django.db.models.functions import Cast, Coalesce
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
@@ -76,12 +76,13 @@ class FiltryWpisow(serializers.Serializer):
 class WpisSerializer(serializers.ModelSerializer):
     zrodlo = serializers.SlugRelatedField(slug_field="slug", read_only=True)
     warstwa = serializers.CharField(source="zrodlo.warstwa")
+    atrybucja = serializers.CharField(source="zrodlo.atrybucja")
 
     class Meta:
         model = Wpis
         fields = (
             "id", "zrodlo", "warstwa", "tytul", "tresc", "link", "opublikowano_at", "pobrano_at",
-            "klasa", "teryt", "szerokosc", "dlugosc", "bbox", "dokladnosc", "pewnosc_lokalizacji",
+            "atrybucja", "miejsce", "czas_zrodlowy_at", "dokladna_godzina_publikacji", "klasa", "teryt", "szerokosc", "dlugosc", "bbox", "dokladnosc", "pewnosc_lokalizacji",
         )
 
     def to_representation(self, instance):
@@ -94,6 +95,10 @@ class WpisSerializer(serializers.ModelSerializer):
                 dokladnosc = Wpis.Dokladnosc.POWIAT if all(len(kod) == 4 for kod in kody) else Wpis.Dokladnosc.WOJEWODZTWO
             dane.update(teryt=kody, szerokosc=None, dlugosc=None, bbox=None,
                         dokladnosc=dokladnosc, pewnosc_lokalizacji=0)
+            dane["miejsce"] = ""
+        if instance.zrodlo.slug == "rcb" and instance.dokladna_godzina_publikacji:
+            godzina = timezone.localtime(instance.opublikowano_at)
+            dane["atrybucja"] += f" o godz. {godzina:%H:%M}"
         return dane
 
 
@@ -122,6 +127,7 @@ class ZrodloSerializer(SwiezoscSerializer):
     slug = serializers.CharField()
     nazwa = serializers.CharField()
     instytucja = serializers.CharField()
+    atrybucja = serializers.CharField()
     czestotliwosc_s = serializers.IntegerField()
 
 
@@ -130,6 +136,7 @@ class WarstwaSerializer(SwiezoscSerializer):
     nazwa = serializers.CharField()
     wylaczona = serializers.BooleanField()
     zrodla = ZrodloSerializer(many=True)
+    atrybucja = serializers.ListField(child=serializers.CharField())
 
 
 class LiniaStanuSerializer(serializers.Serializer):
@@ -161,6 +168,7 @@ def stan_warstw():
             "slug": zrodlo.slug,
             "nazwa": zrodlo.nazwa,
             "instytucja": zrodlo.instytucja,
+            "atrybucja": zrodlo.atrybucja,
             "czestotliwosc_s": zrodlo.czestotliwosc_s,
             "ostatnie_pobranie_at": zrodlo.ostatnie_pobranie_at,
             "ostatni_sukces_at": sukces,
@@ -170,6 +178,7 @@ def stan_warstw():
         })
     return [
         {"warstwa": warstwa, "nazwa": nazwa, "wylaczona": warstwa in wylaczone, "zrodla": grupy[warstwa],
+         "atrybucja": list(dict.fromkeys(z["atrybucja"] for z in grupy[warstwa] if z["atrybucja"])),
          "ostatnie_pobranie_at": max((z["ostatnie_pobranie_at"] for z in grupy[warstwa] if z["ostatnie_pobranie_at"]), default=None),
          "ostatni_sukces_at": max((z["ostatni_sukces_at"] for z in grupy[warstwa] if z["ostatni_sukces_at"]), default=None),
          "liczba_wpisow_24h": sum(z["liczba_wpisow_24h"] for z in grupy[warstwa]),
@@ -339,7 +348,9 @@ class ZdarzeniaView(PublicznyOdczyt):
     pagination_class = StronicowanieTeraz
 
     def get_queryset(self):
-        wpisy = Wpis.objects.publiczne().select_related("zrodlo").order_by("opublikowano_at", "pk")
+        wpisy = (Wpis.objects.publiczne().select_related("zrodlo")
+                 .alias(czas_osi=Coalesce("czas_zrodlowy_at", "opublikowano_at"))
+                 .order_by("czas_osi", "pk"))
         return (Zdarzenie.objects.publiczne().select_related("zweryfikowal")
                 .prefetch_related(Prefetch("wpisy", queryset=wpisy, to_attr="publiczne_wpisy"))
                 .order_by("-ostatni_wpis_at", "-pk"))

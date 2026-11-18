@@ -32,6 +32,10 @@ def wyczysc_wpisy(queryset, powod, uzytkownik=None):
             wpis.zewnetrzny_id = f"usuniety-{uuid4().hex}"
             wpis.tytul = wpis.tresc = wpis.link = ""
             wpis.teryt = []
+            wpis.miejsce = wpis.hash_wersji = ""
+            wpis.wersje = []
+            wpis.czas_zrodlowy_at = None
+            wpis.dokladna_godzina_publikacji = False
             wpis.szerokosc = wpis.dlugosc = wpis.bbox = None
             wpis.dokladnosc = Wpis.Dokladnosc.BRAK
             wpis.pewnosc_lokalizacji = 0
@@ -42,7 +46,8 @@ def wyczysc_wpisy(queryset, powod, uzytkownik=None):
         Wpis.objects.using(baza).bulk_update(wpisy, [
             "hash_zewnetrznego_id", "zewnetrzny_id", "tytul", "tresc", "link", "teryt", "szerokosc",
             "dlugosc", "bbox", "dokladnosc", "pewnosc_lokalizacji", "status_przegladu", "ukryty_powod",
-            "usunieto_at", "usunal",
+            "usunieto_at", "usunal", "miejsce", "hash_wersji", "wersje", "czas_zrodlowy_at",
+            "dokladna_godzina_publikacji",
         ])
         identyfikatory = [wpis.pk for wpis in wpisy]
         Pobranie.objects.using(baza).exclude(zrzut="").filter(

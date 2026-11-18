@@ -15,7 +15,8 @@ class ZrodloAdmin(admin.ModelAdmin):
     search_fields = ("slug", "nazwa", "instytucja")
     raw_id_fields = ("zrodlo_dostepu",)
     readonly_fields = ("tryb_zmienil", "tryb_zmiana_at", "ostatnie_pobranie_at", "ostatni_sukces_at",
-                       "ostatni_blad", "kolejne_bledy")
+                       "ostatni_blad", "kolejne_bledy", "podstawa_rekomendowana",
+                       "wyjatek_podpisal", "ostatnia_proba_archiwum_at")
     actions = ("przelacz_na_publiczne",)
 
     def get_queryset(self, request):
@@ -25,10 +26,17 @@ class ZrodloAdmin(admin.ModelAdmin):
         return queryset
 
     def get_readonly_fields(self, request, obj=None):
+        pola = self.readonly_fields
+        if not request.user.is_superuser:
+            pola = (*pola, "blokada_dostepu", "podstawa_prawna", "rejestr_podstaw_url",
+                    "rekomendowany_tryb", "wyjatek_decyzja")
         if obj and obj.tryb == Zrodlo.Tryb.PUBLICZNY:
-            return (*self.readonly_fields, "slug", "nazwa", "instytucja", "warstwa", "sposob_dostepu", "adres",
-                    "zrodlo_dostepu", "podstawa_prawna", "rejestr_podstaw_url", "czestotliwosc_s")
-        return self.readonly_fields
+            return (*pola, "slug", "nazwa", "instytucja", "warstwa", "sposob_dostepu", "adres",
+                    "zrodlo_dostepu", "podstawa_prawna", "rejestr_podstaw_url", "czestotliwosc_s",
+                    "atrybucja", "redystrybucja_pro", "rekomendowany_tryb", "wyjatek_decyzja")
+        if obj and obj.podstawa_rekomendowana and request.user.is_superuser:
+            return (*pola, "rekomendowany_tryb")
+        return pola
 
     def get_form(self, request, obj=None, **kwargs):
         formularz = super().get_form(request, obj, **kwargs)
@@ -37,6 +45,11 @@ class ZrodloAdmin(admin.ModelAdmin):
                 para for para in Zrodlo.Tryb.choices if para[0] != Zrodlo.Tryb.PUBLICZNY
             ]
         return formularz
+
+    def save_model(self, request, obj, form, change):
+        if request.user.is_superuser and "wyjatek_decyzja" in form.changed_data:
+            obj.wyjatek_podpisal = request.user if obj.wyjatek_decyzja.strip() else None
+        super().save_model(request, obj, form, change)
 
     def get_actions(self, request):
         akcje = super().get_actions(request)
@@ -48,11 +61,15 @@ class ZrodloAdmin(admin.ModelAdmin):
     def przelacz_na_publiczne(self, request, queryset):
         if not request.user.is_superuser:
             return
-        liczba = brak_podstawy = 0
+        liczba = odmowy = 0
         with transaction.atomic(using=queryset.db):
             for zrodlo in queryset.exclude(tryb=Zrodlo.Tryb.PUBLICZNY).select_for_update():
-                if not zrodlo.podstawa_prawna.strip() or not zrodlo.rejestr_podstaw_url:
-                    brak_podstawy += 1
+                podstawa = zrodlo.podstawa_prawna.strip()
+                if (not podstawa or podstawa == zrodlo.podstawa_rekomendowana.strip()
+                        or not zrodlo.rejestr_podstaw_url
+                        or (zrodlo.rekomendowany_tryb != Zrodlo.Tryb.PUBLICZNY
+                            and not (zrodlo.wyjatek_decyzja.strip() and zrodlo.wyjatek_podpisal_id))):
+                    odmowy += 1
                     continue
                 zrodlo.tryb = Zrodlo.Tryb.PUBLICZNY
                 zrodlo.tryb_zmienil = request.user
@@ -60,8 +77,8 @@ class ZrodloAdmin(admin.ModelAdmin):
                 zrodlo.save(update_fields=["tryb", "tryb_zmienil", "tryb_zmiana_at"])
                 liczba += 1
         self.message_user(request, f"Źródła dopuszczone do publikacji: {liczba}.")
-        if brak_podstawy:
-            self.message_user(request, f"Źródła bez podstawy i odnośnika do rejestru: {brak_podstawy}.", level="warning")
+        if odmowy:
+            self.message_user(request, f"Odmowy publikacji z powodu braku podstawy, odnośnika lub wymaganego podpisanego wyjątku: {odmowy}.", level="warning")
 
 
 @admin.register(Pobranie)

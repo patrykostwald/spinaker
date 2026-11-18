@@ -296,7 +296,7 @@ LOGGING = {"version": 1, "disable_existing_loggers": False,
     "root": {"handlers": ["console"], "level": "INFO"}}
 if env("SENTRY_DSN", default=""):
     import sentry_sdk
-    sentry_sdk.init(dsn=env("SENTRY_DSN"), send_default_pii=False)
+    sentry_sdk.init(dsn=env("SENTRY_DSN"), send_default_pii=False, include_local_variables=False)
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

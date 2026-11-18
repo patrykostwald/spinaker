@@ -1,0 +1,9 @@
+[
+  {
+    "id_stacji": "101",
+    "stacja": "Stacja testowa",
+    "rzeka": "Rzeka testowa",
+    "stan_wody": "203",
+    "stan_wody_data_pomiaru": "2026-11-17 11:00:00"
+  }
+]

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:gdacs="http://www.gdacs.org" xmlns:georss="http://www.georss.org/georss"><channel><title>GDACS</title>
+<item><guid>test-cze</guid><title>Powódź w Czechach</title><pubDate>Tue, 17 Nov 2026 10:00:00 GMT</pubDate><link>https://www.gdacs.org/report.aspx?eventid=1</link><gdacs:country>Czechia</gdacs:country><georss:point>50.1 16.2</georss:point></item>
+<item><guid>test-usa</guid><title>Powódź w USA</title><pubDate>Tue, 17 Nov 2026 10:00:00 GMT</pubDate><link>https://www.gdacs.org/report.aspx?eventid=2</link><gdacs:country>United States</gdacs:country></item>
+</channel></rss>

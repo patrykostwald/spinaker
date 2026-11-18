@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "testowy1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18,
+          50,
+          6
+        ]
+      },
+      "properties": {
+        "time": 1794909600000,
+        "title": "M 3.1 - Poland",
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/testowy1"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "testowy2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30,
+          40,
+          6
+        ]
+      },
+      "properties": {
+        "time": 1794909600000,
+        "title": "M 4.5",
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/testowy2"
+      }
+    }
+  ]
+}

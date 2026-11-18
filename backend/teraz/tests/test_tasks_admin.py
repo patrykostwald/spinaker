@@ -29,6 +29,7 @@ def test_routing_i_harmonogram():
     for nazwa, wpis in beat_schedule.items():
         assert app.conf.beat_schedule[nazwa] == wpis
         assert wpis["options"]["expires"] > 0
+    assert beat_schedule["teraz-zbierz-nalezne-zrodla"]["options"]["expires"] == 10
     assert tasks.zbierz_zrodlo.acks_late is False
     assert tasks.zbierz_zrodlo.soft_time_limit == 40 < tasks.zbierz_zrodlo.time_limit
 
@@ -47,7 +48,7 @@ def test_planowanie_tylko_naleznych_zarejestrowanych_zrodel(zrob_zrodlo, monkeyp
     monkeypatch.setattr(tasks.zbierz_zrodlo, "apply_async", zaplanuj)
     tasks.zbierz_nalezne_zrodla()
     assert {wywolanie.args[0] for wywolanie in zaplanuj.call_args_list} == {(zrodlo.pk,), (drugie.pk,)}
-    assert all(0 <= c.kwargs["countdown"] <= 5 and c.kwargs["expires"] == 120 for c in zaplanuj.call_args_list)
+    assert all(0 <= c.kwargs["countdown"] <= 5 and c.kwargs["expires"] == 10 for c in zaplanuj.call_args_list)
     tasks.zbierz_zrodlo(zrodlo.pk)
     tasks.zbierz_zrodlo(zrodlo.pk)
     assert Pobranie.objects.filter(zrodlo=zrodlo).count() == 1
@@ -114,7 +115,8 @@ def test_admin_dostep_i_akcje(klient_admina, django_user_model, zrob_zrodlo, zro
     wydawca = django_user_model.objects.create_superuser(username="wydawca")
     redaktor = django_user_model.objects.create_user(username="redaktor", is_staff=True)
     redaktor.user_permissions.add(*Permission.objects.filter(content_type__app_label="teraz"))
-    zrodlo = zrob_zrodlo(podstawa_prawna="Zatwierdzona podstawa", rejestr_podstaw_url="https://rejestr.example.org/1")
+    zrodlo = zrob_zrodlo(podstawa_prawna="Zatwierdzona podstawa", rejestr_podstaw_url="https://rejestr.example.org/1",
+                        rekomendowany_tryb=Zrodlo.Tryb.PUBLICZNY)
     wpis = zrob_wpis(zrodlo, klasa=Klasa.WRAZLIWY)
     wylacznik = WylacznikKategorii.objects.create(warstwa=zrodlo.warstwa, powod="Decyzja redakcji")
     pola_zrodla = {pole: getattr(zrodlo, pole) for pole in ("slug", "nazwa", "instytucja", "warstwa", "sposob_dostepu",
@@ -153,6 +155,47 @@ def test_admin_dostep_i_akcje(klient_admina, django_user_model, zrob_zrodlo, zro
     assert client.post(adres, {"tryb": Zrodlo.Tryb.WYLACZONY, "_save": "1"}).status_code == 302
     zrodlo.refresh_from_db()
     assert zrodlo.tryb == Zrodlo.Tryb.WYLACZONY
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("slug", ["imgw_hydro", "mon", "dorsz", "sg_komunikaty", "notam"])
+def test_admin_wymaga_podstawy_i_podpisanego_wyjatku(klient_admina, django_user_model, slug):
+    client = klient_admina
+    wydawca = django_user_model.objects.create_superuser(username="wydawca")
+    client.force_login(wydawca)
+    zrodlo = Zrodlo.objects.get(slug=slug)
+    tryb = zrodlo.tryb
+    rekomendowany = zrodlo.rekomendowany_tryb
+    assert zrodlo.podstawa_rekomendowana and not zrodlo.podstawa_prawna
+
+    zrodlo.rejestr_podstaw_url = "https://rejestr.example.org/decyzja"
+    zrodlo.podstawa_prawna = zrodlo.podstawa_rekomendowana
+    zrodlo.save(update_fields=["rejestr_podstaw_url", "podstawa_prawna"])
+    akcja(client, "zrodlo", "przelacz_na_publiczne", zrodlo.pk)
+    zrodlo.refresh_from_db()
+    assert zrodlo.tryb == tryb
+
+    zrodlo.podstawa_prawna = "Podstawa sprawdzona przez wydawcę."
+    zrodlo.wyjatek_decyzja = "Niepodpisana decyzja."
+    zrodlo.save(update_fields=["podstawa_prawna", "wyjatek_decyzja"])
+    akcja(client, "zrodlo", "przelacz_na_publiczne", zrodlo.pk)
+    zrodlo.refresh_from_db()
+    assert zrodlo.tryb == tryb and not zrodlo.wyjatek_podpisal_id
+
+    pola = {pole: getattr(zrodlo, pole) for pole in (
+        "slug", "nazwa", "instytucja", "warstwa", "sposob_dostepu", "adres", "czestotliwosc_s", "tryb",
+        "podstawa_prawna", "rejestr_podstaw_url", "atrybucja", "redystrybucja_pro",
+    )}
+    odpowiedz = client.post(reverse("admin:teraz_zrodlo_change", args=[zrodlo.pk]), {
+        **pola, "rekomendowany_tryb": Zrodlo.Tryb.PUBLICZNY,
+        "wyjatek_decyzja": "Wydawca wyraził zgodę na opisany wyjątek.", "_save": "1",
+    })
+    assert odpowiedz.status_code == 302
+    zrodlo.refresh_from_db()
+    assert zrodlo.rekomendowany_tryb == rekomendowany and zrodlo.wyjatek_podpisal == wydawca
+    assert akcja(client, "zrodlo", "przelacz_na_publiczne", zrodlo.pk).status_code == 302
+    zrodlo.refresh_from_db()
+    assert zrodlo.tryb == Zrodlo.Tryb.PUBLICZNY and zrodlo.tryb_zmienil == wydawca
 
 
 @pytest.mark.django_db

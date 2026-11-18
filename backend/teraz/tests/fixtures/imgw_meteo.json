@@ -1,0 +1,15 @@
+[
+  {
+    "id_ostrzezenia": "METEO-17",
+    "nazwa_zjawiska": "Silny wiatr",
+    "stopien": 2,
+    "opublikowano": "2026-11-17 09:30:00",
+    "obowiazuje_od": "2026-11-17 10:00:00",
+    "obszar": "powiat testowy",
+    "teryt": [
+      "0201",
+      "0210"
+    ],
+    "tresc": "<p>Wiatr w porywach.</p><script>pomijane()</script>"
+  }
+]
