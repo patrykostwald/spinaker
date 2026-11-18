@@ -498,7 +498,7 @@ def _naglowek_listy(tokeny: list[Token], koniec_woj: int, znacznik: int) -> bool
     """
     if tokeny[znacznik].zlozony in _POW_MNOGA:
         return True
-    return any(c in tokeny[k].sep for k in range(koniec_woj, znacznik + 1) for c in ":-20132014")
+    return any(c in tokeny[k].sep for k in range(koniec_woj, znacznik + 1) for c in ":-\u2013\u2014")
 
 
 def _po_dla(tokeny: list[Token], poczatek: int) -> bool:
