@@ -422,7 +422,7 @@ def daily_check(now=None, client=None):
 
 # --- Dyżurny i Raport pętli (bez sieci) ---------------------------------------------------------------------------
 
-BACKUP_CMD = 'ssh ubuntu@148.113.242.109 "sh /srv/spin-clinic/deploy/backup.sh && crontab -l | grep backup.sh"'
+BACKUP_CMD = 'ssh ' + os.environ.get('VPS_SSH', 'vps') + ' "sh /srv/spin-clinic/deploy/backup.sh && crontab -l | grep backup.sh"'
 
 
 def check_backup(ctx):

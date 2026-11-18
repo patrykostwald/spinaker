@@ -3,7 +3,7 @@
 Codziennie 6:15 (terminy_task), bez AI:
 - domeny (RDAP przez rdap.org): data wygaśnięcia i status (pendingDelete, clientHold, serverHold, redemptionPeriod = krytyczny);
 - TLS: dni do końca certyfikatu każdego hosta;
-- DNS: rekord A spin.clinic i przeszlosc.today wskazuje serwer (EXPECTED_SERVER_IP, domyślnie 148.113.242.109);
+- DNS: rekord A spin.clinic i przeszlosc.today wskazuje serwer (EXPECTED_SERVER_IP z .env.production; bez niej kontrola DNS ma status „na”);
 - salda: OpenRouter (GET /api/v1/credits), X (GET /2/usage/tweets); pozostali dostawcy: „sprawdź ręcznie raz w miesiącu”;
 - token GitHub do Issues: fine-grained ważny 90 dni od GITHUB_ISSUES_TOKEN_CREATED (albo od pierwszego zauważenia);
 - Codex: data CODEX_AVAILABLE_FROM (informacja).
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 STATE_KEY = 'terminy-zewnetrzne'
 DOMAINS = ('spin.clinic', 'przeszlosc.today', 'zbudujmi.com', 'iapply.pl')
 DNS_HOSTS = ('spin.clinic', 'przeszlosc.today')
-DEFAULT_IP = '148.113.242.109'
+DEFAULT_IP = ''  # adres serwera tylko w .env.production, nie w publicznym repo
 THRESHOLDS = (30, 14, 3)
 TOKEN_DAYS = 90
 BAD_STATUS = ('pending delete', 'pendingdelete', 'client hold', 'clienthold', 'server hold', 'serverhold', 'redemption period',
@@ -41,7 +41,7 @@ STALE = timedelta(hours=48)
 
 
 def expected_ip():
-    return os.environ.get('EXPECTED_SERVER_IP', DEFAULT_IP).strip() or DEFAULT_IP
+    return os.environ.get('EXPECTED_SERVER_IP', DEFAULT_IP).strip()
 
 
 def _float(name, default):
@@ -194,6 +194,10 @@ def collect(now, data):
             out.append(item(f'tls:{domain}', domain, 'tls', 'unknown', detail=f'TLS nie sprawdzony ({type(error).__name__})'))
     for host in DNS_HOSTS:
         try:
+            if not expected_ip():
+                out.append(item(f'dns:{host}', host, 'dns', 'na', detail='brak EXPECTED_SERVER_IP',
+                                instruction='Dopisz EXPECTED_SERVER_IP do .env.production na serwerze.'))
+                continue
             ips = dns_a(host)
             ok = expected_ip() in ips
             out.append(item(f'dns:{host}', host, 'dns', 'ok' if ok else 'critical', None,

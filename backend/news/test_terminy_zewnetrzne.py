@@ -30,7 +30,7 @@ def isolated(monkeypatch):
         yield
 
 
-def probes(monkeypatch, domain_days=300, tls_days=60, ips=('148.113.242.109',), bad=False, credits=None, usage=None):
+def probes(monkeypatch, domain_days=300, tls_days=60, ips=('203.0.113.10',), bad=False, credits=None, usage=None):
     expires = NOW + timedelta(days=domain_days)
     monkeypatch.setattr(tz, 'rdap', lambda d: {'expires': expires, 'status': ['client hold'] if bad else ['active']})
     monkeypatch.setattr(tz, 'tls_expiry', lambda h: NOW + timedelta(days=tls_days))
@@ -59,7 +59,7 @@ def test_collect_levels_and_missing_keys(monkeypatch):
     found = by_key(items)
     assert found['domena:spin.clinic']['level'] == 'warning' and found['domena:spin.clinic']['days'] == 10
     assert found['tls:spin.clinic']['level'] == 'warning' and found['tls:spin.clinic']['days'] == 5
-    assert found['dns:spin.clinic']['level'] == 'critical' and '148.113.242.109' in found['dns:spin.clinic']['detail']
+    assert found['dns:spin.clinic']['level'] == 'critical' and '203.0.113.10' in found['dns:spin.clinic']['detail']
     assert 'dns:zbudujmi.com' not in found and found['saldo:openrouter']['level'] == 'na' and found['saldo:x']['level'] == 'na'
     assert found['token:github']['level'] == 'na' and found['manual:Gemini']['level'] == 'manual'
     assert {it['label'] for it in items if it['kind'] == 'domena'} == set(tz.DOMAINS)
@@ -122,7 +122,7 @@ def test_report_lines_and_table(monkeypatch):
     lines = tz.report_lines(NOW)
     assert lines[0] == 'Terminy zewnętrzne (stan 07.10 06:15):'
     spin = next(l for l in lines if l.startswith('- spin.clinic:'))
-    assert '(341 dni)' in spin and 'TLS do' in spin and 'DNS A -> 148.113.242.109' in spin
+    assert '(341 dni)' in spin and 'TLS do' in spin and 'DNS A -> 203.0.113.10' in spin
     assert any('OpenRouter: kredyty 12.50 USD' in l for l in lines) and any('Ręcznie raz w miesiącu' in l for l in lines)
     assert 'spin.clinic' in tz.table(NOW)
     from news import duty, duty_extra, raport_petli
