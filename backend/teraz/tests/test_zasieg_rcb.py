@@ -111,8 +111,11 @@ def test_jednostki_bez_dwukropka_po_wojewodztwie_i_gminy_miasta():
 
 
 def test_wojewodztwa_przed_lista_nie_przypisuja_jednostek_do_jednego_z_nich():
-    alert = parsuj_akapity("Alert RCB został wysłany do odbiorców na terenie woj. lubelskiego i podkarpackiego - powiaty: A, B.")
-    assert alert["miejsce"].splitlines() == ["lubelskiego", "podkarpackiego", "A", "B"]
+    # nazwy jednostek ze słownika (od R38d „A”, „B” nie są nazwami i dają znacznik „nieustalone”, patrz test_r38d_*)
+    alert = parsuj_akapity(
+        "Alert RCB został wysłany do odbiorców na terenie woj. lubelskiego i podkarpackiego - powiaty: chełmski, włodawski.",
+    )
+    assert alert["miejsce"].splitlines() == ["lubelskiego", "podkarpackiego", "chełmski", "włodawski"]
 
 
 def test_wojewodztwo_nie_przechodzi_do_nastepnej_linii():
@@ -244,8 +247,9 @@ def sprawdz_odswiezone(zrodlo, liczba):
     assert all("lubelskie: Chełm" in m.splitlines() and "lubelskie: świdnicki" in m.splitlines() for m in miejsca)
 
 
-def test_r38c_wersja_parsera_jest_nowsza_niz_3():
-    assert rcb.AdapterRCB.wersja_parsera == "4" and rcb.ArchiwumRCB.wersja_parsera == "4"
+def test_r38c_wersja_parsera_jest_nowsza_niz_4():
+    # R38d: zmienia się `miejsce` (wyłączenia, miejscownik, zalecenia), więc wersja 5; karty zapisane wersją 4 są czytane od nowa
+    assert rcb.AdapterRCB.wersja_parsera == "5" and rcb.ArchiwumRCB.wersja_parsera == "5"
 
 
 def test_r38c_ta_sama_tresc_nowa_wersja_parsera_parsuje_ponownie(monkeypatch, zrodlo_rcb):
@@ -286,6 +290,7 @@ def test_r38c_ta_sama_tresc_nowa_wersja_parsera_parsuje_ponownie(monkeypatch, zr
     {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "3"},
     {"strona": 1, "stron": 1, "karty": [], "zakonczone": True},  # zapisane przed wprowadzeniem znacznika wersji
     {"strona": 2, "stron": 5, "karty": [], "wersja_parsera": "3"},  # przejście w połowie
+    {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "4"},  # parser sprzed R38d
 ])
 def test_r38c_archiwum_zapisane_starszym_parserem_jest_czytane_od_nowa(monkeypatch, zrodlo_rcb, stan_archiwum):
     adres = link_rcb("10")
@@ -304,19 +309,19 @@ def test_r38c_archiwum_zapisane_starszym_parserem_jest_czytane_od_nowa(monkeypat
     rcb.ArchiwumRCB(zrodlo_rcb).zbierz()  # karta
     zrodlo_rcb.refresh_from_db()
     assert [w.args[0].split("?")[-1] for w in pobierz.call_args_list][:1] == ["page=1&size=10"]
-    assert zrodlo_rcb.stan_adaptera["archiwum"]["wersja_parsera"] == "4" and zrodlo_rcb.stan_adaptera["archiwum"]["zakonczone"]
+    assert zrodlo_rcb.stan_adaptera["archiwum"]["wersja_parsera"] == "5" and zrodlo_rcb.stan_adaptera["archiwum"]["zakonczone"]
     sprawdz_odswiezone(zrodlo_rcb, 2)
 
 
 def test_r38c_archiwum_zapisane_biezacym_parserem_nie_wraca(monkeypatch, zrodlo_rcb):
-    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "4"}}
+    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "5"}}
     zrodlo_rcb.save(update_fields=["stan_adaptera"])
     pobierz = podstaw_siec(monkeypatch, link_rcb("10"))
     rcb.ArchiwumRCB(zrodlo_rcb).zbierz()
     assert pobierz.call_count == 0
 
 
-@pytest.mark.parametrize("wersja,ponownie", [("3", True), (None, True), ("4", False)])
+@pytest.mark.parametrize("wersja,ponownie", [("3", True), ("4", True), (None, True), ("5", False)])
 def test_r38c_polecenie_archiwum_wraca_do_kart_starszej_wersji(monkeypatch, zrodlo_rcb, wersja, ponownie):
     # archiwum RCB działa tylko przez to polecenie: stary znacznik „zakonczone” nie może go zatrzymać po zmianie parsera
     stan = {"strona": 1, "stron": 1, "karty": [], "zakonczone": True}
@@ -329,5 +334,5 @@ def test_r38c_polecenie_archiwum_wraca_do_kart_starszej_wersji(monkeypatch, zrod
     call_command("teraz_rcb_archiwum", limit=2)
     assert (pobierz.call_count == 2) is ponownie
     zrodlo_rcb.refresh_from_db()
-    assert zrodlo_rcb.stan_adaptera["archiwum"].get("wersja_parsera") == ("4" if ponownie else wersja)
+    assert zrodlo_rcb.stan_adaptera["archiwum"].get("wersja_parsera") == ("5" if ponownie else wersja)
     assert zrodlo_rcb.wpisy.count() == (2 if ponownie else 0)

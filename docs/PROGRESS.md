@@ -387,3 +387,19 @@ Zrobione i sprawdzone (testy lokalne, bez wdrożenia):
 Zrobione, niesprawdzone: zgodność odbiorców spoza repozytorium z nowym zapisem `miejsce` (bez zmian formatu od R38b); zachowanie na danych produkcyjnych (po wdrożeniu pierwsze przejście archiwum odświeży stare karty, ok. jedna odpowiedź na kartę co 5 s).
 Zaplanowane: wdrożenie po zgodzie właściciela (kopia bazy przed wdrożeniem, polecenie z sekcji 7 zasad projektu).
 
+## Teraz, PR #38: poprawki po czwartej recenzji (Z6R5, zlecenie Z6P5)
+
+Zasada: parser RCB jest zachowawczy. Wyłączenie, zalecenie albo niejasni odbiorcy nie dopisują jednostek, zasięg jest `przyblizony`, a front daje najwyżej „możliwe”.
+
+Zrobione i sprawdzone (testy lokalne, przebieg w Chromium headless, bez wdrożenia):
+- P1 wyłączenia („z wyłączeniem/z wyjątkiem/poza/oprócz/bez”, „nie dotyczy”): jednostki po słowie wyłączenia nie są objęte; w `miejsce` trafiają jako linie `wyłączone: <województwo>: <jednostka>` (albo `wyłączone: nieokreślone`). Front: wyłączony powiat dostaje etykietę „Komunikat wyłącza Twój powiat: sprawdź jego treść” (`wylaczony`), reszta województwa i powiaty wymienione obok wyłączenia najwyżej „możliwe”, „całe województwo” cofnięte.
+- P1 miejscownik: „w woj. lubelskim i podkarpackim” = oba; końcówki -im/-ym/-ej, listy po „i”, „oraz”, przecinku; test z 16 województwami w trzech przypadkach i listami po 2-3.
+- P1 zalecenia: czasownik zalecenia w dowolnym miejscu zdania wyłącza je ze zdań o odbiorcach (zdanie nagłówkowe „Alert RCB…” czytane do zalecenia). Twardy limit nazw: powiat tylko ze słownika, miasto i gmina ze słownika albo 1-3 wyrazy z wielkiej litery; element listy, który nie jest nazwą, daje znacznik `nieustalone: nazwy jednostek` (front nie mówi wtedy „nie ma na liście”).
+- P2: „(woj. śląskie)” po liście wiąże wszystkie jednostki; „woj. X (powiat Y)” rozpoznane; `zasieg_czesciowy` sprawdza zdanie odbiorców.
+- P3: „w mieście Kraków”; zapis wielkimi literami normalizowany (`lubelskie`, `Chełm`, nie `LUBELSKie`).
+- Wersja parsera 5 (karty zapisane wersją 4 są czytane od nowa; wpisy wrażliwe wrócą do przeglądu, istniejąca reguła).
+- Nowy plik `backend/teraz/zrodla/jednostki_powiaty.json`: kopia kodów i nazw z `frontend-spin/public/teraz/teryt-powiaty.json` (backend nie czyta katalogu frontu); zgodność pilnuje test.
+
+Zrobione, niesprawdzone: zachowanie na danych produkcyjnych; nazwy gmin spoza słownika powiatów nie są weryfikowane (brak rejestru gmin w repozytorium, obowiązuje tylko kształt nazwy).
+Odnotowane: „w mieście Kraków” bez nazwy województwa w zdaniu daje jednostkę w `miejsce`, ale bez kodu TERYT (jak „w powiecie krakowskim” bez województwa); wyłączenie w osobnym zdaniu nie jest wiązane z województwem.
+

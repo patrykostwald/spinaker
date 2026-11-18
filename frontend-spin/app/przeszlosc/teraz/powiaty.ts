@@ -1,6 +1,6 @@
 import type { Okres, Wpis } from './typy';
 import { POWIATY, dopelniaczWojewodztwa, powiatOKodzie, type PowiatTeryt } from './slownik';
-import { calyRegionZMiejsca, rozbierzMiejsce, wojewodztwoOKodzie } from './teryt';
+import { calyRegionZMiejsca, maZastrzezenia, maWylaczenia, rozbierzMiejsce, wojewodztwoOKodzie, znacznikiMiejsca, type JednostkaZMiejsca } from './teryt';
 
 /**
  * „Mój powiat”: logika bez Reacta. Wyszukiwanie powiatu i miasta na prawach powiatu (także w odmienionej formie:
@@ -80,13 +80,15 @@ export function szukajPowiatow(tekst: string, opcje: { limit?: number; pomin?: r
  *  - `wymieniony`: nazwa powiatu jest na liście,
  *  - `mozliwy`: niejednoznaczne (np. na liście jest miasto Chełm, a nie ma powiatu chełmskiego): „sprawdź treść komunikatu”,
  *  - `pozaLista`: lista jest, powiatu na niej nie ma (pokazujemy osobno, jako komunikat z województwa),
- *  - `bezListy`: źródło nie podało jednostek (także wpis o uogólnionym położeniu).
- * Zasada: nigdy nie poszerzamy zasięgu ponad źródło.
+ *  - `bezListy`: źródło nie podało jednostek (także wpis o uogólnionym położeniu),
+ *  - `wylaczony`: komunikat wprost wyłącza ten powiat („z wyłączeniem powiatu X”): „sprawdź treść”, nie „wymieniony” (R38d, P1-1).
+ * Zasada: nigdy nie poszerzamy zasięgu ponad źródło, a parser jest zachowawczy: przy wyłączeniu, zaleceniu albo niejasnych
+ * odbiorcach najwyżej „możliwe”; „wymieniony” i „nie ma na liście” tylko przy czystej, kompletnej liście.
  */
-export type Zakres = 'powiat' | 'gmina' | 'wymieniony' | 'wojewodztwo' | 'mozliwy' | 'bezListy' | 'pozaLista';
-const WAGA: Record<Zakres, number> = { powiat: 7, gmina: 6, wymieniony: 5, wojewodztwo: 4, mozliwy: 3, bezListy: 2, pozaLista: 1 };
+export type Zakres = 'powiat' | 'gmina' | 'wymieniony' | 'wojewodztwo' | 'mozliwy' | 'wylaczony' | 'bezListy' | 'pozaLista';
+const WAGA: Record<Zakres, number> = { powiat: 8, gmina: 7, wymieniony: 6, wojewodztwo: 5, mozliwy: 4, wylaczony: 3, bezListy: 2, pozaLista: 1 };
 /** Zakresy, przy których wpis stoi na liście powiatu; `bezListy` i `pozaLista` idą do osobnej grupy „z Twojego województwa”. */
-export const ZAKRESY_POWIATU: ReadonlySet<Zakres> = new Set<Zakres>(['powiat', 'gmina', 'wymieniony', 'wojewodztwo', 'mozliwy']);
+export const ZAKRESY_POWIATU: ReadonlySet<Zakres> = new Set<Zakres>(['powiat', 'gmina', 'wymieniony', 'wojewodztwo', 'mozliwy', 'wylaczony']);
 
 /** Słowo `q` to odmiana słowa `slowo` („krakowie” od „krakow”, „chelmskiego” od „chelmski”); samo słowo też pasuje. */
 const odmianaSlowa = (q: string, slowo: string): boolean => {
@@ -115,17 +117,12 @@ const paraMiastoPowiat = (a: PowiatTeryt, b: PowiatTeryt): boolean => {
   return odmianaSlowa(ziemski, miasto);
 };
 
-/**
- * Czy powiat jest na liście jednostek z `miejsce` (po jednej w linii); dopasowanie z odmianą, tylko w obrębie województwa.
- * Jednostka podpisana przez źródło innym województwem nie dotyczy tego powiatu (dolnośląski powiat świdnicki to nie lubelski).
- * „Wymieniony” wymaga pewnego związku jednostki z województwem: podpisu ze źródła albo komunikatu o jednym województwie
- * (`liczbaWojewodztw` ≤ 1). Jednostka bez województwa przy kilku województwach oraz gmina dają najwyżej „mozliwy”.
- */
-export function dopasujDoListy(miejsce: string, kodPowiatu: string, liczbaWojewodztw = 1): 'wymieniony' | 'mozliwy' | 'pozaLista' | 'bezListy' {
-  const powiat = powiatOKodzie(kodPowiatu);
-  const jednostki = rozbierzMiejsce(miejsce);
-  if (!powiat || !jednostki.length) return 'bezListy';
-  const kandydaci = POWIATY.filter(p => p.woj === powiat.woj).map(p => ({ p, nazwa: normalizuj(p.nazwa) }));
+export type DopasowanieListy = 'wymieniony' | 'mozliwy' | 'wylaczony' | 'pozaLista' | 'bezListy';
+
+interface Kandydat { p: PowiatTeryt; nazwa: string }
+
+/** Powiaty pewnie wskazane przez jednostki (`wymienione`) i to, czy któraś jednostka może wskazywać `powiat` (`mozliwy`). */
+function trafienia(jednostki: JednostkaZMiejsca[], powiat: PowiatTeryt, kandydaci: Kandydat[], liczbaWojewodztw: number): { wymienione: Set<PowiatTeryt>; mozliwy: boolean } {
   const wymienione = new Set<PowiatTeryt>();
   let mozliwy = false;
   for (const jednostka of jednostki) {
@@ -145,14 +142,45 @@ export function dopasujDoListy(miejsce: string, kodPowiatu: string, liczbaWojewo
     if (pewna) trafione.forEach(p => wymienione.add(p));
     else if (trafione.some(p => p === powiat || paraMiastoPowiat(p, powiat))) mozliwy = true;
   }
-  if (wymienione.has(powiat)) return 'wymieniony';
-  if (mozliwy || [...wymienione].some(p => paraMiastoPowiat(p, powiat))) return 'mozliwy';
-  return 'pozaLista';
+  return { wymienione, mozliwy };
+}
+
+/**
+ * Czy powiat jest na liście jednostek z `miejsce` (po jednej w linii); dopasowanie z odmianą, tylko w obrębie województwa.
+ * Jednostka podpisana przez źródło innym województwem nie dotyczy tego powiatu (dolnośląski powiat świdnicki to nie lubelski).
+ * „Wymieniony” wymaga pewnego związku jednostki z województwem: podpisu ze źródła albo komunikatu o jednym województwie
+ * (`liczbaWojewodztw` ≤ 1). Jednostka bez województwa przy kilku województwach oraz gmina dają najwyżej „mozliwy”.
+ * Znaczniki parsera (R38d): jednostka wyłączona w komunikacie daje „wylaczony”, a wyłączenie w województwie albo lista
+ * z nierozpoznanym elementem zamieniają „wymieniony” i „pozaLista” na „mozliwy”.
+ */
+export function dopasujDoListy(miejsce: string, kodPowiatu: string, liczbaWojewodztw = 1): DopasowanieListy {
+  const powiat = powiatOKodzie(kodPowiatu);
+  if (!powiat) return 'bezListy';
+  const jednostki = rozbierzMiejsce(miejsce);
+  const znaczniki = znacznikiMiejsca(miejsce);
+  if (!jednostki.length && !znaczniki.wylaczone.length && !znaczniki.ogolne && !znaczniki.nieustalone) return 'bezListy';
+  const kandydaci = POWIATY.filter(p => p.woj === powiat.woj).map(p => ({ p, nazwa: normalizuj(p.nazwa) }));
+  const wylaczone = trafienia(znaczniki.wylaczone, powiat, kandydaci, liczbaWojewodztw);
+  if (wylaczone.wymienione.has(powiat)) return 'wylaczony';
+  const { wymienione, mozliwy } = trafienia(jednostki, powiat, kandydaci, liczbaWojewodztw);
+  let wynik: DopasowanieListy;
+  if (!jednostki.length) wynik = 'bezListy';
+  else if (wymienione.has(powiat)) wynik = 'wymieniony';
+  else if (mozliwy || [...wymienione].some(p => paraMiastoPowiat(p, powiat))) wynik = 'mozliwy';
+  else wynik = 'pozaLista';
+  // wyłączenie w tym województwie (także niepewne dopasowanie wyłączonej jednostki): najwyżej „możliwe”, nigdy „wymieniony”
+  const wylaczenie = maWylaczenia(znaczniki, powiat.woj) || wylaczone.mozliwy || [...wylaczone.wymienione].some(p => paraMiastoPowiat(p, powiat));
+  if (wylaczenie && wynik === 'wymieniony') wynik = 'mozliwy';
+  // wyłączenie albo lista z nierozpoznanym elementem: nie mamy prawa powiedzieć „nie ma na liście”
+  if ((wylaczenie || znaczniki.nieustalone) && (wynik === 'pozaLista' || wynik === 'bezListy')) wynik = 'mozliwy';
+  return wynik;
 }
 
 /** Kod powiatu przy zasięgu przybliżonym: „wymieniony” tylko gdy nazwa i województwo z `miejsce` się zgadzają, inaczej „możliwe”. */
-const potwierdzonyPowiat = (wpis: Partial<Pick<Wpis, 'miejsce'>>, kodPowiatu: string, liczbaWojewodztw: number): Zakres =>
-  dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw) === 'wymieniony' ? 'wymieniony' : 'mozliwy';
+const potwierdzonyPowiat = (wpis: Partial<Pick<Wpis, 'miejsce'>>, kodPowiatu: string, liczbaWojewodztw: number): Zakres => {
+  const d = dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
+  return d === 'wymieniony' || d === 'wylaczony' ? d : 'mozliwy';
+};
 
 /** Najwęższy zakres, w jakim wpis dotyczy powiatu (po kodach TERYT wpisu i jego zasięgu), albo null, gdy go nie dotyczy. */
 export function zakresDlaPowiatu(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 'zasieg' | 'miejsce'>>, kodPowiatu: string): Zakres | null {
@@ -164,8 +192,10 @@ export function zakresDlaPowiatu(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 
     if (k === kodPowiatu) z = wpis.zasieg === 'przyblizony' ? potwierdzonyPowiat(wpis, kodPowiatu, liczbaWojewodztw) : 'powiat';
     else if (k.length > 4 && k.startsWith(kodPowiatu)) z = 'gmina';
     else if (k.length === 2 && kodPowiatu.startsWith(k)) {
-      // zasięg przybliżony, ale to województwo źródło podało bez jednostek, a jednostki są w innych: całe (R38c, P1)
-      z = wpis.zasieg === 'obszar' || calyRegionZMiejsca(wpis.miejsce, k) ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
+      // zasięg przybliżony, ale to województwo źródło podało bez jednostek, a jednostki są w innych: całe (R38c, P1);
+      // wyłączenie albo niepełna lista w tym województwie (R38d) cofa „całe”, także gdy źródło oznaczyło zasięg jako obszar
+      const cale = wpis.zasieg === 'obszar' ? !maZastrzezenia(wpis.miejsce, k) : calyRegionZMiejsca(wpis.miejsce, k);
+      z = cale ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
     }
     if (z && (wynik === null || WAGA[z] > WAGA[wynik])) wynik = z;
   }
@@ -178,6 +208,7 @@ export function zakresTekstem(zakres: Zakres, kodPowiatu: string): string {
   if (zakres === 'gmina') return 'dotyczy gminy w tym powiecie';
   if (zakres === 'wymieniony') return 'Twój powiat jest wymieniony w komunikacie';
   if (zakres === 'mozliwy') return 'możliwe, że dotyczy Twojego powiatu: sprawdź treść komunikatu';
+  if (zakres === 'wylaczony') return 'Komunikat wyłącza Twój powiat: sprawdź jego treść';
   if (zakres === 'pozaLista') return 'Komunikat w Twoim województwie, Twojego powiatu nie ma na liście';
   if (zakres === 'bezListy') return 'Komunikat w Twoim województwie, źródło nie podaje powiatów: sprawdź treść komunikatu';
   return woj ? `dotyczy całego województwa ${dopelniaczWojewodztwa(woj)}` : 'dotyczy całego województwa';
