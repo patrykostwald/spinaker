@@ -49,8 +49,16 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
 - Rzeki i kluby. Nazwy rzek, które są też gminami (Wisła, Warta, Nysa, Pilica, Wieprz, Narew...), nie dają
   gminy po „na/nad/rzeka”, z członem „Kłodzka/Łużycka” ani w tekście o stanie wód (słowa jak „hydrologiczny”,
   „stan alarmowy”, „wezbranie”, „powódź”); „Pożar w Wiśle” poza taką okolicznością to nadal miasto Wisła.
-  Nazwa rzeki lub klubu tuż przed nazwą miasta („Wisła Kraków”, „Raków Częstochowa”) nie jest gminą.
-  Lista: `_RZEKI`, `_KLUBY` w `geokoder.py`.
+  Nazwa klubu (w każdym przypadku: „Wisły”, „Legii”, „Lecha”, „Śląska”) blokuje i siebie, i miasto stojące
+  tuż po niej („Wisła Kraków”, „Raków Częstochowa”, „Legii Warszawa”): to drużyna, nie miejsce zdarzenia.
+  Miasto zdarzenia w tym samym zdaniu zostaje („Kibice Wisły Kraków zatrzymani w Płocku” daje Płock).
+  Przecinek, przyimek i koniec zdania przerywają blokadę. Lista: `_RZEKI`, `_KLUBY` w `geokoder.py`.
+- Krainy („w Kotlinie Kłodzkiej”, „w Górach Stołowych”, „w Puszczy Białowieskiej”): jednowyrazowa gmina, po
+  której stoi przymiotnik lub rzeczownik wielką literą tworzący nazwę spoza słownika gmin, nie jest gminą.
+- „Polska” i jej odmiany („w Polsce obowiązują ostrzeżenia”) nie są nazwami gmin; odrzucona nazwa bez
+  kontekstu nie obniża pewności pozostałych miejsc.
+- Znaki niewidoczne (U+00AD, U+200B, U+200C, U+200D, U+FEFF, np. z kopiowanego tekstu „Wroc­ławiu”) są
+  usuwane przed tokenizacją; pozycje dopasowań nadal wskazują oryginalny tekst.
 - Dzielnice Warszawy (wszystkie 18) nie dają gmin, także bez słowa „dzielnica” („na Bielanach” to nie gmina
   Bielany pod Sochaczewem). „Dzielnica X” daje Warszawę, „gmina Bielany” gminę.
 - Adresy (ulice, numery), wsie i osiedla są pomijane.
@@ -58,7 +66,10 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   (np. „w legendarnym Kotle czarownic” to nie gmina Kotla).
 - Jednostki służb: komenda, komisariat, prokuratura, sąd i jednostka „w X” (także małą literą: „z komisariatu
   w Pilawie”, i skróty KPP, KMP, KWP, KSP, KP, JRG, PSP, KP PSP, KW PSP) to miejsce jednostki, nie zdarzenia:
-  komenda wojewódzka daje województwo, powiatowa powiat (uwaga `jednostka`, pewność najwyżej 0,8).
+  komenda wojewódzka daje województwo, powiatowa powiat (uwaga `jednostka`, pewność najwyżej 0,8). Gdy w tekście
+  jest też inne miejsce zdarzenia, miejsce jednostki zostaje w `dopasowania` z uwagą `jednostka`, ale nie trafia
+  do `teryt` („Policjanci z KMP w Płocku zatrzymali w gminie Słupno” daje tylko Słupno). Gdy jednostka jest
+  jedynym miejscem w tekście, daje wynik jak wyżej.
 - Zasięg krajowy (`kraj`) tylko przy słowach o zasięgu: „obowiązuje w całym kraju”, „na terenie całego kraju”,
   „dla całej Polski”. „Z całej Polski”, „najwięcej w całym kraju” i „na terenie Polski” nim nie są. `kraj` nie
   zeruje innych trafień: konkretne miejsca zostają w `teryt`, a `dokladnosc` to `kraj`.
@@ -66,7 +77,12 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   gdy w treści padają dokładniejsze miejsca („Ostrzeżenie dla województwa mazowieckiego. Najsilniejsze
   opady w Warszawie.” daje `('14', '1465011')`, dokładność `wojewodztwo`). Szerszy kod znika tylko, gdy węższe
   miejsce jest jego doprecyzowaniem: lista powiatów pod województwem („woj. lubelskie - powiaty: ...”) albo
-  zapis adresowy stojący obok („woj. lubelskie, powiat chełmski, gmina Chełm”, „Chełm, woj. lubelskie”).
+  zapis adresowy stojący obok („woj. lubelskie, powiat chełmski, gmina Chełm”, „Chełm, woj. lubelskie”,
+  „Zakopane (powiat tatrzański)”). Kod szerszy poprzedzony „dla” albo stojący w nagłówku alertu (pierwsze zdanie
+  lub fraza przed dwukropkiem) nigdy nie znika: „Ostrzeżenie dla województwa lubelskiego: miasto Chełm i gmina
+  Rejowiec” daje `06` i obie gminy, a „Alert RCB dla powiatu tatrzańskiego, miasto Zakopane” daje `1217` i Zakopane.
+  Lista powiatów z województwem w nawiasie („bieszczadzkiego (woj. podkarpackie), tatrzańskiego (woj.
+  małopolskie)”) daje same powiaty, bez kodu województwa.
   Kod z miejsca jednostki lub ze spadku homonimu znika, gdy w tekście jest węższe miejsce w nim zawarte.
 - Pewność wyniku to najniższa z pewności przyjętych miejsc, razy 0,9, gdy w tekście była nazwa
   wieloznaczna bez rozstrzygnięcia. Do publikacji automatycznej zalecany próg 0,8; wpisy od 0,6 do 0,8
