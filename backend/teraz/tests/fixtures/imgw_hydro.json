@@ -1,0 +1,12 @@
+[
+  {
+    "id_ostrzezenia": "HYDRO-17",
+    "nazwa_zjawiska": "Wezbranie",
+    "stopien": 1,
+    "obowiazuje_od": "2026-11-17 11:00:00",
+    "obszary": [
+      "zlewnia testowa"
+    ],
+    "przebieg": "Wzrost stanów wody."
+  }
+]

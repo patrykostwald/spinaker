@@ -77,23 +77,40 @@ class Zrodlo(models.Model):
         RSS = "rss", "RSS"
         HTML = "html", "Strona WWW"
         X = "x", "X"
+        WEBSOCKET = "websocket", "WebSocket"
+
+    class Redystrybucja(models.TextChoices):
+        ALLOW = "allow", "Dozwolona"
+        DENY = "deny", "Zabroniona"
+        PENDING = "pending", "Do wyjaśnienia"
 
     slug = models.SlugField(unique=True, help_text="Stały identyfikator źródła i klucz adaptera.")
     nazwa = models.CharField(max_length=200, help_text="Nazwa źródła widoczna na liście warstw.")
     instytucja = models.CharField(max_length=200, help_text="Instytucja publikująca komunikaty.")
     warstwa = models.CharField(max_length=16, choices=Warstwa.choices, db_index=True, help_text="Warstwa mapy.")
-    sposob_dostepu = models.CharField(max_length=4, choices=SposobDostepu.choices, help_text="Kanał pobierania komunikatów.")
-    adres = models.URLField(max_length=2048, validators=[http_url], help_text="Adres używany przez adapter.")
+    sposob_dostepu = models.CharField(max_length=9, choices=SposobDostepu.choices, help_text="Kanał pobierania komunikatów.")
+    adres = models.CharField(max_length=2048, help_text="Adres używany przez adapter.")
     czestotliwosc_s = models.PositiveIntegerField(default=300, validators=[MinValueValidator(1)], help_text="Odstęp między pobraniami w sekundach.")
     tryb = models.CharField(max_length=12, choices=Tryb.choices, default=Tryb.WEWNETRZNY, db_index=True, help_text="Tryb publikacji i pobierania.")
     tryb_zmienil = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", help_text="Wydawca, który dopuścił źródło do publikacji.")
     tryb_zmiana_at = models.DateTimeField(null=True, blank=True, help_text="Czas dopuszczenia źródła przez wydawcę.")
     podstawa_prawna = models.TextField(blank=True, help_text="Opis podstawy dostępu i publikacji.")
+    podstawa_rekomendowana = models.TextField(blank=True, editable=False)
+    wyjatek_decyzja = models.TextField(blank=True, help_text="Uzasadnienie wyjątku od rekomendowanego trybu.")
+    wyjatek_podpisal = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", editable=False)
+    atrybucja = models.TextField(blank=True)
+    redystrybucja_pro = models.CharField(max_length=7, choices=Redystrybucja.choices, default=Redystrybucja.PENDING)
+    rekomendowany_tryb = models.CharField(max_length=12, choices=Tryb.choices, default=Tryb.WEWNETRZNY)
+    stan_adaptera = models.JSONField(default=dict, editable=False)
+    kontynuacja_at = models.DateTimeField(null=True, blank=True, editable=False)
+    blokada_dostepu = models.BooleanField(default=False, help_text="Wstrzymuje pobieranie po odmowie lub wyzwaniu bota.")
     rejestr_podstaw_url = models.URLField(max_length=1024, blank=True, validators=[http_url], help_text="Odnośnik do wpisu w rejestrze podstaw.")
     zrodlo_dostepu = models.ForeignKey("news.Source", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", help_text="Źródło w katalogu spinakera z zatwierdzoną instrukcją dostępu.")
     ostatnie_pobranie_at = models.DateTimeField(null=True, blank=True, help_text="Czas rozpoczęcia ostatniej próby pobrania.")
+    ostatnia_proba_archiwum_at = models.DateTimeField(null=True, blank=True, editable=False)
     ostatni_sukces_at = models.DateTimeField(null=True, blank=True, help_text="Czas ostatniego udanego pobrania, także bez zmian.")
     ostatni_blad = models.CharField(max_length=200, blank=True, help_text="Wewnętrzny kod ostatniego błędu.")
     kolejne_bledy = models.PositiveIntegerField(default=0, help_text="Liczba nieudanych prób od ostatniego sukcesu.")
@@ -101,6 +118,18 @@ class Zrodlo(models.Model):
     class Meta:
         verbose_name = "źródło"
         verbose_name_plural = "źródła"
+
+    def clean(self):
+        super().clean()
+        if self.slug == "firms":
+            from .transport import BAZA_FIRMS
+            if self.adres != BAZA_FIRMS:
+                raise ValidationError({"adres": "FIRMS wymaga bazowego adresu bez klucza."})
+        schematy = ["wss"] if self.sposob_dostepu == self.SposobDostepu.WEBSOCKET else ["http", "https"]
+        try:
+            URLValidator(schemes=schematy)(self.adres)
+        except ValidationError as exc:
+            raise ValidationError({"adres": exc}) from exc
 
     def __str__(self):
         return self.nazwa
@@ -126,7 +155,10 @@ class Pobranie(models.Model):
     class Meta:
         verbose_name = "pobranie"
         verbose_name_plural = "pobrania"
-        indexes = [models.Index(fields=["zrodlo", "-pobrano_at"], name="teraz_pobranie_zrodlo_czas")]
+        indexes = [
+            models.Index(fields=["zrodlo", "-pobrano_at"], name="teraz_pobranie_zrodlo_czas"),
+            models.Index(fields=["zrodlo", "odcisk_adresu", "-pobrano_at"], name="teraz_pobranie_adres_czas"),
+        ]
 
     def __str__(self):
         return f"{self.zrodlo} ({self.pobrano_at:%Y-%m-%d %H:%M})"
@@ -138,6 +170,7 @@ class WpisQuerySet(models.QuerySet):
             Q(warstwa=OuterRef("zrodlo__warstwa")) | Q(klasa=OuterRef("klasa"))
         )
         return (self.filter(zrodlo__tryb=Zrodlo.Tryb.PUBLICZNY)
+                .filter(pomiar_aktywny=True)
                 .filter(Q(klasa=Klasa.ZWYKLY) | Q(status_przegladu=StatusPrzegladu.DOPUSZCZONY))
                 .exclude(status_przegladu=StatusPrzegladu.WSTRZYMANY)
                 .filter(usunieto_at__isnull=True)
@@ -162,6 +195,12 @@ class Wpis(models.Model):
     opublikowano_at = models.DateTimeField(db_index=True, help_text="Czas publikacji podany przez źródło.")
     pobrano_at = models.DateTimeField(help_text="Czas pierwszego pobrania komunikatu.")
     klasa = models.CharField(max_length=20, choices=Klasa.choices, default=Klasa.NIEZNANA, help_text="Klasa wrażliwości publikacji.")
+    miejsce = models.TextField(blank=True)
+    czas_zrodlowy_at = models.DateTimeField(null=True, blank=True, help_text="Godzina komunikatu podana w treści źródła.")
+    dokladna_godzina_publikacji = models.BooleanField(default=True)
+    wersje = models.JSONField(default=list, blank=True, editable=False)
+    pomiar_aktywny = models.BooleanField(default=True, editable=False)
+    hash_wersji = models.CharField(max_length=64, blank=True, editable=False)
     teryt = models.JSONField(default=list, blank=True, validators=[sprawdz_teryt], help_text="Lista kodów TERYT z zachowaniem początkowych zer.")
     szerokosc = models.FloatField(null=True, blank=True, validators=[MinValueValidator(-90), MaxValueValidator(90)], help_text="Szerokość geograficzna w stopniach.")
     dlugosc = models.FloatField(null=True, blank=True, validators=[MinValueValidator(-180), MaxValueValidator(180)], help_text="Długość geograficzna w stopniach.")
@@ -212,6 +251,7 @@ class ZdarzenieQuerySet(models.QuerySet):
             liczba_instytucji=Count("wpisy__zrodlo__instytucja", distinct=True),
         ).filter(
             Q(status__in=[Zdarzenie.Status.KOMUNIKAT_OFICJALNY, Zdarzenie.Status.ZGLOSZONE])
+            | Q(status=Zdarzenie.Status.ODWOLANE, zrodlo_automatu__isnull=False, przygotowane_automatycznie=True)
             | Q(zweryfikowal__isnull=False, zweryfikowano_at__isnull=False)
         ).filter(
             ~Q(status=Zdarzenie.Status.POTWIERDZONE) | Q(liczba_instytucji__gte=2)
@@ -226,6 +266,9 @@ class Zdarzenie(models.Model):
         OCENA = "ocena", "Ocena"
         ODWOLANE = "odwolane", "Odwołane"
 
+    zrodlo_automatu = models.ForeignKey(Zrodlo, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", editable=False)
+    identyfikator_automatu = models.CharField(max_length=64, blank=True, editable=False)
     wpisy = models.ManyToManyField(Wpis, related_name="zdarzenia", help_text="Komunikaty pogrupowane w zdarzenie.")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ZGLOSZONE, db_index=True, help_text="Status redakcyjny zdarzenia.")
     tytul_roboczy = models.CharField(max_length=500, help_text="Tytuł zdarzenia ustalony na podstawie powiązanych komunikatów.")
@@ -241,6 +284,8 @@ class Zdarzenie(models.Model):
     class Meta:
         verbose_name = "zdarzenie"
         verbose_name_plural = "zdarzenia"
+        constraints = [models.UniqueConstraint(fields=["zrodlo_automatu", "identyfikator_automatu"],
+            condition=~Q(identyfikator_automatu=""), name="teraz_unikalne_zdarzenie_automatu")]
 
     def __str__(self):
         return self.tytul_roboczy

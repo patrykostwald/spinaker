@@ -1,0 +1,21 @@
+{
+  "action": "create",
+  "data": {
+    "type": "Feature",
+    "id": "20261117_0000010",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        22,
+        49,
+        -7
+      ]
+    },
+    "properties": {
+      "unid": "20261117_0000010",
+      "time": "2026-11-17T10:20:00Z",
+      "flynn_region": "POLAND",
+      "mag": 2.5
+    }
+  }
+}

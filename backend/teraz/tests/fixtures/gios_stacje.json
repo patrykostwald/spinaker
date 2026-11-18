@@ -1,0 +1,16 @@
+{
+  "Lista stacji pomiarowych": [
+    {
+      "Identyfikator stacji": 52,
+      "Nazwa stacji": "Stacja testowa",
+      "WGS84 φ N": "52.1",
+      "WGS84 λ E": "21.1"
+    },
+    {
+      "Identyfikator stacji": 53,
+      "Nazwa stacji": "Stacja testowa 2",
+      "WGS84 φ N": "50.2",
+      "WGS84 λ E": "18.3"
+    }
+  ]
+}

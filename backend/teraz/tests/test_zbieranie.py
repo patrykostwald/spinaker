@@ -1,3 +1,4 @@
+import json
 import socket
 from datetime import timedelta
 from unittest.mock import Mock
@@ -15,7 +16,7 @@ from teraz import tasks, transport
 from teraz.cache import GENERACJA
 from teraz.models import Klasa, Pobranie, StatusPrzegladu, Wpis, Zrodlo
 from teraz.retencja import wyczysc_wpisy
-from teraz.zbieranie import Adapter
+from teraz.zbieranie import Adapter, BladFormatu
 
 
 def odpowiedz(status, tresc=b"", **naglowki):
@@ -93,6 +94,98 @@ class ParserTestowy(Adapter):
     def parsuj(self, odpowiedz):
         return [dict(zewnetrzny_id="ten-sam", tytul="Komunikat", tresc=odpowiedz.tresc.decode(),
                      link="https://test.example.org/jeden", opublikowano_at=timezone.now(), klasa=Klasa.ZWYKLY)]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("klasa", [Klasa.WRAZLIWY, Klasa.NIEZNANA])
+@pytest.mark.parametrize("zmiana", [
+    {"tresc": "Sprostowanie"},
+    {"teryt": ["14"]},
+    {"szerokosc": 52, "dlugosc": 21},
+    {"bbox": [20, 51, 22, 53]},
+    {"dokladnosc": Wpis.Dokladnosc.WOJEWODZTWO},
+])
+def test_zmieniony_wpis_wymaga_ponownego_przegladu(zrob_zrodlo, zrob_wpis, monkeypatch, klasa, zmiana):
+    zrodlo = zrob_zrodlo(tryb=Zrodlo.Tryb.PUBLICZNY)
+    wpis = zrob_wpis(zrodlo, klasa=klasa, status_przegladu=StatusPrzegladu.DOPUSZCZONY,
+                     przeglad_zmiana_at=timezone.now())
+    dane = {pole: getattr(wpis, pole) for pole in ("zewnetrzny_id", "tytul", "tresc", "link", "klasa", "opublikowano_at")}
+    monkeypatch.setattr(Adapter, "pobierz", Mock(return_value=(
+        transport.OdpowiedzHTTP(200, {}, b"wersja", "utf-8"), SourceAccessInstruction.Scope.CONTENT,
+    )))
+    monkeypatch.setattr(ParserTestowy, "parsuj", lambda self, odp: [{**dane, **zmiana}])
+    assert Wpis.objects.publiczne().filter(pk=wpis.pk).exists()
+    ParserTestowy(zrodlo).zbierz()
+    wpis.refresh_from_db()
+    assert wpis.klasa == klasa
+    assert wpis.status_przegladu == StatusPrzegladu.DO_PRZEGLADU and wpis.przeglad_zmiana_at is None
+    assert not Wpis.objects.publiczne().filter(pk=wpis.pk).exists()
+
+
+@pytest.mark.django_db
+def test_zwykly_wpis_z_zaznaczona_dokladnoscia_i_ograniczona_historia(zrob_zrodlo, zrob_wpis, monkeypatch):
+    zrodlo = zrob_zrodlo()
+    wpis = zrob_wpis(zrodlo, klasa=Klasa.ZWYKLY, wersje=[{"tresc": str(n)} for n in range(25)])
+    dane = {pole: getattr(wpis, pole) for pole in ("zewnetrzny_id", "tytul", "tresc", "link", "klasa", "opublikowano_at")}
+    monkeypatch.setattr(Adapter, "pobierz", Mock(return_value=(
+        transport.OdpowiedzHTTP(200, {}, b"wersja", "utf-8"), SourceAccessInstruction.Scope.CONTENT,
+    )))
+    monkeypatch.setattr(ParserTestowy, "parsuj", lambda self, odp: [
+        dict(dane, szerokosc=52, dlugosc=21, dokladnosc=Wpis.Dokladnosc.PUNKT),
+    ])
+    ParserTestowy(zrodlo).zbierz()
+    wpis.refresh_from_db()
+    assert wpis.klasa == Klasa.ZWYKLY
+    assert len(wpis.wersje) == 20 and wpis.wersje[0]["tresc"] == "6"
+    assert wpis.wersje[-1]["zwiekszono_dokladnosc"] is True
+    assert wpis.wersje[-1]["dokladnosc"] == Wpis.Dokladnosc.BRAK
+
+
+def test_gleboki_json_jest_bledem_formatu():
+    odp = transport.OdpowiedzHTTP(200, {}, b"[" * 5000 + b"]" * 5000, "utf-8")
+    dekoder = json.JSONDecoder()
+    dekoder.scan_once = json.scanner.py_make_scanner(dekoder)
+    with pytest.raises(BladFormatu) as blad:
+        ParserTestowy(Zrodlo())._parsuj(lambda odpowiedz: dekoder.decode(odpowiedz.tresc.decode()), odp)
+    assert isinstance(blad.value.__cause__, RecursionError)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("tresc,typ,blokada", [
+    (b"<html><head><title>Access denied</title></head></html>", "text/html", True),
+    (b"<html><head><title>Access denied</title></head></html>", "", True),
+    (b"<rss><channel><title>Access denied</title></channel></rss>", "application/rss+xml", False),
+    (b'<?xml version="1.0"?><atom:feed><title>Access denied</title></atom:feed>', "text/html", False),
+])
+def test_tytul_odmowy_tylko_w_html(zrob_zrodlo, monkeypatch, tresc, typ, blokada):
+    zrodlo = zrob_zrodlo(sposob_dostepu=Zrodlo.SposobDostepu.RSS)
+    naglowki = {"Content-Type": typ} if typ else {}
+    monkeypatch.setattr(Adapter, "pobierz", Mock(return_value=(
+        transport.OdpowiedzHTTP(200, naglowki, tresc, "utf-8"), SourceAccessInstruction.Scope.CONTENT,
+    )))
+    ParserTestowy(zrodlo).zbierz()
+    zrodlo.refresh_from_db()
+    assert zrodlo.blokada_dostepu is blokada
+    assert zrodlo.wpisy.exists() is not blokada
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("status", [502, None])
+def test_blad_nastepnego_zadania_ma_wlasny_status(zrob_zrodlo, monkeypatch, status):
+    class DwaZadania(ParserTestowy):
+        limit_zadan = 2
+
+        def przeprowadz(self, cykl):
+            cykl.wykonaj(self.zrodlo.adres)
+            cykl.wykonaj(f"{self.zrodlo.adres}/kolejny")
+
+    zrodlo = zrob_zrodlo()
+    monkeypatch.setattr(Adapter, "pobierz", Mock(side_effect=[
+        (transport.OdpowiedzHTTP(200, {}, b"komunikat", "utf-8"), SourceAccessInstruction.Scope.CONTENT),
+        transport.BladPobrania("Błąd drugiego żądania.", status_http=status),
+    ]))
+    assert DwaZadania(zrodlo).zbierz().status_http == status
+    assert list(zrodlo.pobrania.order_by("pk").values_list("status_http", flat=True)) == [200, status]
 
 
 @pytest.fixture
