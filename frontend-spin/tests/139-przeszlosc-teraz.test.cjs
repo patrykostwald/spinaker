@@ -53,7 +53,8 @@ test('teksty trasy: bez długich myślników i bez słów „spokojnie” i „b
 
 test('flaga TERAZ_ENABLED: bez niej przekierowanie na /przeszlosc; middleware zna /teraz', () => {
   const page = read(`${dir}/page.tsx`);
-  assert.match(page, /serverFeature\('TERAZ_ENABLED'\)/);
+  assert.match(page, /serverFeatureVerified\('TERAZ_ENABLED'\)/, 'podgląd zweryfikowany podpisem, nie samo ciasteczko (test zachowania: 143)');
+  assert.ok(!/serverFeature\('TERAZ_ENABLED'\)/.test(page));
   assert.match(page, /redirect\('\/przeszlosc'\)/);
   assert.match(page, /robots: \{ index: false/);
   assert.match(read('lib/features.ts'), /TERAZ_ENABLED: process\.env\.NEXT_PUBLIC_TERAZ_ENABLED/);
@@ -96,7 +97,7 @@ test('warstwy: każdy kod z kontraktu ma wygląd; stałe zdania zgodne z zasadam
   assert.equal(new Set(Object.values(w.WARSTWY_META).map(m => m.kolor)).size, kody.length, 'kolory warstw różne');
   assert.equal(w.ZDANIE_STALE, 'To nie jest strona urzędowa. W sytuacji zagrożenia słuchaj komunikatów RCB i dzwoń pod 112.');
   assert.equal(w.NIEPEWNOSC, 'nie mamy pewności, sprawdź Alert RCB i 112');
-  const statusy = ['komunikat_oficjalny', 'zgloszone', 'potwierdzone', 'ocena', 'odwolane', 'brak'];
+  const statusy = ['komunikat_oficjalny', 'zgloszone', 'potwierdzone', 'ocena', 'odwolane', 'brak', 'niedostepny'];
   assert.deepEqual(Object.keys(w.STATUSY).sort(), [...statusy].sort());
   assert.equal(new Set(statusy.map(s => w.STATUSY[s].ksztalt)).size, statusy.length, 'każdy status ma własny kształt (nie tylko kolor)');
   assert.deepEqual(w.OKRESY.map(o => o.id), ['1h', '24h', '7d']);
@@ -114,7 +115,8 @@ test('dane próbne mają dokładnie pola kontraktu API i obejmują wymagane przy
   const warstwy = d.probneWarstwy(teraz);
   assert.equal(warstwy.length, 18, 'API zwraca wszystkie 18 warstw');
   for (const w of warstwy) {
-    assert.deepEqual(Object.keys(w).sort(), [...polaSwiezosci, 'nazwa', 'warstwa', 'zrodla'].sort());
+    assert.deepEqual(Object.keys(w).sort(), [...polaSwiezosci, 'nazwa', 'warstwa', 'wylaczona', 'zrodla'].sort());
+    assert.equal(typeof w.wylaczona, 'boolean');
     for (const z of w.zrodla) assert.deepEqual(Object.keys(z).sort(), [...polaSwiezosci, 'czestotliwosc_s', 'instytucja', 'nazwa', 'slug'].sort());
   }
   const stan = d.probneStan(teraz);
@@ -130,6 +132,10 @@ test('dane próbne mają dokładnie pola kontraktu API i obejmują wymagane przy
   assert.ok(d.probneZdarzenia(teraz).some(z => z.status === 'zgloszone' && z.wpisy.every(w => w.warstwa === 'pozary')), 'pożar FIRMS jako Zgłoszone');
   // zdania linii stanu jak w StanView
   assert.equal(stan.warstwy.find(l => l.warstwa === 'rcb').ostatnie_pobranie, 'ostatnie pobranie: 14:39');
+  assert.equal(stan.warstwy.find(l => l.warstwa === 'rcb').komunikaty, 'komunikatów z 24 h: 3', 'zdanie jak w StanView (backend/teraz/api.py)');
+  assert.equal(stan.warstwy.find(l => l.warstwa === 'policja').ostatnie_pobranie, 'brak w naszych danych', 'brak pobrania jak w StanView');
+  assert.deepEqual(warstwy.filter(w => w.wylaczona).map(w => w.warstwa), ['media'], 'jedna warstwa wyłączona przez redakcję do pokazania wyłączenia');
+  assert.ok(warstwy.filter(w => w.wylaczona).every(w => w.zrodla.length === 0), 'wyłączona warstwa nie ma źródeł (backend je wyklucza)');
   assert.equal(stan.warstwy.find(l => l.warstwa === 'rcb').komunikat, '');
   assert.equal(stan.warstwy.find(l => l.warstwa === 'imgw_hydro').komunikat, 'nie mamy pewności, sprawdź Alert RCB i 112');
   assert.equal(stan.warstwy.find(l => l.warstwa === 'policja').komunikat, 'nie mamy pewności, sprawdź Alert RCB i 112', 'brak źródeł też daje niepewność jak w API');
@@ -175,7 +181,7 @@ test('model: status tylko ze zdarzenia, GeoJSON z kształtem statusu, region, wp
   const bez = widoki.filter(v => m.bezPolozenia(v.wpis)).map(v => v.wpis.id).sort();
   assert.deepEqual(bez, [9001, 9002, 9003, 9004, 9030], 'wpisy tylko z TERYT albo bez miejsca idą na listę');
   const wRegionie = woj => widoki.filter(v => m.zgodnyZRegionem(v.wpis, woj)).map(v => v.wpis.id).sort();
-  assert.deepEqual(wRegionie('18'), [9001], 'podkarpackie: RCB dla powiatów 18xx');
+  assert.deepEqual(wRegionie('18'), [9001, 9005], 'podkarpackie: RCB dla powiatów 18xx oraz prostokąt IMGW nad Małopolską, który sięga prostokąta podkarpackiego (przecięcie zasięgów, przybliżenie)');
   assert.ok(wRegionie('02').includes(9020), 'punkt bez TERYT w prostokącie dolnośląskiego (wstrząs koło Lubina)');
   assert.ok(wRegionie('12').includes(9005) && wRegionie('12').includes(9004), 'Małopolska: prostokąt i kody 12xx');
   assert.equal(wRegionie(null).length, widoki.length);
@@ -186,12 +192,13 @@ test('model: podsumowanie stanu ostrzega tylko dla warstw ze źródłami; luka j
   const m = load(`${dir}/model`);
   const teraz = Date.now();
   const p = m.podsumujStan(d.probneStan(teraz), d.probneWarstwy(teraz));
-  assert.equal(p.wiersze.length, 18);
+  assert.equal(p.wiersze.length, 17, '18 warstw minus wyłączona przez redakcję (media)');
+  assert.ok(!p.wiersze.some(w => w.warstwa === 'media'));
   assert.deepEqual(p.ostrzezenia.map(o => o.warstwa), ['imgw_hydro'], 'warstwy bez źródeł nie krzyczą w głównej linii, ale są oznaczone w szczegółach');
   assert.ok(p.wiersze.filter(w => !w.aktywna).every(w => w.komunikat === 'nie mamy pewności, sprawdź Alert RCB i 112'));
   assert.equal(m.podsumujStan(undefined, []), null);
   const bezNazw = m.podsumujStan(d.probneStan(teraz), undefined);
-  assert.equal(bezNazw.wiersze.length, 18, 'działa też bez listy warstw');
+  assert.equal(bezNazw.wiersze.length, 18, 'działa też bez listy warstw (bez niej nie wiemy, co jest wyłączone)');
 });
 
 test('model: warstwy włączone, sortowanie, nazwa źródła, adres wpisu', () => {
@@ -204,7 +211,7 @@ test('model: warstwy włączone, sortowanie, nazwa źródła, adres wpisu', () =
   assert.equal(m.posortujWarstwy(warstwy)[0].warstwa, 'rcb');
   assert.deepEqual({ ...m.nazwaZrodla(warstwy, 'nasa-firms') }, { nazwa: 'Źródła ciepła NASA FIRMS (VIIRS)', instytucja: 'NASA' });
   assert.deepEqual({ ...m.nazwaZrodla(warstwy, 'nieznane') }, { nazwa: 'nieznane', instytucja: '' });
-  assert.equal(m.adresWpisu('https://przeszlosc.today', '/teraz', '?okres=7d&warstwy=rcb', 9001), 'https://przeszlosc.today/teraz?okres=7d&warstwy=rcb&wpis=9001');
+  assert.equal(m.adresWpisu('https://przeszlosc.today', '/teraz', { warstwy: ['rcb'], okres: '7d', woj: null, wpis: null, widok: 'mapa', probne: false }, 9001), 'https://przeszlosc.today/teraz?warstwy=rcb&okres=7d&wpis=9001');
 });
 
 test('parametry URL: parsowanie z walidacją i zapis bez wartości domyślnych', () => {
@@ -260,8 +267,10 @@ test('API: adresy pod /api/teraz/, odświeżanie co 30 s, paginacja DRF, błędy
   for (const s of ["'stan'", "'warstwy'", "'wpisy'", "'zdarzenia'"]) assert.ok(kod.includes(s), s);
   assert.match(kod, /\/api\/teraz\//);
   const a = load(`${dir}/api`);
-  assert.equal(a.odKiedy('1h', 1_000_000_000), new Date(1_000_000_000 - 3_600_000).toISOString());
-  assert.equal(a.odKiedy('7d', 1_000_000_000), new Date(1_000_000_000 - 604_800_000).toISOString());
+  assert.equal(a.odKiedy('1h', 1_000_040_000), new Date(1_000_020_000 - 3_600_000).toISOString(), 'początek okresu zaokrąglony w dół do minuty');
+  assert.equal(a.odKiedy('7d', 1_000_040_000), new Date(1_000_020_000 - 604_800_000).toISOString());
+  assert.equal(a.odKiedy('24h', 1_000_020_000), a.odKiedy('24h', 1_000_079_999), 'wszyscy klienci w tej samej minucie wysyłają ten sam adres (cache backendu)');
+  assert.notEqual(a.odKiedy('24h', 1_000_020_000), a.odKiedy('24h', 1_000_080_000));
   const e = new a.BladApi(503, 'x');
   assert.equal(e.status, 503); assert.equal(e.name, 'BladApi');
 
@@ -288,7 +297,7 @@ test('API: adresy pod /api/teraz/, odświeżanie co 30 s, paginacja DRF, błędy
   stub.fetch = async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError('zły json'); } });
   await assert.rejects(a.pobierz('stan'), err => err.name === 'BladApi' && /formacie/.test(err.message));
   // województwo: wynik filtra TERYT i prostokąta bez duplikatów, od najnowszych
-  const wpis = (id, minut) => ({ id, opublikowano_at: new Date(Date.now() - minut * 60_000).toISOString() });
+  const wpis = (id, minut) => ({ id, zrodlo: 'rcb-gov-pl', warstwa: 'rcb', tytul: `Wpis ${id}`, tresc: '', link: 'https://www.gov.pl/', opublikowano_at: new Date(Date.now() - minut * 60_000).toISOString(), pobrano_at: new Date(Date.now() - minut * 60_000).toISOString(), klasa: 'zwykly', teryt: [], szerokosc: null, dlugosc: null, bbox: null, dokladnosc: 'brak', pewnosc_lokalizacji: 0 });
   stub.fetch = async adres => odpowiedz({ count: 2, next: null, previous: null, results: adres.includes('teryt=14') ? [wpis(1, 30), wpis(2, 10)] : [wpis(2, 10), wpis(3, 5)] });
   const woj = await a.pobierzWpisy('24h', '14');
   assert.deepEqual(woj.wpisy.map(x => x.id), [3, 2, 1]);

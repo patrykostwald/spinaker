@@ -12,6 +12,8 @@ import { IkonaOstrzezenia } from './Ikony';
  * komunikatów nie jest informacją o braku zagrożenia.
  * Czytniki ekranu: luka w danych jest zapowiadana uprzejmie (role status), brak połączenia natychmiast (role alert);
  * odświeżanie godziny pobrania nie jest zapowiadane.
+ * Cała sekcja stoi nad przewijaną treścią (siatka .tz), a arkusze panelu i karty zaczynają się pod nią, więc stałe zdanie
+ * nie wychodzi poza ekran ani nie jest przykrywane. Czas odświeżenia stanu źródeł (stan/) i komunikatów (wpisy/) to dwie osobne informacje.
  */
 export interface LiniaStanuProps {
   probne: boolean;
@@ -20,20 +22,23 @@ export interface LiniaStanuProps {
   /** Zapytanie o stan albo o wpisy zakończyło się błędem. */
   blad: boolean;
   /** Czas ostatniego udanego odświeżenia wpisów (ms) albo null, gdy jeszcze nic nie przyszło. */
-  odswiezono: number | null;
+  odswiezonoWpisy: number | null;
+  /** Czas ostatniego udanego odświeżenia stanu źródeł (stan/, ms) albo null. */
+  odswiezonoStan: number | null;
   ladowanie: boolean;
 }
 
 const MAKS_OSTRZEZEN = 3;
 
-export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezono, ladowanie }: LiniaStanuProps) {
+export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezonoWpisy, odswiezonoStan, ladowanie }: LiniaStanuProps) {
   const [otwarta, setOtwarta] = useState(false);
   const przycisk = useRef<HTMLButtonElement>(null);
   const brakPolaczenia = !online || blad;
   const rcb = podsumowanie?.wiersze.find(w => w.warstwa === 'rcb' && w.aktywna);
   const pierwsza = rcb ?? podsumowanie?.wiersze.find(w => w.aktywna);
   const ostrzezenia = podsumowanie?.ostrzezenia ?? [];
-  const godzinaOdswiezenia = odswiezono ? godzina(new Date(odswiezono).toISOString()) : '';
+  const godzinaWpisow = odswiezonoWpisy ? godzina(new Date(odswiezonoWpisy).toISOString()) : '';
+  const godzinaStanu = odswiezonoStan ? godzina(new Date(odswiezonoStan).toISOString()) : '';
 
   // Esc zamyka rozwinięcie i wraca na przycisk (nie zamyka przy tym karty ani panelu)
   useEffect(() => {
@@ -53,7 +58,7 @@ export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezono, lad
   if (brakPolaczenia) {
     alarm = <>
       <strong>{online ? 'Brak połączenia z serwerem' : 'Brak połączenia z internetem'}: {NIEPEWNOSC}.</strong>
-      {godzinaOdswiezenia && <> Ostatnie dane z godz. {godzinaOdswiezenia}.</>}
+      {godzinaWpisow && <> Ostatnie komunikaty pobraliśmy o godz. {godzinaWpisow}.</>}
     </>;
   }
   let luka: React.ReactNode = null;
@@ -66,7 +71,7 @@ export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezono, lad
 
   // jedna linia zwinięta: oznaczenie próbne i stan źródeł
   let stan: string;
-  if (brakPolaczenia) stan = godzinaOdswiezenia ? `ostatnie dane z godz. ${godzinaOdswiezenia}` : 'brak danych';
+  if (brakPolaczenia) stan = godzinaWpisow ? `ostatnie komunikaty z godz. ${godzinaWpisow}` : 'brak danych';
   else if (!podsumowanie) stan = ladowanie ? 'sprawdzamy stan źródeł…' : `stan źródeł niedostępny: ${NIEPEWNOSC}`;
   else stan = pierwsza ? `${pierwsza.nazwa}: ${pierwsza.ostatniePobranie}, ${pierwsza.komunikaty}` : 'brak aktywnych źródeł';
 
@@ -92,7 +97,11 @@ export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezono, lad
       {probne && <p className="tz-stan__probne" role="note"><strong>Dane przykładowe.</strong> To nie są prawdziwe komunikaty, tylko podgląd wyglądu strony.</p>}
       {podsumowanie
         ? <>
-          <p className="tz-stan__info">{podsumowanie.informacja}.{godzinaOdswiezenia ? ` Odświeżono o godz. ${godzinaOdswiezenia}.` : ''}</p>
+          <p className="tz-stan__info">{podsumowanie.informacja}.</p>
+          <p className="tz-stan__czasy">
+            <span>Stan źródeł odświeżono: {godzinaStanu ? `o godz. ${godzinaStanu}` : 'jeszcze nie'}.</span>{' '}
+            <span>Komunikaty odświeżono: {godzinaWpisow ? `o godz. ${godzinaWpisow}` : 'jeszcze nie'}.</span>
+          </p>
           <ul>
             {podsumowanie.wiersze.map(w => <li key={w.warstwa} data-aktywna={w.aktywna ? '' : undefined}>
               <strong>{w.nazwa}</strong>

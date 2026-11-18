@@ -1,14 +1,17 @@
 import type { Okres, Warstwa } from './typy';
 import type { WierszStanu } from './model';
 import { aktywna } from './model';
-import { KOLEJNOSC_STATUSOW, OKRESY, metaStatusu, metaWarstwy } from './warstwy';
+import { KOLEJNOSC_STATUSOW, metaStatusu, metaWarstwy } from './warstwy';
 import { WOJEWODZTWA } from './teryt';
 import { EtykietaStatusu, IkonaOstrzezenia, IkonaWarstwy } from './Ikony';
+import { WyborOkresu } from './WyborOkresu';
 
 /**
  * Panel warstw: filtry (czas, województwo), przełączniki warstw z kolorem, ikoną, liczbą wpisów i świeżością, legenda.
  * Zdania o świeżości pochodzą z API (stan/): „ostatnie pobranie: 14:32”, „komunikatów: 3” (ostatnie 24 godziny).
- * Warstwy bez żadnego publicznego źródła są osobno, wyłączone: nie udają, że coś pokazują.
+ * Warstwy bez żadnego publicznego źródła są osobno, wyłączone: nie udają, że coś pokazują. Warstwy wyłączone przez redakcję
+ * (`wylaczona`) nie dochodzą tu wcale (TerazPage przekazuje tylko dostępne).
+ * Filtr województwa jest przybliżony (prostokąty, nie granice), co jest napisane pod polem.
  */
 export interface PanelWarstwProps {
   warstwy: Warstwa[];
@@ -34,19 +37,22 @@ export function PanelWarstw(p: PanelWarstwProps) {
       <button type="button" className="tz-przycisk tz-panel__zamknij" onClick={p.onZamknij} aria-label="Zamknij panel warstw">Zamknij</button>
     </div>
 
-    <fieldset className="tz-filtr">
-      <legend>Czas</legend>
-      <div className="tz-segmenty" role="group" aria-label="Okres, z którego pokazujemy komunikaty">
-        {OKRESY.map(o => <button key={o.id} type="button" aria-pressed={p.okres === o.id} data-on={p.okres === o.id ? '' : undefined} onClick={() => p.onOkres(o.id)}>{o.etykieta}</button>)}
-      </div>
-    </fieldset>
+    <div className="tz-filtr">
+      <p className="tz-filtr__etykieta" id="tz-okres-etykieta">Czas (okres, z którego pokazujemy komunikaty)</p>
+      <WyborOkresu okres={p.okres} onOkres={p.onOkres} nazwa="tz-okres-panel" opisanePrzez="tz-okres-etykieta" klasa="tz-segmenty" />
+    </div>
 
     <div className="tz-filtr">
       <label htmlFor="tz-woj">Województwo</label>
-      <select id="tz-woj" value={p.woj ?? ''} onChange={e => p.onWoj(e.target.value || null)}>
+      <select id="tz-woj" value={p.woj ?? ''} aria-describedby="tz-woj-uwaga" onChange={e => p.onWoj(e.target.value || null)}>
         <option value="">Cała Polska</option>
         {WOJEWODZTWA.map(w => <option key={w.kod} value={w.kod}>{w.nazwa}</option>)}
       </select>
+      <p id="tz-woj-uwaga" className="tz-filtr__uwaga">
+        {p.woj
+          ? 'Filtr przybliżony: komunikaty bez kodu TERYT pokazujemy, gdy ich zasięg choćby częściowo wchodzi w prostokąt województwa, więc przy granicy mogą trafić się komunikaty z sąsiedniego.'
+          : 'Po wybraniu województwa filtr jest przybliżony (prostokąt, nie granica).'}
+      </p>
     </div>
 
     <div className="tz-panel__naglowek">
@@ -71,11 +77,11 @@ export function PanelWarstw(p: PanelWarstwProps) {
             <input type="checkbox" role="switch" checked={wl} onChange={() => p.onPrzelacz(w.warstwa)} />
             <span className="tz-przelacznik__tor" aria-hidden="true"><span /></span>
             <IkonaWarstwy kod={w.warstwa} />
-            <span className="tz-warstwa__nazwa">{w.nazwa}<span className="tz-sr"> ({meta.opis})</span></span>
+            <span className="tz-warstwa__nazwa" title={w.nazwa}>{w.nazwa}<span className="tz-sr"> ({meta.opis})</span></span>
             <span className="tz-warstwa__licznik" title="Komunikaty na mapie przy bieżących filtrach">{p.naMapie[w.warstwa] ?? 0}<span className="tz-sr"> na mapie</span></span>
           </label>
-          <p className="tz-warstwa__opis">{meta.opis}</p>
-          <p className="tz-warstwa__stan">{wiersz ? `${wiersz.ostatniePobranie} · ${wiersz.komunikaty} (24 godz.)` : 'stan niedostępny'}</p>
+          <p className="tz-warstwa__opis" title={meta.opis}>{meta.opis}</p>
+          <p className="tz-warstwa__stan" title={wiersz ? `${wiersz.ostatniePobranie} · ${wiersz.komunikaty}` : undefined}>{wiersz ? `${wiersz.ostatniePobranie} · ${wiersz.komunikaty}` : 'stan niedostępny'}</p>
           {ostrzega && <p className="tz-warstwa__ostrz"><IkonaOstrzezenia rozmiar={14} /><span><strong>Możliwa luka w danych.</strong> {wiersz?.komunikat}.</span></p>}
         </li>;
       })}

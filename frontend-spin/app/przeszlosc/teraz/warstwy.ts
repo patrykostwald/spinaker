@@ -60,7 +60,7 @@ export const KOLEJNOSC_WARSTW: KodWarstwy[] = [
   'wojsko', 'drogi', 'kolej', 'przestrzen', 'energetyka', 'cyber', 'urzedy', 'media',
 ];
 
-export type Ksztalt = 'kolo' | 'romb' | 'kwadrat' | 'trojkat' | 'krzyzyk' | 'pierscien';
+export type Ksztalt = 'kolo' | 'romb' | 'kwadrat' | 'trojkat' | 'krzyzyk' | 'pierscien' | 'szesciokat';
 export type StylObramowania = 'ciagla' | 'przerywana' | 'kropkowana';
 
 export interface MetaStatusu { etykieta: string; opis: string; ksztalt: Ksztalt; obramowanie: StylObramowania }
@@ -73,9 +73,11 @@ export const STATUSY: Record<StatusKlucz, MetaStatusu> = {
   ocena: { etykieta: 'Ocena', opis: 'Ocena redakcji, nie komunikat urzędowy.', ksztalt: 'trojkat', obramowanie: 'przerywana' },
   odwolane: { etykieta: 'Odwołane', opis: 'Komunikat odwołany lub wycofany.', ksztalt: 'krzyzyk', obramowanie: 'kropkowana' },
   brak: { etykieta: 'Komunikat bez zdarzenia', opis: 'Komunikat źródła, jeszcze niepowiązany ze zdarzeniem.', ksztalt: 'pierscien', obramowanie: 'kropkowana' },
+  // nie wiemy, czy komunikat ma zdarzenie (awaria zdarzenia/ albo limit stron): to nie to samo co „bez zdarzenia”
+  niedostepny: { etykieta: 'Status niedostępny', opis: 'Nie udało się sprawdzić zdarzeń, więc nie wiemy, czy komunikat został potwierdzony albo odwołany. Sprawdź oryginał u źródła.', ksztalt: 'szesciokat', obramowanie: 'kropkowana' },
 };
 export const metaStatusu = (s: StatusKlucz): MetaStatusu => STATUSY[s] ?? STATUSY.brak;
-export const KOLEJNOSC_STATUSOW: StatusKlucz[] = ['komunikat_oficjalny', 'zgloszone', 'potwierdzone', 'ocena', 'odwolane', 'brak'];
+export const KOLEJNOSC_STATUSOW: StatusKlucz[] = ['komunikat_oficjalny', 'zgloszone', 'potwierdzone', 'ocena', 'odwolane', 'brak', 'niedostepny'];
 
 export const OKRESY: { id: Okres; etykieta: string; ms: number }[] = [
   { id: '1h', etykieta: '1 godz.', ms: 3_600_000 },

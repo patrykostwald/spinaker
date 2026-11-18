@@ -219,7 +219,7 @@ test('parametry adresu „Mój powiat”: walidacja, limit 5, zapis, link do zes
 
 test('API: wpisy do „Mój powiat” po województwach, bez filtra prostokąta, bez powtórzeń, z flagą ucięcia', async () => {
   const a = load(`${dir}/api`);
-  const wpis = (id, minut) => ({ id, opublikowano_at: new Date(Date.now() - minut * 60_000).toISOString() });
+  const wpis = (id, minut) => ({ id, zrodlo: 'rcb-gov-pl', warstwa: 'rcb', tytul: `Wpis ${id}`, tresc: '', link: 'https://www.gov.pl/', opublikowano_at: new Date(Date.now() - minut * 60_000).toISOString(), pobrano_at: new Date(Date.now() - minut * 60_000).toISOString(), klasa: 'zwykly', teryt: ['14'], szerokosc: null, dlugosc: null, bbox: null, dokladnosc: 'wojewodztwo', pewnosc_lokalizacji: 0 });
   const adresy = [];
   stub.fetch = async adres => {
     adresy.push(adres);
@@ -254,7 +254,7 @@ function renderuj(props) {
   const wpisy = props.probne === false ? [] : d.probneWpisy(teraz);
   const domyslne = {
     powiaty: ['1813'], onZmien() {}, okres: '7d', onOkres() {}, widoki: m.zbudujWidoki(wpisy, d.probneZdarzenia(teraz)), warstwy: d.probneWarstwy(teraz),
-    ladowanie: false, blad: false, uciete: false, lukaWDanych: false, poczatekOkresu: new Date(teraz - 7 * 86_400_000).toISOString(), adres: () => 'x',
+    ladowanie: false, blad: false, uciete: false, pominiete: 0, lukaWDanych: false, poczatekOkresu: new Date(teraz - 7 * 86_400_000).toISOString(), adres: () => 'x',
   };
   const { probne, ...reszta } = props; void probne;
   return renderToStaticMarkup(React.createElement(MojPowiat, { ...domyslne, ...reszta }));

@@ -1,5 +1,6 @@
 import type { Warstwa, WidokWpisu } from './typy';
 import { czasLokalny, dataIGodzina } from './czas';
+import { adresZrodla } from './link';
 import { nazwaZrodla } from './model';
 import { normalizuj } from './powiaty';
 import { opisMiejsca } from './teryt';
@@ -57,7 +58,7 @@ export function wierszeTabeli(widoki: WidokWpisu[], warstwy: Warstwa[] | undefin
     const miejsceWarstwy = KOLEJNOSC_WARSTW.indexOf(wpis.warstwa);
     return {
       id: wpis.id, warstwa: nazwaWarstwy, tytul: wpis.tytul, status: etykietaStatusu, miejsce, opublikowano, pobrano,
-      opublikowanoCzas, pobranoCzas, zrodlo: zrodloTekst, link: wpis.link,
+      opublikowanoCzas, pobranoCzas, zrodlo: zrodloTekst, link: adresZrodla(wpis.link) ?? '',
       klucze: {
         warstwa: miejsceWarstwy < 0 ? 999 : miejsceWarstwy,
         tytul: normalizuj(wpis.tytul),

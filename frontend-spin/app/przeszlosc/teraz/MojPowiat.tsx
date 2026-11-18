@@ -1,13 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Okres, Warstwa, WidokWpisu } from './typy';
 import { dataIGodzina, host, odGodziny } from './czas';
+import { adresZrodla } from './link';
 import { nazwaZrodla } from './model';
 import { MAKS_POWIATOW, liczbaKomunikatow, szukajPowiatow, zakresDlaPowiatu, zakresTekstem } from './powiaty';
 import type { Zakres } from './powiaty';
 import { dlaPowiatu, pelnaNazwaPowiatu, powiatOKodzie } from './slownik';
 import { kopiujDoSchowka } from './schowek';
-import { NIEPEWNOSC, OKRESY, metaStatusu, metaWarstwy } from './warstwy';
+import { NIEPEWNOSC, metaStatusu, metaWarstwy } from './warstwy';
 import { EtykietaStatusu, IkonaWarstwy } from './Ikony';
+import { WyborOkresu } from './WyborOkresu';
 
 /**
  * Widok „Mój powiat”: bez mapy, duży druk, do 5 powiatów (albo miast na prawach powiatu) zapisanych w przeglądarce.
@@ -31,6 +33,8 @@ export interface MojPowiatProps {
   blad: boolean;
   /** Pobraliśmy tylko najnowsze wpisy: brak wpisu dla powiatu nie jest wtedy pewny. */
   uciete: boolean;
+  /** Liczba wpisów o nieznanym formacie, pominiętych przy pobraniu (wtedy „brak” też nie jest pewny). */
+  pominiete: number;
   /** Któraś warstwa ma lukę w danych (zdanie o tym jest też w linii stanu u góry). */
   lukaWDanych: boolean;
   /** Początek okresu (ISO), liczony od ostatniego pobrania wpisów (stały między odświeżeniami). */
@@ -129,9 +133,11 @@ function Wpis({ widok, warstwy, zakres, kodPowiatu }: { widok: WidokWpisu; warst
       <div><dt>Pobrano przez nas</dt><dd>{dataIGodzina(wpis.pobrano_at)}</dd></div>
       <div><dt>Źródło</dt><dd>{zrodlo.nazwa}{zrodlo.instytucja && zrodlo.instytucja !== zrodlo.nazwa ? `, ${zrodlo.instytucja}` : ''}</dd></div>
     </dl>
-    <p><a className="tz-przycisk tz-przycisk--glowny" href={wpis.link} target="_blank" rel="noopener noreferrer">
-      Otwórz oryginał u źródła{host(wpis.link) ? ` (${host(wpis.link)})` : ''}<span className="tz-sr"> (otwiera się w nowej karcie)</span>
-    </a></p>
+    {adresZrodla(wpis.link)
+      ? <p><a className="tz-przycisk tz-przycisk--glowny" href={adresZrodla(wpis.link) as string} target="_blank" rel="noopener noreferrer">
+        Otwórz oryginał u źródła{host(wpis.link) ? ` (${host(wpis.link)})` : ''}<span className="tz-sr"> (otwiera się w nowej karcie)</span>
+      </a></p>
+      : <p className="tz-brak-linku">Źródło nie podało poprawnego odnośnika do oryginału.</p>}
   </article>;
 }
 
@@ -174,9 +180,7 @@ export function MojPowiat(p: MojPowiatProps) {
 
     <div className="tz-mp-okres">
       <p className="tz-mp-etykieta" id="tz-mp-okres-etykieta">Okres</p>
-      <div className="tz-mp-segmenty" role="group" aria-labelledby="tz-mp-okres-etykieta">
-        {OKRESY.map(o => <button key={o.id} type="button" aria-pressed={p.okres === o.id} onClick={() => p.onOkres(o.id)}>{o.etykieta}</button>)}
-      </div>
+      <WyborOkresu okres={p.okres} onOkres={p.onOkres} nazwa="tz-okres-powiat" opisanePrzez="tz-mp-okres-etykieta" klasa="tz-mp-segmenty" />
     </div>
 
     <div id="tz-mp-pierwsze-pole"><WyborPowiatu onDodaj={dodaj} wybrane={p.powiaty} pelny={pelny} onKomunikat={setKomunikat} /></div>
@@ -218,6 +222,7 @@ export function MojPowiat(p: MojPowiatProps) {
         {!p.ladowanie && !p.blad && wpisy.length === 0 && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
           Brak w naszych danych {powiat ? dlaPowiatu(powiat) : `dla powiatu o kodzie ${kod}`} {poczatek}. Sprawdź Alert RCB i 112.
           {p.uciete && ' Pokazujemy tylko najnowsze komunikaty z województwa, więc mogło ich być więcej.'}
+          {p.pominiete > 0 && ' Część komunikatów miała nieznany format i została pominięta.'}
           {p.lukaWDanych && ' Część źródeł ma lukę w danych (ostrzeżenie u góry strony).'}
         </p>}
       </section>;

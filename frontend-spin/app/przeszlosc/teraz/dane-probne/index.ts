@@ -10,7 +10,7 @@ import { godzina } from '../czas';
 const MIN = 60_000;
 const iso = (teraz: number, minutTemu: number) => new Date(teraz - minutTemu * MIN).toISOString();
 
-interface Opis { kod: KodWarstwy; nazwa: string; zrodla: { slug: string; nazwa: string; instytucja: string; co_s: number; pobranieMin: number; sukcesMin: number; liczba24h: number; blad?: boolean }[] }
+interface Opis { kod: KodWarstwy; nazwa: string; wylaczona?: boolean; zrodla: { slug: string; nazwa: string; instytucja: string; co_s: number; pobranieMin: number; sukcesMin: number; liczba24h: number; blad?: boolean }[] }
 
 const OPISY: Opis[] = [
   { kod: 'rcb', nazwa: 'Alert RCB', zrodla: [{ slug: 'rcb-gov-pl', nazwa: 'Alert RCB na gov.pl', instytucja: 'Rządowe Centrum Bezpieczeństwa', co_s: 60, pobranieMin: 1, sukcesMin: 1, liczba24h: 3 }] },
@@ -30,7 +30,8 @@ const OPISY: Opis[] = [
   { kod: 'przestrzen', nazwa: 'Przestrzeń powietrzna', zrodla: [] },
   { kod: 'energetyka', nazwa: 'Energetyka', zrodla: [] },
   { kod: 'cyber', nazwa: 'Cyberbezpieczeństwo', zrodla: [{ slug: 'cert-polska', nazwa: 'Ostrzeżenia CERT Polska', instytucja: 'CERT Polska (NASK)', co_s: 1800, pobranieMin: 14, sukcesMin: 14, liczba24h: 1 }] },
-  { kod: 'media', nazwa: 'Media', zrodla: [] },
+  // wyłączona przez redakcję (WylacznikKategorii): nie pokazuje się nigdzie, także w „warstwach w przygotowaniu”
+  { kod: 'media', nazwa: 'Media', wylaczona: true, zrodla: [] },
   { kod: 'urzedy', nazwa: 'Urzędy', zrodla: [] },
 ];
 
@@ -44,7 +45,7 @@ export function probneWarstwy(teraz: number = Date.now()): Warstwa[] {
     const pobrania = zrodla.map(z => z.ostatnie_pobranie_at).filter((x): x is string => !!x).sort();
     const sukcesy = zrodla.map(z => z.ostatni_sukces_at).filter((x): x is string => !!x).sort();
     return {
-      warstwa: o.kod, nazwa: o.nazwa, zrodla,
+      warstwa: o.kod, nazwa: o.nazwa, wylaczona: !!o.wylaczona, zrodla,
       ostatnie_pobranie_at: pobrania.length ? pobrania[pobrania.length - 1] : null,
       ostatni_sukces_at: sukcesy.length ? sukcesy[sukcesy.length - 1] : null,
       liczba_wpisow_24h: zrodla.reduce((s, z) => s + z.liczba_wpisow_24h, 0),
@@ -59,8 +60,8 @@ export function probneStan(teraz: number = Date.now()): Stan {
     informacja: 'To nie jest strona urzędowa',
     warstwy: probneWarstwy(teraz).map(w => ({
       warstwa: w.warstwa,
-      ostatnie_pobranie: `ostatnie pobranie: ${w.ostatnie_pobranie_at ? godzina(w.ostatnie_pobranie_at) : 'brak danych'}`,
-      komunikaty: `komunikatów: ${w.liczba_wpisow_24h}`,
+      ostatnie_pobranie: w.ostatnie_pobranie_at ? `ostatnie pobranie: ${godzina(w.ostatnie_pobranie_at)}` : 'brak w naszych danych',
+      komunikaty: `komunikatów z 24 h: ${w.liczba_wpisow_24h}`,
       komunikat: w.luka || w.blad || !w.zrodla.length ? 'nie mamy pewności, sprawdź Alert RCB i 112' : '',
     })),
   };

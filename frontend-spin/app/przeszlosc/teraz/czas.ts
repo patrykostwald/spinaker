@@ -1,3 +1,5 @@
+import { adresZrodla } from './link';
+
 /** Czas w strefie Europe/Warsaw, po polsku, bez zależności od strefy przeglądarki. */
 const STREFA = 'Europe/Warsaw';
 
@@ -59,7 +61,8 @@ export function ileTemu(iso: string | null | undefined, teraz: number = Date.now
   return `${Math.round(godz / 24)} dni temu`;
 }
 
-/** Adres hosta bez „www.”, do podpisu odnośnika; pusty przy błędnym adresie. */
+/** Adres hosta bez „www.”, do podpisu odnośnika; pusty przy błędnym adresie i przy adresie innym niż bezwzględny http(s). */
 export function host(url: string | null | undefined): string {
-  try { return url ? new URL(url).hostname.replace(/^www\./, '') : ''; } catch { return ''; }
+  const adres = adresZrodla(url);
+  try { return adres ? new URL(adres).hostname.replace(/^www\./, '') : ''; } catch { return ''; }
 }

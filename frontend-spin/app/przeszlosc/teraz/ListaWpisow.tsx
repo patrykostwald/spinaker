@@ -26,8 +26,8 @@ export function ListaWpisow({ widoki, warstwy, wybrany, onWybierz, etykieta, pus
           <IkonaWarstwy kod={wpis.warstwa} />
           <span className="tz-pozycja__glowna">
             <span className="tz-pozycja__tytul">{wpis.tytul}</span>
-            <span className="tz-pozycja__meta">{nazwa} · {nazwaZrodla(warstwy, wpis.zrodlo).nazwa}</span>
-            <span className="tz-pozycja__meta">{dataIGodzina(wpis.opublikowano_at)} · {opisMiejsca(wpis)}</span>
+            <span className="tz-pozycja__meta" title={`${nazwa} · ${nazwaZrodla(warstwy, wpis.zrodlo).nazwa}`}>{nazwa} · {nazwaZrodla(warstwy, wpis.zrodlo).nazwa}</span>
+            <span className="tz-pozycja__meta" title={`${dataIGodzina(wpis.opublikowano_at)} · ${opisMiejsca(wpis)}`}>{dataIGodzina(wpis.opublikowano_at)} · {opisMiejsca(wpis)}</span>
           </span>
           <EtykietaStatusu status={status} />
         </button>

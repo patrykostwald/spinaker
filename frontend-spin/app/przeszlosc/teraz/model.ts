@@ -1,11 +1,45 @@
-import type { Bbox, KodWarstwy, LiniaStanu, Stan, StatusKlucz, Warstwa, WidokWpisu, Wpis, Zdarzenie, Zrodlo } from './typy';
+import type { Bbox, KodWarstwy, LiniaStanu, Stan, StatusKlucz, Warstwa, WidokWpisu, Wpis, WynikListy, Zdarzenie, Zrodlo } from './typy';
 import { metaStatusu, metaWarstwy, KOLEJNOSC_WARSTW } from './warstwy';
 import { WOJEWODZTWA, wBbox } from './teryt';
+import { zbudujZapytanie, type Parametry } from './parametry';
 
 /** Czysta logika widoku (bez Reacta i mapy), żeby dało się ją sprawdzić testami. */
 
-/** Wpis → zdarzenie (przy kilku zdarzeniach wygrywa to z najświeższym wpisem); status tylko ze zdarzenia. */
-export function zbudujWidoki(wpisy: Wpis[], zdarzenia: Zdarzenie[]): WidokWpisu[] {
+/**
+ * Które wpisy mogą mieć status, którego nie znamy. Wpis bez zdarzenia jest „bez zdarzenia” tylko wtedy, gdy mamy pełne zdarzenia:
+ *  - `wszystkie`: nie ma danych o zdarzeniach (awaria, wczytywanie) albo część rekordów miała zły format,
+ *  - `nieWiekszeNiz`: zdarzenia pobrano z limitem stron (od najnowszych); zdarzenie spoza limitu ma `ostatni_wpis_at` nie
+ *    późniejszy niż najstarsze pobrane, więc wpis opublikowany później niż ta granica na pewno nie należy do pominiętego zdarzenia.
+ */
+export interface PolitykaStatusu { wszystkie: boolean; nieWiekszeNiz: number | null }
+export const PELNE_ZDARZENIA: PolitykaStatusu = { wszystkie: false, nieWiekszeNiz: null };
+
+export function politykaStatusu(zdarzenia: WynikListy<Zdarzenie> | undefined): PolitykaStatusu {
+  if (!zdarzenia || zdarzenia.pominiete > 0) return { wszystkie: true, nieWiekszeNiz: null };
+  if (!zdarzenia.uciete) return PELNE_ZDARZENIA;
+  const czasy = zdarzenia.wyniki.map(z => Date.parse(z.ostatni_wpis_at)).filter(Number.isFinite);
+  return czasy.length ? { wszystkie: false, nieWiekszeNiz: Math.min(...czasy) } : { wszystkie: true, nieWiekszeNiz: null };
+}
+
+/** Kody warstw wyłączonych przez redakcję (pole `wylaczona` z warstwy/). */
+export const kodyWylaczonych = (warstwy: Warstwa[] | undefined): Set<string> => new Set((warstwy ?? []).filter(w => w.wylaczona).map(w => w.warstwa));
+
+/**
+ * Usuwa z danych wszystko, co należy do wyłączonych warstw: wpisy oraz wpisy powiązane w zdarzeniach (karta, „inne komunikaty”).
+ * Działa na danych z cache klienta, więc wycofana warstwa znika także tam, gdzie wpisy przyszły przed wyłączeniem.
+ */
+export function bezWylaczonych(wpisy: Wpis[], zdarzenia: Zdarzenie[], wylaczone: ReadonlySet<string>): { wpisy: Wpis[]; zdarzenia: Zdarzenie[] } {
+  if (!wylaczone.size) return { wpisy, zdarzenia };
+  return {
+    wpisy: wpisy.filter(w => !wylaczone.has(w.warstwa)),
+    zdarzenia: zdarzenia
+      .map(z => (z.wpisy.some(w => wylaczone.has(w.warstwa)) ? { ...z, wpisy: z.wpisy.filter(w => !wylaczone.has(w.warstwa)) } : z))
+      .filter(z => z.wpisy.length > 0),
+  };
+}
+
+/** Wpis → zdarzenie (przy kilku zdarzeniach wygrywa to z najświeższym wpisem); status tylko ze zdarzenia, a gdy zdarzeń nie znamy, „status niedostępny”. */
+export function zbudujWidoki(wpisy: Wpis[], zdarzenia: Zdarzenie[], polityka: PolitykaStatusu = PELNE_ZDARZENIA): WidokWpisu[] {
   const poWpisie = new Map<number, Zdarzenie>();
   for (const z of zdarzenia) {
     for (const w of z.wpisy) {
@@ -15,7 +49,8 @@ export function zbudujWidoki(wpisy: Wpis[], zdarzenia: Zdarzenie[]): WidokWpisu[
   }
   return wpisy.map(wpis => {
     const zdarzenie = poWpisie.get(wpis.id) ?? null;
-    const status: StatusKlucz = zdarzenie ? zdarzenie.status : 'brak';
+    const nieznany = !zdarzenie && (polityka.wszystkie || (polityka.nieWiekszeNiz !== null && Date.parse(wpis.opublikowano_at) <= polityka.nieWiekszeNiz));
+    const status: StatusKlucz = zdarzenie ? zdarzenie.status : nieznany ? 'niedostepny' : 'brak';
     return { wpis, status, zdarzenie };
   });
 }
@@ -29,22 +64,28 @@ export const maObszar = (w: Wpis): boolean => !poprawnyPunkt(w) && Array.isArray
 /** Wpis bez punktu i bez prostokąta: pokazujemy tylko na liście („dotyczy: powiat X”). */
 export const bezPolozenia = (w: Wpis): boolean => !poprawnyPunkt(w) && !maObszar(w);
 
-/** Filtr województwa: kod TERYT zaczyna się od kodu województwa; wpis bez TERYT ale z punktem lub prostokątem liczy się, gdy leży w przybliżonym prostokącie. */
+/** Czy dwa zasięgi (zachód, południe, wschód, północ) mają wspólną część. */
+export const przecinaSie = (a: Bbox, b: Bbox): boolean => a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+
+/**
+ * Filtr województwa: kod TERYT zaczyna się od kodu województwa. Wpis bez TERYT z punktem liczy się, gdy punkt leży w przybliżonym
+ * prostokącie województwa, a z prostokątem, gdy jego zasięg ma z tym prostokątem część wspólną (tak samo filtruje API: `bbox=`).
+ * To przybliżenie: prostokąty województw nie są granicami, więc przy brzegach mogą trafić się wpisy z sąsiedniego województwa
+ * (interfejs mówi o tym w panelu filtrów). Zasięg obejmujący część regionu nie znika.
+ */
 export function zgodnyZRegionem(w: Wpis, woj: string | null): boolean {
   if (!woj) return true;
   if (w.teryt.length) return w.teryt.some(k => k.startsWith(woj));
   const region = WOJEWODZTWA.find(r => r.kod === woj);
   if (!region) return true;
   if (poprawnyPunkt(w)) return wBbox(w.dlugosc as number, w.szerokosc as number, region.bbox);
-  if (maObszar(w)) {
-    // prostokąt bez TERYT przypisujemy do województwa, w którym leży jego środek (przecięcia dałyby wpisy z sąsiednich województw)
-    const b = w.bbox as Bbox;
-    return wBbox((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, region.bbox);
-  }
+  if (maObszar(w)) return przecinaSie(w.bbox as Bbox, region.bbox);
   return false;
 }
 
-export const aktywna = (w: Warstwa): boolean => w.zrodla.length > 0;
+/** Warstwa działa: nie jest wyłączona przez redakcję i ma publiczne źródło. Wyłączona nie pojawia się nigdzie, także w „w przygotowaniu”. */
+export const aktywna = (w: Warstwa): boolean => !w.wylaczona && w.zrodla.length > 0;
+export const dostepna = (w: Warstwa): boolean => !w.wylaczona;
 
 /** Warstwy w kolejności produktu; nieznane kody na końcu. */
 export function posortujWarstwy(warstwy: Warstwa[]): Warstwa[] {
@@ -60,10 +101,15 @@ export function nazwaZrodla(warstwy: Warstwa[] | undefined, slug: string): { naz
   return { nazwa: slug, instytucja: '' };
 }
 
-/** Które warstwy są włączone: null z URL i pamięci = wszystkie aktywne. */
+/**
+ * Które warstwy są włączone: null z URL i pamięci = wszystkie aktywne. Zapisany wybór obejmuje tylko warstwy, które istnieją i nie są
+ * wyłączone (wyłączenie wygrywa z preferencją). Gdy listy warstw nie mamy, wybór zostaje bez zmian (nie ma z czym porównać).
+ */
 export function wlaczoneWarstwy(wybor: string[] | null, warstwy: Warstwa[]): Set<string> {
   if (wybor === null) return new Set(warstwy.filter(aktywna).map(w => w.warstwa));
-  return new Set(wybor);
+  if (!warstwy.length) return new Set(wybor);
+  const dozwolone = new Set<string>(warstwy.filter(dostepna).map(w => w.warstwa));
+  return new Set(wybor.filter(k => dozwolone.has(k)));
 }
 
 export interface WierszStanu {
@@ -85,7 +131,8 @@ export interface PodsumowanieStanu {
 export function podsumujStan(stan: Stan | undefined, warstwy: Warstwa[] | undefined): PodsumowanieStanu | null {
   if (!stan) return null;
   const nazwy = new Map((warstwy ?? []).map(w => [w.warstwa, w]));
-  const wiersze = stan.warstwy.map((l: LiniaStanu): WierszStanu => {
+  const wylaczone = kodyWylaczonych(warstwy);
+  const wiersze = stan.warstwy.filter(l => !wylaczone.has(l.warstwa)).map((l: LiniaStanu): WierszStanu => {
     const w = nazwy.get(l.warstwa);
     return {
       warstwa: l.warstwa,
@@ -139,9 +186,10 @@ export function naGeoJson(widoki: WidokWpisu[]): {
   return { punkty: { type: 'FeatureCollection', features: punkty }, obszary: { type: 'FeatureCollection', features: obszary } };
 }
 
-/** Adres do skopiowania: bieżący adres strony z parametrem wpisu (reszta widoku zostaje). */
-export function adresWpisu(origin: string, sciezka: string, zapytanie: string, id: number): string {
-  const q = new URLSearchParams(zapytanie);
-  q.set('wpis', String(id));
-  return `${origin}${sciezka}?${q.toString()}`;
+/**
+ * Adres do skopiowania: ścieżka strony i wyłącznie parametry widoku z listy dozwolonych (warstwy, okres, województwo, widok, tryb próbny)
+ * plus wpis. Obcych parametrów z bieżącego adresu (np. śledzących) nie kopiujemy.
+ */
+export function adresWpisu(origin: string, sciezka: string, widok: Parametry, id: number): string {
+  return `${origin}${sciezka}${zbudujZapytanie({ ...widok, wpis: id }, '')}`;
 }

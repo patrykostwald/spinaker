@@ -5,7 +5,7 @@ import { liczbaKomunikatow } from './powiaty';
 import { KOLUMNY, NAGLOWKI_CSV, filtrujWiersze, kierunekPoczatkowy, sortujWiersze, wierszeCsv, wierszeTabeli } from './tabela';
 import type { IdKolumny, Kierunek } from './tabela';
 import { host } from './czas';
-import { NIEPEWNOSC } from './warstwy';
+import { adresZrodla } from './link';
 
 /**
  * Pełna tabela komunikatów: ten sam zbiór co na mapie (warstwy, czas i województwo z panelu), jako zwykła tabela HTML dla
@@ -19,9 +19,11 @@ export interface TabelaWpisowProps {
   onWybierz: (id: number) => void;
   /** Opis bieżących filtrów do podpisu tabeli, np. „24 godz., cała Polska”. */
   opisFiltrow: string;
+  /** Tekst, gdy tabela jest pusta (brak komunikatów, dane niedostępne albo wczytywanie: o tym decyduje strona). */
+  pusta: string;
 }
 
-export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow }: TabelaWpisowProps) {
+export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow, pusta }: TabelaWpisowProps) {
   const [tekst, setTekst] = useState('');
   const [sortowanie, setSortowanie] = useState<{ kolumna: IdKolumny; kierunek: Kierunek }>({ kolumna: 'opublikowano', kierunek: 'malejaco' });
   const [komunikat, setKomunikat] = useState('');
@@ -70,7 +72,7 @@ export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow 
     <p className="tz-sr" role="status" aria-live="polite" aria-atomic="true">{komunikat || `${liczbaKomunikatow(wiersze.length)} w tabeli.`}</p>
 
     {!wszystkie.length
-      ? <p className="tz-lista__pusta" role="status">Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: {NIEPEWNOSC}.</p>
+      ? <p className="tz-lista__pusta" role="status">{pusta}</p>
       : <div id="tz-tabela" className="tz-tabela__przewijanie" tabIndex={0} role="region" aria-label="Tabela komunikatów (przewijana strzałkami)">
         <table className="tz-tabela__tabela">
           <caption className="tz-sr">Komunikaty ({opisFiltrow}), {liczbaKomunikatow(wiersze.length)}. Nagłówki kolumn sortują tabelę.</caption>
@@ -96,7 +98,9 @@ export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow 
               <td><time dateTime={w.pobranoCzas.replace(' ', 'T')}>{w.pobrano}</time></td>
               <td>
                 {w.zrodlo}
-                <a className="tz-tabela__link" href={w.link} target="_blank" rel="noopener noreferrer">Oryginał{host(w.link) ? ` (${host(w.link)})` : ''}<span className="tz-sr"> (otwiera się w nowej karcie)</span></a>
+                {adresZrodla(w.link)
+                  ? <a className="tz-tabela__link" href={adresZrodla(w.link) as string} target="_blank" rel="noopener noreferrer">Oryginał{host(w.link) ? ` (${host(w.link)})` : ''}<span className="tz-sr"> (otwiera się w nowej karcie)</span></a>
+                  : <span className="tz-tabela__link tz-brak-linku">Brak poprawnego odnośnika</span>}
               </td>
             </tr>)}
           </tbody>
