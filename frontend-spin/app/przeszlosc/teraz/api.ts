@@ -82,6 +82,21 @@ export async function pobierzWpisy(okres: Okres, woj: string | null, signal?: Ab
   return { wpisy, uciete: a.uciete || b.uciete };
 }
 
+/**
+ * Wpisy do „Mój powiat”: dla każdego z podanych województw (kod 2 cyfry) zapytanie z filtrem TERYT, bez filtra prostokąta
+ * (powiat dopasowujemy po kodzie wpisu, wpis bez kodu go nie dotyczy). Filtr `teryt=06` zwraca też wpisy z kodami
+ * powiatów i gmin tego województwa, więc jedno zapytanie na województwo wystarcza także dla wpisów „całe województwo”.
+ * `uciete` = któreś województwo ma więcej wpisów, niż pobieramy; wtedy „brak wpisów” nie jest pewny.
+ */
+export async function pobierzWpisyTeryt(okres: Okres, kodyWojewodztw: string[], signal?: AbortSignal): Promise<WynikWpisow> {
+  const od = odKiedy(okres);
+  const wyniki = await Promise.all(kodyWojewodztw.map(w => pobierzStrony<Wpis>('wpisy', { od, teryt: w }, MAKS_STRON_WPISOW, signal)));
+  const poId = new Map<number, Wpis>();
+  for (const r of wyniki) for (const w of r.wyniki) poId.set(w.id, w);
+  const wpisy = [...poId.values()].sort((x, y) => Date.parse(y.opublikowano_at) - Date.parse(x.opublikowano_at));
+  return { wpisy, uciete: wyniki.some(r => r.uciete) };
+}
+
 const wspolne = { refetchInterval: ODSWIEZANIE_MS, refetchIntervalInBackground: false, refetchOnReconnect: true, staleTime: ODSWIEZANIE_MS / 2, retry: 1, retryDelay: 2000 } as const;
 
 export function useStan(probne: boolean) {
@@ -92,8 +107,10 @@ export function useWarstwy(probne: boolean) {
   return useQuery<Warstwa[]>({ queryKey: ['teraz', 'warstwy', probne], queryFn: ({ signal }) => probne ? Promise.resolve(probneWarstwy()) : pobierz<Warstwa[]>('warstwy', {}, signal), ...wspolne });
 }
 
-export function useWpisy(probne: boolean, okres: Okres, woj: string | null) {
+/** `aktywne` = false wstrzymuje zapytania (widok „Mój powiat” nie potrzebuje danych mapy). */
+export function useWpisy(probne: boolean, okres: Okres, woj: string | null, aktywne: boolean = true) {
   return useQuery<WynikWpisow>({
+    enabled: aktywne,
     queryKey: ['teraz', 'wpisy', probne, okres, woj],
     queryFn: ({ signal }) => {
       if (!probne) return pobierzWpisy(okres, woj, signal);
@@ -101,6 +118,25 @@ export function useWpisy(probne: boolean, okres: Okres, woj: string | null) {
       return Promise.resolve({ wpisy, uciete: false });
     },
     placeholderData: keepPreviousData,
+    ...wspolne,
+  });
+}
+
+/** Wpisy wybranych powiatów (patrz pobierzWpisyTeryt); bez wybranych województw nie wysyła żadnego zapytania. */
+export function useWpisyPowiatow(probne: boolean, okres: Okres, kodyWojewodztw: string[], aktywne: boolean) {
+  const klucz = kodyWojewodztw.join(',');
+  return useQuery<WynikWpisow>({
+    enabled: aktywne && kodyWojewodztw.length > 0,
+    queryKey: ['teraz', 'wpisy-powiatow', probne, okres, klucz],
+    queryFn: ({ signal }) => {
+      if (!probne) return pobierzWpisyTeryt(okres, kodyWojewodztw, signal);
+      const od = odKiedy(okres);
+      const poId = new Map<number, Wpis>();
+      for (const w of kodyWojewodztw) for (const x of filtrujProbneWpisy(probneWpisy(), { od, teryt: w })) poId.set(x.id, x);
+      const wpisy = [...poId.values()].sort((x, y) => Date.parse(y.opublikowano_at) - Date.parse(x.opublikowano_at));
+      return Promise.resolve({ wpisy, uciete: false });
+    },
+    // celowo bez keepPreviousData: po zmianie zestawu powiatów stare dane nie mogą udawać kompletnych (fałszywe „brak komunikatów”)
     ...wspolne,
   });
 }

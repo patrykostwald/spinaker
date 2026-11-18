@@ -18,37 +18,49 @@ html[data-theme="light"] .tz { --tz-ostrz: #8a4b00; --tz-ostrz-tlo: rgba(138, 75
 .tz :is(a, button, input, select, summary):focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
 
 /* ---------- Pasek górny ---------- */
-.tz-gora { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); }
-.tz-marka { display: inline-flex; align-items: center; min-height: var(--tz-tap); color: var(--sc-text-2); font: 600 13px/1 var(--sc-font-sans); letter-spacing: .04em; text-decoration: none; }
+.tz-gora { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); }
+.tz-marka { display: inline-flex; align-items: center; gap: 6px; min-width: var(--tz-tap); min-height: var(--tz-tap); color: var(--sc-text-2); font: 600 13px/1 var(--sc-font-sans); letter-spacing: .04em; text-decoration: none; }
 .tz-marka:hover { color: var(--sc-text); }
+.tz-marka__ik { font-size: 20px; line-height: 1; }
 .tz-tytul { font: 600 17px/1 var(--sc-font-display); letter-spacing: -.01em; }
 .tz-widok { display: inline-flex; margin-left: auto; padding: 3px; border-radius: 10px; background: var(--sc-surface-3); }
-.tz-widok button { min-height: 38px; min-width: 64px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: var(--sc-text-2); font: 600 14px/1 var(--sc-font-sans); cursor: pointer; }
+.tz-widok button { min-height: 38px; min-width: 56px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--sc-text-2); font: 600 14px/1 var(--sc-font-sans); cursor: pointer; }
 .tz-widok button[aria-pressed="true"] { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 55%, transparent); }
 .tz-widok button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---------- Linia stanu (zawsze widoczna) ---------- */
-.tz-stan { padding: 8px 12px 6px; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); font-size: 13px; line-height: 1.45; max-height: 46dvh; overflow: auto; }
-.tz-stan__probne { margin-bottom: 4px; padding: 4px 8px; border-radius: 8px; background: var(--sc-accent-soft); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 50%, transparent); }
+/* Stałe zdanie i ostrzeżenie o luce są zawsze widoczne; oznaczenie „Dane przykładowe” i stan źródeł to jedna linia z rozwinięciem
+   (nakładka pod linią, żeby mapa się nie przesuwała). */
+.tz-stan { position: relative; z-index: 40; padding: 6px 12px 0; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); font-size: 13px; line-height: 1.45; }
 .tz-stan__stale { font-weight: 600; color: var(--sc-text); }
-.tz-stan__linia { display: flex; gap: 6px; align-items: flex-start; margin-top: 2px; color: var(--sc-text-2); }
-.tz-stan__linia strong { color: var(--sc-text); font-weight: 600; }
-.tz-stan[data-poziom="ostrzezenie"] .tz-stan__linia { margin-top: 4px; padding: 5px 8px; border-radius: 8px; background: var(--tz-ostrz-tlo); color: var(--sc-text); box-shadow: inset 3px 0 0 var(--tz-ostrz); }
+.tz-stan__alarm:empty { display: none; }
+.tz-stan__ostrz { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 0; padding: 5px 8px; border-radius: 8px; background: var(--tz-ostrz-tlo); color: var(--sc-text); box-shadow: inset 3px 0 0 var(--tz-ostrz); }
+.tz-stan__ostrz strong { font-weight: 600; }
 .tz-stan__ik { flex: none; display: inline-flex; margin-top: 2px; color: var(--tz-ostrz); }
-.tz-stan__szczegoly summary { display: inline-flex; align-items: center; min-height: 32px; color: var(--sc-text-3); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.tz-stan__szczegoly[open] summary { color: var(--sc-text-2); }
-.tz-stan__info { color: var(--sc-text-3); }
-.tz-stan__szczegoly ul { display: grid; gap: 6px; margin-top: 6px; }
+.tz .tz-stan__przelacznik { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 40px; padding: 0; border: 0; background: transparent; color: var(--sc-text-2); font: inherit; text-align: left; cursor: pointer; }
+.tz-stan__jedna { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tz-stan__probne-etykieta { color: var(--sc-accent); font-weight: 650; }
+.tz-stan__rozwin { flex: none; color: var(--sc-text-2); text-decoration: underline; text-underline-offset: 3px; }
+.tz-stan__przelacznik[aria-expanded="true"] .tz-stan__rozwin { color: var(--sc-text); }
+.tz-stan__szczegoly { position: absolute; left: 0; right: 0; top: 100%; display: grid; gap: 8px; max-height: min(60dvh, 520px); overflow: auto; padding: 10px 12px 12px; background: var(--sc-surface); border-bottom: 1px solid var(--sc-line-strong); box-shadow: 0 14px 28px rgba(0, 0, 0, .4); }
+.tz-stan__szczegoly[hidden] { display: none; }
+.tz-stan__probne { padding: 4px 8px; border-radius: 8px; background: var(--sc-accent-soft); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 50%, transparent); }
+.tz-stan__info { color: var(--sc-text-2); }
+.tz-stan__szczegoly ul { display: grid; gap: 6px; }
 .tz-stan__szczegoly li { display: grid; gap: 1px; }
 .tz-stan__szczegoly li[data-aktywna] strong { font-weight: 600; }
-.tz-stan__szczegoly li:not([data-aktywna]) { color: var(--sc-text-3); }
+.tz-stan__szczegoly li:not([data-aktywna]) { color: var(--sc-text-2); }
 .tz-stan__szczegoly li span { color: var(--sc-text-2); }
 .tz-stan__szczegoly li em { font-style: normal; color: var(--tz-ostrz); }
+.tz-stan__zamknij { justify-self: start; }
 
 /* ---------- Główny obszar ---------- */
 .tz-glowna { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .tz-scena { position: relative; min-height: 0; overflow: hidden; background: var(--sc-surface-2); }
 .tz .tz-mapa { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* odnośniki w atrybucji mapy: podkreślone, żeby nie różniły się od tekstu samym kolorem (WCAG 1.4.1) */
+.tz .maplibregl-ctrl-attrib a { text-decoration: underline; text-underline-offset: 2px; }
+.tz .tz-mapa canvas:focus-visible, .tz .tz-mapa:focus-visible { outline: 3px solid var(--sc-focus, var(--sc-accent)); outline-offset: -3px; }
 .tz-mapa-ladowanie { position: absolute; inset: 0; display: grid; place-items: center; color: var(--sc-text-3); }
 .tz-pomin { position: absolute; left: 8px; top: 8px; z-index: 6; padding: 10px 14px; border-radius: 10px; background: var(--sc-bg); color: var(--sc-text); transform: translateY(-200%); }
 .tz-pomin:focus { transform: none; }
@@ -157,9 +169,84 @@ html[data-theme="light"] .tz-ikona { color: color-mix(in srgb, var(--tz-kolor) 7
 .tz-pozycja__tytul { font: 600 15px/1.35 var(--sc-font-sans); }
 .tz-pozycja__meta { font-size: 13px; line-height: 1.4; color: var(--sc-text-3); }
 
+/* ---------- Tabela i „Mój powiat” (bez mapy: przewijana ramka na całą scenę) ---------- */
+.tz-ramka { position: absolute; inset: 0; overflow: auto; padding: 12px 12px 84px; }
+.tz-komunikaty-inline { display: grid; gap: 8px; max-width: 760px; }
+.tz-komunikaty-inline:empty { display: none; }
+.tz-komunikaty-inline .tz-komunikat { margin-bottom: 8px; }
+.tz-tabela { display: grid; gap: 10px; }
+.tz-tabela__tytul { font: 600 20px/1.3 var(--sc-font-display); }
+.tz .tz-tabela__tytul:focus, .tz .tz-tabela__tytul:focus-visible, .tz .tz-mp-tytul:focus, .tz .tz-mp-tytul:focus-visible { outline: none; }
+.tz-tabela__opis, .tz-tabela__licznik { color: var(--sc-text-2); font-size: 14px; }
+.tz-tabela__narzedzia { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.tz-tabela__filtr { display: grid; gap: 4px; flex: 1 1 240px; max-width: 420px; }
+.tz-tabela__filtr label, .tz-mp-etykieta { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-tabela__filtr input { min-height: var(--tz-tap); padding: 0 12px; border: 0; border-radius: 10px; background: var(--sc-surface-3); color: var(--sc-text); font: 400 15px/1 var(--sc-font-sans); box-shadow: inset 0 0 0 1px var(--sc-line-strong); }
+.tz .tz-przycisk:disabled { opacity: .5; cursor: not-allowed; }
+.tz-tabela__przewijanie { overflow: auto; max-width: 100%; border-radius: var(--tz-r); background: var(--sc-surface); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-tabela__tabela { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
+.tz-tabela__tabela th, .tz-tabela__tabela td { padding: 8px 10px; border-bottom: 1px solid var(--sc-line); text-align: left; vertical-align: top; }
+.tz-tabela__tabela thead th { position: sticky; top: 0; z-index: 1; padding: 0; background: var(--sc-surface-3); white-space: nowrap; }
+.tz-tabela__tabela tbody th { font-weight: 600; min-width: 240px; }
+.tz-tabela__tabela th:nth-child(1), .tz-tabela__tabela td:nth-child(1) { min-width: 130px; }
+.tz-tabela__tabela th:nth-child(3), .tz-tabela__tabela td:nth-child(3) { min-width: 130px; }
+.tz-tabela__tabela th:nth-child(4), .tz-tabela__tabela td:nth-child(4) { min-width: 200px; }
+.tz-tabela__tabela th:nth-child(5), .tz-tabela__tabela td:nth-child(5), .tz-tabela__tabela th:nth-child(6), .tz-tabela__tabela td:nth-child(6) { min-width: 150px; }
+.tz-tabela__tabela th:nth-child(7), .tz-tabela__tabela td:nth-child(7) { min-width: 200px; }
+.tz-tabela__tabela tbody tr[data-wybrany] { background: var(--sc-accent-soft); }
+.tz-tabela__sortuj { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: var(--tz-tap); padding: 0 10px; border: 0; background: transparent; color: var(--sc-text); font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .05em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.tz-tabela__strzalka { color: var(--sc-text-2); font-size: 11px; }
+.tz-tabela__tytul-przycisk { padding: 6px 0; border: 0; background: transparent; color: var(--sc-text); font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.tz-tabela__tytul-przycisk[aria-pressed="true"] { color: var(--sc-accent); }
+.tz-tabela__link { display: block; margin-top: 4px; color: var(--sc-accent); font-size: 13px; }
+
+.tz-ramka--powiat { padding: 16px 16px 40px; }
+.tz-mp { display: grid; gap: 18px; max-width: 860px; margin: 0 auto; font-size: 18px; line-height: 1.55; }
+.tz-mp-tytul { font: 600 28px/1.2 var(--sc-font-display); letter-spacing: -.01em; }
+.tz-mp-lead { color: var(--sc-text-2); font-size: 18px; }
+.tz-mp-okres { display: grid; gap: 6px; }
+.tz-mp-segmenty { display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: var(--sc-surface-3); max-width: 420px; }
+.tz-mp-segmenty button { min-height: 52px; border: 0; border-radius: 9px; background: transparent; color: var(--sc-text-2); font: 600 18px/1 var(--sc-font-sans); cursor: pointer; }
+.tz-mp-segmenty button[aria-pressed="true"] { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1.5px var(--sc-accent); }
+.tz-mp-wybor { display: grid; gap: 6px; }
+.tz-mp-kontrolka { position: relative; display: grid; }
+.tz-mp-pole { min-height: 56px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--sc-surface-3); color: var(--sc-text); font: 400 20px/1 var(--sc-font-sans); box-shadow: inset 0 0 0 1.5px var(--sc-line-strong); }
+.tz-mp-pole:disabled { opacity: .55; cursor: not-allowed; }
+.tz-mp-pomoc { color: var(--sc-text-2); font-size: 15px; line-height: 1.45; }
+.tz-mp-podpowiedzi { position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 4px); max-height: 320px; overflow: auto; padding: 6px; border-radius: 12px; background: var(--sc-surface); box-shadow: 0 12px 30px rgba(0, 0, 0, .45), inset 0 0 0 1px var(--sc-line-strong); }
+.tz-mp-podpowiedzi[hidden] { display: none; }
+.tz-mp-podpowiedzi li { padding: 12px 14px; min-height: 48px; border-radius: 9px; font-size: 18px; line-height: 1.35; cursor: pointer; }
+.tz-mp-podpowiedzi li[data-aktywna], .tz-mp-podpowiedzi li:hover { background: var(--sc-accent-soft); box-shadow: inset 0 0 0 1.5px var(--sc-accent); }
+.tz-mp-wybrane { display: flex; flex-wrap: wrap; gap: 8px; }
+.tz-mp-wybrane li span { min-width: 0; }
+.tz-mp-wybrane li { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 14px; border-radius: 999px; background: var(--sc-surface-3); font-size: 17px; box-shadow: inset 0 0 0 1px var(--sc-line-strong); }
+.tz-mp-wybrane button { flex: none; white-space: nowrap; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--sc-surface); color: var(--sc-text); font: 600 15px/1 var(--sc-font-sans); cursor: pointer; }
+.tz-mp-udostepnij { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.tz-mp-udostepnij span { color: var(--sc-text-2); font-size: 15px; }
+.tz-mp-pusto { padding: 16px; border-radius: var(--tz-r); background: var(--sc-surface); color: var(--sc-text-2); }
+.tz-mp-sekcja { display: grid; gap: 12px; padding: 16px; border-radius: 14px; background: var(--sc-surface); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-mp-sekcja__tytul { font: 600 24px/1.25 var(--sc-font-display); letter-spacing: -.01em; }
+.tz-mp-liczba { color: var(--sc-text-2); font-size: 16px; }
+.tz-mp-stan { padding: 12px 14px; border-radius: 10px; background: var(--sc-surface-2); color: var(--sc-text); }
+.tz-mp-stan--brak, .tz-mp-stan--uwaga { box-shadow: inset 4px 0 0 var(--tz-ostrz); background: var(--tz-ostrz-tlo); }
+.tz-mp-wpisy { display: grid; gap: 12px; }
+.tz-mp-wpis { display: grid; gap: 8px; padding: 14px; border-radius: 12px; background: var(--sc-surface-2); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-mp-wpis__meta { display: inline-flex; align-items: center; gap: 8px; font: 650 13px/1.3 var(--sc-font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-mp-wpis__tytul { font: 600 21px/1.3 var(--sc-font-display); }
+.tz-mp-wpis__znaczki { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.tz-znaczek--zakres { background: var(--sc-accent-soft); color: var(--sc-accent); }
+.tz-mp-wpis__status { font-size: 15px; color: var(--sc-text-2); }
+.tz-mp-wpis__tresc { font-size: 17px; color: var(--sc-text); }
+.tz-mp-wpis__dane { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--sc-surface); }
+.tz-mp-wpis__dane dt { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-mp-wpis__dane dd { font-size: 17px; }
+.tz-mp-wpis__dane small { display: block; margin-top: 2px; font-size: 14px; color: var(--sc-text-2); }
+.tz-mp-wpis .tz-przycisk { min-height: 48px; font-size: 16px; }
+
 /* ---------- Komputer: panel z lewej, karta z prawej ---------- */
 @media (min-width: 900px) {
   .tz-glowna { grid-template-columns: var(--tz-panel-w) minmax(0, 1fr); }
+  .tz[data-widok="powiat"] .tz-glowna { grid-template-columns: minmax(0, 1fr); }
   .tz-panel { overflow: auto; border-right: 1px solid var(--sc-line); min-height: 0; }
   .tz .tz-panel__zamknij, .tz .tz-fab { display: none; }
   .tz-karta { position: absolute; z-index: 5; top: 12px; right: 12px; bottom: 36px; width: var(--tz-karta-w); border-radius: 14px; box-shadow: 0 10px 34px rgba(0, 0, 0, .42), inset 0 0 0 1px var(--sc-line-strong); }
@@ -176,19 +263,31 @@ html[data-theme="light"] .tz-ikona { color: color-mix(in srgb, var(--tz-kolor) 7
   .tz-karta { z-index: 31; max-height: 62dvh; }
   .tz[data-karta] .tz-fab, .tz[data-panel] .tz-fab { display: none; }
   .tz[data-karta] .tz-nakladka--dol, .tz[data-panel] .tz-nakladka--dol { display: none; }
-  .tz-stan { max-height: 38dvh; }
   /* atrybucja nie wchodzi pod przycisk „Warstwy” */
   .tz .maplibregl-ctrl-bottom-right { max-width: calc(100% - 136px); }
 }
+/* nazwa serwisu i „Mój” tylko na szerszym ekranie; dla czytników ekranu zostają w nazwie przycisku i odnośnika */
+@media (max-width: 559.98px) {
+  .tz .tz-marka__tekst, .tz .tz-widok__dodatek { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+}
 @media (max-width: 420px) {
   .tz-gora { gap: 8px; padding: 0 8px; }
-  .tz-widok button { min-width: 56px; padding: 0 10px; }
+  .tz-widok button { padding: 0 10px; }
   .tz-karta__tytul { font-size: 18px; }
+  .tz-stan { padding: 4px 8px 0; }
+}
+@media (max-width: 380px) {
+  .tz-gora { gap: 6px; }
+  .tz-widok button { min-width: 46px; padding: 0 7px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tz-panel, .tz-przelacznik__tor, .tz-przelacznik__tor span { transition: none !important; }
+  .tz *, .tz *::before, .tz *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
 @media (prefers-contrast: more) {
   .tz { --tz-ostrz: #ffd08a; }
   .tz-warstwa__opis, .tz-warstwa__stan, .tz-pozycja__meta { color: var(--sc-text-2); }
+}
+@media (forced-colors: active) {
+  .tz-widok button[aria-pressed="true"], .tz-segmenty button[data-on], .tz-mp-segmenty button[aria-pressed="true"] { outline: 2px solid Highlight; }
+  .tz-przelacznik__tor { border: 1px solid ButtonText; }
 }
