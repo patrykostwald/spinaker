@@ -120,7 +120,7 @@ export function probneWpisy(teraz: number = Date.now()): Wpis[] {
       tytul: 'Przykład: Alert RCB, zagrożenie z powietrza w części województwa lubelskiego',
       tresc: `Przykład na wzór alertu z 10.11: Alert RCB wysłany do odbiorców na terenie części województwa lubelskiego - powiaty: ${POWIATY_ALERTU_RCB_1011.join(', ')}.`,
       link: 'https://www.gov.pl/web/rcb', teryt: ['06'], dokladnosc: 'wojewodztwo', pewnosc_lokalizacji: 0.5, zasieg: 'przyblizony',
-      miejsce: ['lubelskiego', ...POWIATY_ALERTU_RCB_1011].join('\n'), dokladna_godzina_publikacji: false,
+      miejsce: ['lubelskiego', ...POWIATY_ALERTU_RCB_1011.map(nazwa => `lubelskie: ${nazwa}`)].join('\n'), dokladna_godzina_publikacji: false,
       // podpis z rejestru źródeł (0004_rejestr_zrodel.py); bez „o godz.”, bo źródło podało tylko datę
       atrybucja: 'Źródło: RCB, gov.pl, opublikowano na gov.pl',
     }),

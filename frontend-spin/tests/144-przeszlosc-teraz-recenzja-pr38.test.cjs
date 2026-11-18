@@ -235,3 +235,129 @@ test('P2-13: gotowość mapy należy do instancji, kamera czeka na jej load', ()
   assert.match(kod, /\}, \[p\.wybrany, maPolozenie, gotowa\]\);/, 'po load efekt kamery stosuje bieżący wybór');
   assert.ok(!/gotowa=\{mapa\.gotowa\}/.test(read(`${dir}/TerazPage.tsx`)));
 });
+
+// ====================== R38b: ponowna recenzja PR #38 (zlecenie Z6P3) ======================
+
+const powiatyMod = () => load(`${dir}/powiaty`);
+const zakresWpisu = (wpis, kod) => powiatyMod().zakresDlaPowiatu(wpis, kod);
+const KOD = { swidnickiLubelski: '0617', swidnickiDolnoslaski: '0219', walbrzyski: '0221', chelmski: '0603', chelm: '0662', lublin: '0663', wlodawski: '0619' };
+
+test('R38b P1-1: jednostka liczy się tylko w województwie, pod które źródło ją podpisuje (próba recenzenta: świdnicki)', () => {
+  // „woj. lubelskie: powiat świdnicki; woj. dolnośląskie: powiat wałbrzyski” w formie z parsera RCB
+  const alert = { teryt: ['02', '06'], zasieg: 'przyblizony', miejsce: 'lubelskiego\ndolnośląskiego\nlubelskie: świdnicki\ndolnośląskie: wałbrzyski' };
+  assert.equal(zakresWpisu(alert, KOD.swidnickiLubelski), 'wymieniony');
+  assert.equal(zakresWpisu(alert, KOD.walbrzyski), 'wymieniony');
+  assert.notEqual(zakresWpisu(alert, KOD.swidnickiDolnoslaski), 'wymieniony', 'dolnośląski świdnicki nie jest na liście źródła');
+  assert.equal(zakresWpisu(alert, KOD.swidnickiDolnoslaski), 'pozaLista');
+  // starszy zapis bez województw przy dwóch województwach: niejednoznaczne, nigdy „wymieniony” (oba powiaty o tej nazwie)
+  const starszy = { teryt: ['02', '06'], zasieg: 'przyblizony', miejsce: 'świdnicki\nwałbrzyski' };
+  assert.equal(zakresWpisu(starszy, KOD.swidnickiLubelski), 'mozliwy');
+  assert.equal(zakresWpisu(starszy, KOD.swidnickiDolnoslaski), 'mozliwy');
+  assert.equal(zakresWpisu(starszy, KOD.walbrzyski), 'mozliwy');
+  // jedno województwo: lista bez podpisów jest jednoznaczna
+  assert.equal(zakresWpisu({ ...starszy, teryt: ['06'] }, KOD.swidnickiLubelski), 'wymieniony');
+  // typ jednostki: gmina o nazwie miasta nie wymienia powiatu
+  assert.equal(zakresWpisu({ teryt: ['06'], zasieg: 'przyblizony', miejsce: 'lubelskie: gmina Chełm' }, KOD.chelm), 'mozliwy');
+  assert.equal(zakresWpisu({ teryt: ['06'], zasieg: 'przyblizony', miejsce: 'lubelskie: miasto Chełm' }, KOD.chelm), 'wymieniony');
+});
+
+test('R38b P1-1: „w powiatach chełmskim i włodawskim” bez dwukropka to lista wybranych powiatów, nie całe województwo', () => {
+  const alert = { teryt: ['06'], zasieg: 'przyblizony', miejsce: 'lubelskiego\nlubelskie: chełmskim\nlubelskie: włodawskim' };
+  assert.equal(zakresWpisu(alert, KOD.chelmski), 'wymieniony');
+  assert.equal(zakresWpisu(alert, KOD.wlodawski), 'wymieniony');
+  assert.equal(zakresWpisu(alert, KOD.lublin), 'pozaLista');
+  assert.equal(zakresWpisu(alert, KOD.chelm), 'mozliwy', 'miasto Chełm nie jest powiatem chełmskim');
+  assert.notEqual(zakresWpisu(alert, KOD.lublin), 'wojewodztwo');
+});
+
+test('R38b P1-1: czterocyfrowy kod przy zasięgu przybliżonym nie jest potwierdzeniem bez zgodnej nazwy i województwa', () => {
+  const wpis = (miejsce, zasieg = 'przyblizony') => ({ teryt: [KOD.chelm], zasieg, miejsce });
+  assert.equal(zakresWpisu(wpis('', 'obszar'), KOD.chelm), 'powiat', 'zasięg ze źródła: kod wystarcza');
+  assert.equal(zakresWpisu(wpis(''), KOD.chelm), 'mozliwy', 'przybliżony bez listy');
+  assert.equal(zakresWpisu(wpis('lubelskie: Chełm'), KOD.chelm), 'wymieniony', 'nazwa i województwo zgodne');
+  assert.equal(zakresWpisu(wpis('dolnośląskie: Chełm'), KOD.chelm), 'mozliwy', 'nazwa pod innym województwem');
+  assert.equal(zakresWpisu(wpis('lubelskie: włodawski'), KOD.chelm), 'mozliwy', 'inna nazwa');
+  assert.equal(zakresWpisu(wpis('lubelskie: gmina Chełm'), KOD.chelm), 'mozliwy', 'gmina to nie powiat');
+});
+
+test('R38b P1-1: opis miejsca przy kilku województwach podaje województwo przy jednostce', () => {
+  const t = load(`${dir}/teryt`);
+  const opis = t.opisMiejsca({ teryt: ['02', '06'], dokladnosc: 'wojewodztwo', szerokosc: null, dlugosc: null, bbox: null, zasieg: 'przyblizony',
+    miejsce: 'lubelskie: świdnicki\ndolnośląskie: wałbrzyski\ndolnośląskie: miasto Świdnica' });
+  assert.match(opis, /źródło wymienia: świdnicki \(lubelskie\), wałbrzyski \(dolnośląskie\), miasto Świdnica \(dolnośląskie\)/);
+  assert.deepEqual(t.rozbierzMiejsce('lubelskiego\nlubelskie: gmina Żarów\nChełm'), [
+    { woj: '06', typ: 'gmina', nazwa: 'Żarów' }, { woj: null, typ: 'powiat', nazwa: 'Chełm' },
+  ]);
+});
+
+test('R38b P1-2: „Mój powiat” przy awarii listy warstw i pustym wyniku pokazuje „dane niedostępne”, nie „brak”', () => {
+  const warstwy503 = { isSuccess: false, isPending: false, isError: true, isPlaceholderData: false, data: undefined, dataUpdatedAt: 0 };
+  const pusteWpisy = udane({ wpisy: [], uciete: false, pominiete: 0 });
+  ustawDane();
+  zapytania.warstwy = warstwy503;
+  zapytania['wpisy-powiatow'] = pusteWpisy;
+  const awaria = tekst(strona({ widok: 'powiat' }, ['1813']));
+  assert.match(awaria, /Lista warstw niedostępna/);
+  assert.match(awaria, /Dane niedostępne: nie mamy aktualnej listy warstw/);
+  assert.ok(!/Brak w naszych danych/.test(awaria), awaria);
+  // to samo przy nieudanym odświeżeniu (dane warstw z cache są, potwierdzenia nie ma)
+  ustawDane();
+  zapytania.warstwy = { ...warstwy503, data: d().probneWarstwy(), dataUpdatedAt: 1 };
+  zapytania['wpisy-powiatow'] = pusteWpisy;
+  const nieaktualne = tekst(strona({ widok: 'powiat' }, ['1813']));
+  assert.match(nieaktualne, /Dane niedostępne: nie mamy aktualnej listy warstw/);
+  assert.ok(!/Brak w naszych danych/.test(nieaktualne));
+  // kontrola: potwierdzone warstwy i pusty, kompletny wynik to zwykły „brak”
+  ustawDane();
+  zapytania['wpisy-powiatow'] = pusteWpisy;
+  const kompletne = tekst(strona({ widok: 'powiat' }, ['1813']));
+  assert.match(kompletne, /Brak w naszych danych dla powiatu przemyskiego/);
+  assert.ok(!/Dane niedostępne: nie mamy aktualnej listy warstw/.test(kompletne));
+});
+
+test('R38b P2-4: ostrzeżenie, gdy znikają same powiązania albo odświeżenie warstw zawiodło, a wpis główny nie został ukryty', () => {
+  const mod = m();
+  const warstwy = d().probneWarstwy();
+  const zdarzenia = d().probneZdarzenia();
+  assert.ok(zdarzenia.some(z => z.wpisy.some(w => w.warstwa === 'pozary')), 'próbka ma powiązanie z warstwą pożarów');
+  const bezPozarow = mod.potwierdzoneWarstwy(warstwy.filter(w => w.warstwa !== 'pozary'), true);
+  const wynik = mod.tylkoPotwierdzone([], zdarzenia, bezPozarow, mod.kodyWylaczonych(warstwy));
+  assert.equal(wynik.ukryte, 0, 'żaden wpis główny nie został ukryty');
+  assert.ok(wynik.ukrytePowiazane > 0, 'ale powiązania tak');
+  // render strony: warstwa pożarów pominięta przez walidator, lista wpisów pusta
+  ustawDane({ warstwy: udane(warstwy.filter(w => w.warstwa !== 'pozary')), wpisy: udane({ wpisy: [], uciete: false, pominiete: 0 }) });
+  const powiazania = tekst(strona());
+  assert.match(powiazania, /Warstwy niepotwierdzone\./, powiazania);
+  assert.match(powiazania, new RegExp(`warstw bez potwierdzenia \\(${wynik.ukrytePowiazane}\\)`));
+  // odświeżenie warstw zawiodło (dane z cache), wpisów głównych brak: ostrzeżenie o nieaktualnej liście
+  ustawDane({ warstwy: { isSuccess: false, isPending: false, isError: true, data: warstwy, dataUpdatedAt: 1 }, wpisy: udane({ wpisy: [], uciete: false, pominiete: 0 }) });
+  zapytania.zdarzenia = udane({ wyniki: [], uciete: false, pominiete: 0 });
+  const zawiodlo = tekst(strona());
+  assert.match(zawiodlo, /Lista warstw nieaktualna\./, zawiodlo);
+  assert.ok(!/Brak komunikatów w wybranym czasie/.test(zawiodlo));
+  // z powiązaniami w cache te same warunki dają ostrzeżenie o ukrytych komunikatach (też nie po cichu)
+  ustawDane({ warstwy: { isSuccess: false, isPending: false, isError: true, data: warstwy, dataUpdatedAt: 1 }, wpisy: udane({ wpisy: [], uciete: false, pominiete: 0 }) });
+  assert.match(tekst(strona()), /Warstwy niepotwierdzone\./);
+  // kontrola: wszystko potwierdzone, bez ostrzeżeń o warstwach
+  ustawDane({ wpisy: udane({ wpisy: [], uciete: false, pominiete: 0 }) });
+  const dobrze = tekst(strona());
+  assert.ok(!/Warstwy niepotwierdzone|Lista warstw nieaktualna|Lista warstw niedostępna/.test(dobrze));
+});
+
+test('R38b P2-5: awaryjna ścieżka kopiowania pokazuje pełny adres zestawu z okresem, nie odsyła do paska adresu', () => {
+  const p = powiatyMod();
+  const adres = p.adresZestawu('https://przeszlosc.today', '/przeszlosc/teraz', ['1813', '0662'], '24h', false);
+  assert.match(adres, /widok=powiat/);
+  assert.match(adres, /powiaty=1813%2C0662/);
+  assert.match(adres, /okres=24h/, 'okres domyślny też jest jawny: odbiorca z zapisaną 1 godziną dostaje 24 godziny');
+  const { PoleAdresuRecznego } = load(`${dir}/MojPowiat`);
+  const html = renderToStaticMarkup(React.createElement(PoleAdresuRecznego, { adres }));
+  assert.ok(html.includes('readOnly=""') || html.includes('readonly=""'), 'pole tylko do odczytu, do zaznaczenia');
+  assert.ok(html.includes(adres.replace(/&/g, '&amp;')), 'pełny adres w polu');
+  const zrodlo = read(`${dir}/MojPowiat.tsx`);
+  assert.ok(!/z paska przeglądarki/.test(zrodlo), 'brak odesłania do paska adresu (nie zawiera okresu domyślnego)');
+  assert.match(zrodlo, /setAdresReczny\(ok \? null : adres\)/, 'adres z chwili kliknięcia trafia do pola po nieudanym kopiowaniu');
+  // adres z linku wygrywa z zapisaną preferencją odbiorcy: parametr okres jest w adresie, więc pamięć go nie nadpisuje
+  assert.match(read(`${dir}/TerazPage.tsx`), /if \(!q\.has\('okres'\) && p\.okres\) setOkres\(p\.okres\)/);
+  assert.equal(load(`${dir}/parametry`).parsuj(new URLSearchParams(adres.split('?')[1])).okres, '24h');
+});

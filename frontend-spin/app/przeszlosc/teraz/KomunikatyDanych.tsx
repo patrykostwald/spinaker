@@ -23,7 +23,7 @@ export interface StanPobrania {
   pominiete?: number;
   /** Ile rekordów faktycznie pobraliśmy (przy obcięciu mówimy, ile mamy). */
   pobrane?: number;
-  /** Warstwy: liczba wpisów ukrytych, bo ich warstwa nie jest potwierdzona w bieżącej odpowiedzi warstwy/. */
+  /** Warstwy: liczba wpisów (także powiązanych ze zdarzeniami) ukrytych, bo ich warstwa nie jest potwierdzona w bieżącej odpowiedzi warstwy/. */
   niepotwierdzone?: number;
 }
 
@@ -53,6 +53,8 @@ export function KomunikatyDanych({ wpisy, warstwy, zdarzenia, brakWybranego }: K
 
     {warstwy.niedostepne && <p className="tz-komunikat tz-komunikat--blad" role="status">
       <strong>Lista warstw niedostępna.</strong> Nie możemy sprawdzić nazw źródeł ani tego, czy któraś warstwa została wyłączona.</p>}
+    {warstwy.nieaktualne && !warstwy.niepotwierdzone && <p className="tz-komunikat tz-komunikat--blad" role="status">
+      <strong>Lista warstw nieaktualna.</strong> Nie udało się jej odświeżyć, więc nie pokazujemy komunikatów z warstw bez aktualnego potwierdzenia: {NIEPEWNOSC}.</p>}
     {!!warstwy.niepotwierdzone && <p className="tz-komunikat tz-komunikat--blad" role="status">
       <strong>Warstwy niepotwierdzone.</strong> Nie mamy aktualnej listy warstw, więc ukrywamy komunikaty z warstw bez potwierdzenia ({warstwy.niepotwierdzone}): {NIEPEWNOSC}.</p>}
     {brakWybranego && <p className="tz-komunikat tz-komunikat--blad" role="status">Tego wpisu nie ma w bieżących danych (inny okres, region, warstwa wyłączona albo wpis wycofany). Zmień okres w panelu warstw.</p>}

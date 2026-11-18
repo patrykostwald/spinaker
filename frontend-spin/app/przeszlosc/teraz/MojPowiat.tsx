@@ -17,7 +17,8 @@ import { WyborOkresu } from './WyborOkresu';
  * całe województwo tylko przy potwierdzonym zasięgu), z tymi samymi godzinami i statusem co karta. Alert z kodem województwa,
  * ale z listą wybranych powiatów, dopasowujemy po nazwach z listy (powiaty.ts, `dopasujDoListy`); komunikat z województwa, który
  * powiatu nie wymienia, stoi osobno („Inne komunikaty z województwa”). Brak komunikatów to „Brak w naszych danych...”, tylko przy
- * kompletnych danych; przy obcięciu albo pominięciu rekordów mówimy, ile pobraliśmy (recenzja PR #38, P1-2 i P1-3).
+ * kompletnych danych i potwierdzonej liście warstw; bez niej „Dane niedostępne”; przy obcięciu albo pominięciu rekordów mówimy,
+ * ile pobraliśmy (recenzja PR #38, P1-2 i P1-3; R38b, P1-2).
  * Laws of UX: Hick (jeden główny wybór: dodaj powiat), Fitts (cele min. 48 px), Proximity i Common Region (sekcja na powiat),
  * Tesler (odmiana i literówki bierze na siebie wyszukiwarka), Jakob (pole z podpowiedziami jak w każdym wyszukiwaniu).
  */
@@ -39,8 +40,10 @@ export interface MojPowiatProps {
   pominiete: number;
   /** Ile wpisów z województw wybranych powiatów faktycznie pobraliśmy. */
   pobrane: number;
-  /** Wpisy ukryte, bo ich warstwa nie jest potwierdzona w bieżącej odpowiedzi warstwy/. */
+  /** Wpisy (także powiązane ze zdarzeniami) ukryte, bo ich warstwa nie jest potwierdzona w bieżącej odpowiedzi warstwy/. */
   niepotwierdzone: number;
+  /** Bieżąca, poprawna odpowiedź warstwy/ (R38b, P1-2). Bez niej wszystkie wpisy są ukryte, więc pusty wynik nie znaczy „brak komunikatów”. */
+  warstwyPotwierdzone: boolean;
   /** Ostatnie odświeżenie się nie udało (pokazujemy wcześniejsze dane). */
   nieaktualne: boolean;
   /** Któraś warstwa ma lukę w danych (zdanie o tym jest też w linii stanu u góry). */
@@ -120,6 +123,12 @@ function WyborPowiatu({ onDodaj, wybrane, pelny, onKomunikat }: PozycjaWyboru) {
   </div>;
 }
 
+/** Pełny adres zestawu do ręcznego skopiowania, gdy schowek jest niedostępny: z okresem, bo pasek adresu go nie zawiera (R38b, P2-5). */
+export function PoleAdresuRecznego({ adres }: { adres: string }) {
+  return <input type="text" readOnly className="tz-mp-pole tz-mp-adres" value={adres} aria-label="Adres zestawu powiatów do skopiowania ręcznie"
+    onFocus={e => e.currentTarget.select()} onClick={e => e.currentTarget.select()} />;
+}
+
 function Wpis({ widok, warstwy, zakres, kodPowiatu }: { widok: WidokWpisu; warstwy: Warstwa[] | undefined; zakres: Zakres; kodPowiatu: string }) {
   const { wpis, status, zdarzenie } = widok;
   const meta = metaWarstwy(wpis.warstwa);
@@ -153,6 +162,8 @@ function Wpis({ widok, warstwy, zakres, kodPowiatu }: { widok: WidokWpisu; warst
 export function MojPowiat(p: MojPowiatProps) {
   const [komunikat, setKomunikat] = useState('');
   const [skopiowano, setSkopiowano] = useState<'tak' | 'nie' | null>(null);
+  // adres z chwili nieudanego kopiowania: pokazujemy go w całości, bo pasek adresu nie ma okresu domyślnego (R38b, P2-5)
+  const [adresReczny, setAdresReczny] = useState<string | null>(null);
   const pelny = p.powiaty.length >= MAKS_POWIATOW;
   const poczatek = odGodziny(p.poczatekOkresu);
   // kompletne dane: wszystkie strony, nic odrzuconego, wszystkie warstwy potwierdzone, ostatnie odświeżenie udane
@@ -177,9 +188,11 @@ export function MojPowiat(p: MojPowiatProps) {
     window.setTimeout(() => document.getElementById('tz-mp-pierwsze-pole')?.querySelector<HTMLInputElement>('input')?.focus(), 0);
   };
   const kopiuj = async () => {
-    const ok = await kopiujDoSchowka(p.adres());
+    const adres = p.adres();
+    const ok = await kopiujDoSchowka(adres);
     setSkopiowano(ok ? 'tak' : 'nie');
-    window.setTimeout(() => setSkopiowano(null), 4000);
+    setAdresReczny(ok ? null : adres);
+    if (ok) window.setTimeout(() => setSkopiowano(null), 4000);
   };
 
   const sekcje = useMemo(() => p.powiaty.map(kod => {
@@ -220,7 +233,8 @@ export function MojPowiat(p: MojPowiatProps) {
       </ul>
       <div className="tz-mp-udostepnij">
         <button type="button" className="tz-przycisk" onClick={kopiuj}>Kopiuj link do tego zestawu</button>
-        <span role="status" aria-live="polite">{skopiowano === 'tak' ? 'Skopiowano link.' : skopiowano === 'nie' ? 'Nie udało się skopiować, skopiuj adres z paska przeglądarki.' : ''}</span>
+        <span role="status" aria-live="polite">{skopiowano === 'tak' ? 'Skopiowano link.' : skopiowano === 'nie' ? 'Nie udało się skopiować automatycznie. Skopiuj poniższy adres (zawiera też okres):' : ''}</span>
+        {adresReczny !== null && <PoleAdresuRecznego adres={adresReczny} />}
       </div>
     </>}
 
@@ -234,7 +248,10 @@ export function MojPowiat(p: MojPowiatProps) {
         <h3 id={idNaglowka} className="tz-mp-sekcja__tytul">{nazwa}</h3>
         {p.ladowanie && <p className="tz-mp-stan" role="status">Wczytujemy komunikaty…</p>}
         {!p.ladowanie && p.blad && <p className="tz-mp-stan tz-mp-stan--uwaga" role="alert">Nie udało się pobrać komunikatów: {NIEPEWNOSC}.</p>}
-        {!p.ladowanie && !p.blad && <>
+        {!p.ladowanie && !p.blad && !p.warstwyPotwierdzone && <p className="tz-mp-stan tz-mp-stan--uwaga" role="alert">
+          Dane niedostępne: nie mamy aktualnej listy warstw, więc nie pokazujemy komunikatów {dla}. To nie znaczy, że ich nie było: {NIEPEWNOSC}.
+        </p>}
+        {!p.ladowanie && !p.blad && p.warstwyPotwierdzone && <>
           {/* ostrzeżenie o niepełnych danych nie znika przez jedno trafienie (P1-3) */}
           {niepelne && <p className="tz-mp-stan tz-mp-stan--uwaga" role="status">
             Dane niepełne: pobraliśmy {liczbaKomunikatow(p.pobrane)} z województwa; {powodyNiepelnych}. Komunikatów {dla} mogło być więcej: sprawdź Alert RCB i 112.

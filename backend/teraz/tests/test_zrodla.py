@@ -151,8 +151,10 @@ def test_rcb_miejsce_zawiera_tylko_nazwy_jednostek():
             <p>Alert RCB pozostaje w mocy.</p>
         </div></article>""".encode()
     alert, = rcb.parsuj_karte(OdpowiedzHTTP(200, {}, dane, "utf-8"), link_rcb("10"))
+    # jednostka dostaje województwo tylko z własnej linii (gminy z linii bez województwa zostają bez niego), typ gminy i miasta w nazwie
     assert set(alert["miejsce"].splitlines()) == {
-        "lubelskie", "włodawski", "Chełm", "Pruszków", "Nowa Wieś", "Warszawa",
+        "lubelskie", "lubelskie: włodawski", "lubelskie: Chełm",
+        "gmina Pruszków", "gmina Nowa Wieś", "miasto Warszawa",
     }
     assert "ul. Leśna 12" in alert["tresc"] and alert["teryt"] == ["06"]
 

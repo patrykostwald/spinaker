@@ -60,14 +60,54 @@ export const etykietaDokladnosci = (d: Dokladnosc): string => DOKLADNOSC[d] ?? D
 
 /** Linia z nazwą województwa w dowolnym przypadku („lubelskiego”), nie powiatu („lubelski”). */
 const KONCOWKI_WOJ = /(?:ie|iego|iem|ich)$/;
-const jestNazwaWojewodztwa = (linia: string): boolean => {
+/** Kod województwa (2 cyfry), jeśli cała linia jest jego nazwą („lubelskiego”, „woj. lubelskie”); inaczej null. */
+export const kodWojewodztwaZNazwy = (linia: string): string | null => {
   const l = linia.trim().toLowerCase().replace(/^woj(?:\.|ewództwo)?\s+/, '');
-  return KONCOWKI_WOJ.test(l) && WOJEWODZTWA.some(w => l.replace(KONCOWKI_WOJ, '') === w.nazwa.replace(/ie$/, ''));
+  if (!KONCOWKI_WOJ.test(l)) return null;
+  return WOJEWODZTWA.find(w => l.replace(KONCOWKI_WOJ, '') === w.nazwa.replace(/ie$/, ''))?.kod ?? null;
 };
 
-/** Jednostki wymienione przez źródło w polu `miejsce` (po jednej w linii), bez nazw województw. */
-export const jednostkiZMiejsca = (miejsce: string | undefined): string[] =>
-  [...new Set((miejsce ?? '').split(/\r?\n/).map(l => l.trim()).filter(l => l && !jestNazwaWojewodztwa(l)))];
+export type TypJednostki = 'powiat' | 'gmina' | 'miasto';
+/** Jednostka wymieniona przez źródło: `woj` to kod województwa, pod które źródło ją podpisuje (null: źródło tego nie wiąże). */
+export interface JednostkaZMiejsca { woj: string | null; typ: TypJednostki; nazwa: string }
+
+/**
+ * Rozbiera pole `miejsce` (po jednej jednostce w linii; format parsera RCB, recenzja PR #38 R38b P1-1):
+ * „lubelskie: świdnicki” (powiat w województwie), „dolnośląskie: gmina Żarów”, „miasto Warszawa”, „Chełm” (bez województwa:
+ * starsze wpisy albo źródło niczego nie przypisało). Same nazwy województw („lubelskiego”) nie są jednostkami.
+ */
+export function rozbierzMiejsce(miejsce: string | undefined): JednostkaZMiejsca[] {
+  const wynik: JednostkaZMiejsca[] = [];
+  for (const surowa of (miejsce ?? '').split(/\r?\n/)) {
+    let linia = surowa.trim();
+    if (!linia || kodWojewodztwaZNazwy(linia)) continue;
+    let woj: string | null = null;
+    const dwukropek = linia.indexOf(':');
+    if (dwukropek > 0) {
+      woj = kodWojewodztwaZNazwy(linia.slice(0, dwukropek));
+      if (woj) linia = linia.slice(dwukropek + 1).trim();
+    }
+    let typ: TypJednostki = 'powiat';
+    const przedrostek = /^(gmin(?:a|y|ie|ę)|miast(?:o|a|em))\s+(?=\S)/i.exec(linia);
+    if (przedrostek) {
+      typ = przedrostek[1].toLowerCase().startsWith('gmin') ? 'gmina' : 'miasto';
+      linia = linia.slice(przedrostek[0].length);
+    }
+    if (linia) wynik.push({ woj, typ, nazwa: linia });
+  }
+  return wynik;
+}
+
+/** Jednostki wymienione przez źródło w polu `miejsce`, bez nazw województw; przy kilku województwach z dopiskiem („świdnicki (lubelskie)”). */
+export const jednostkiZMiejsca = (miejsce: string | undefined): string[] => {
+  const jednostki = rozbierzMiejsce(miejsce);
+  const wiele = new Set(jednostki.map(j => j.woj).filter(Boolean)).size > 1;
+  const nazwaWoj = (kod: string | null) => WOJEWODZTWA.find(w => w.kod === kod)?.nazwa;
+  return [...new Set(jednostki.map(j => {
+    const tekst = j.typ === 'powiat' ? j.nazwa : `${j.typ === 'gmina' ? 'gmina' : 'miasto'} ${j.nazwa}`;
+    return wiele && j.woj ? `${tekst} (${nazwaWoj(j.woj)})` : tekst;
+  }))];
+};
 
 /**
  * Opis miejsca wpisu do karty: „dotyczy: powiat przemyski (podkarpackie), powiat lubaczowski (podkarpackie)”. Przy zasięgu

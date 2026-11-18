@@ -261,6 +261,14 @@ class PublicznyOdczyt(GenericAPIView):
     cache_dostepny = True
     publiczny = True
 
+    def initial(self, request, *args, **kwargs):
+        """Bramka flagi przed negocjacją treści: zły `Accept` nie może zdradzić istnienia API (406 zamiast 404), a odpowiedź
+        sprzed startu zawsze dostaje nagłówek prywatny (recenzja PR #38, R38b P2-3)."""
+        self.publiczny = bool(settings.TERAZ_PUBLICZNE)
+        if not self.publiczny and not dostep_przed_startem(request):
+            raise NotFound()
+        super().initial(request, *args, **kwargs)
+
     def perform_authentication(self, request):
         try:
             super().perform_authentication(request)
