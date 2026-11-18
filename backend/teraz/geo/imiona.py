@@ -5,7 +5,9 @@ miejsce. Lista jest ręczna i krótka (kilkaset imion); formy odmienione powstaj
 narzędnik, miejscownik, wołacz), bez słownika morfologicznego. Imiona są w mianowniku, z polskimi znakami.
 
 Imion, których odmieniona forma jest zwykłym czasownikiem lub rzeczownikiem, nie ma na liście: „Wit” (czasownik „wita”,
-„Wita Kraków: turyści wrócili” to nie imię i nazwisko).
+„Wita Kraków: turyści wrócili” to nie imię i nazwisko). Takie imiona są w osobnej, krótkiej liście (`_DWUZNACZNE`,
+`jest_imieniem_dwuznacznym`): geokoder bierze je pod uwagę tylko ostrożnie (w środku zdania i gdy w tekście jest też
+wyraźne miejsce z przyimkiem: „Zaginięcie Wita Kalisza zgłoszono w Warszawie”).
 """
 
 from __future__ import annotations
@@ -71,6 +73,14 @@ def _formy_zenskie(imie: str) -> set[str]:
     return {n} | {rdzen + k for k in ("y", "i", "e", "ie", "a", "o")}
 
 
+_DWUZNACZNE = ("Wit",)
+
+
+@lru_cache(maxsize=1)
+def _dwuznaczne() -> frozenset[str]:
+    return frozenset(forma for imie in _DWUZNACZNE for forma in _formy_meskie(imie))
+
+
 @lru_cache(maxsize=1)
 def _wszystkie() -> frozenset[str]:
     formy: set[str] = set()
@@ -84,3 +94,8 @@ def _wszystkie() -> frozenset[str]:
 def jest_imieniem(zlozony: str) -> bool:
     """Czy wyraz (złożony: małe litery bez polskich znaków) jest popularnym imieniem, w dowolnym przypadku."""
     return zlozony in _wszystkie()
+
+
+def jest_imieniem_dwuznacznym(zlozony: str) -> bool:
+    """Czy wyraz (złożony) jest formą imienia, które bywa też zwykłym wyrazem (`_DWUZNACZNE`): „Wit”, „Wita”, „Witem”."""
+    return zlozony in _dwuznaczne()

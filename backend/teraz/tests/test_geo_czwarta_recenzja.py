@@ -82,18 +82,19 @@ def test_trasa_i_kierunek_nie_wycinaja_miejsc(tekst, oczekiwane):
 def test_pewnosc_nie_rosnie_po_wycieciu_miejsca():
     # zdanie bez wycięcia: pewność czystego wyniku się nie zmienia
     assert geokoduj("Wypadek w Warszawie.").pewnosc == 0.9
-    # z wycięciem pochodzenia lub jednostki: nie powyżej 0,8, nigdy wyżej niż przed wycięciem
+    # z wycięciem pochodzenia lub jednostki: nie powyżej 0,75 (piąta recenzja, zabezpieczenie strukturalne; wcześniej 0,8),
+    # nigdy wyżej niż przed wycięciem
     w = geokoduj("Kierowca z Lublina rozbił samochód w Warszawie.")
-    assert kody(w) == {WARSZAWA} and w.pewnosc == 0.8
+    assert kody(w) == {WARSZAWA} and w.pewnosc == 0.75
     w = geokoduj("Policjanci z KMP w Płocku zatrzymali w gminie Słupno.")
-    assert kody(w) == {"1419122"} and w.pewnosc == 0.8
+    assert kody(w) == {"1419122"} and w.pewnosc == 0.75
     # wycięte miejsce o niskiej pewności obniża wynik („Tarnów” bez kontekstu to homonim: 0,65)
     w = geokoduj("Kierowca z Tarnowa rozbił samochód w Warszawie.")
     assert kody(w) == {WARSZAWA} and w.pewnosc <= 0.65
 
 
 # stary kontra nowy: zdania, które mają dawać dokładnie ten sam wynik co przed czwartą recenzją
-# (wartości zapisane z wersji 873cf468; wyjątek świadomy: pewność po wycięciu jednostki nie powyżej 0,8)
+# (wartości zapisane z wersji 873cf468; wyjątek świadomy: pewność po wycięciu jednostki nie powyżej 0,75, decyzja z Z3P7)
 BEZ_ZMIAN = [
     ("Kierowca z Lublina zginął w Chełmie.", (CHELM,), 0.65),
     ("Strażacy z Lublina.", (LUBLIN,), 0.9),
@@ -114,7 +115,7 @@ BEZ_ZMIAN = [
     ("Burmistrz rozmawiał z Tuchowem w Krakowie.", ("1216103", KRAKOW), 0.75),
     ("Mieszkanka Lublina zginęła w pożarze w Chełmie.", (CHELM,), 0.65),
     ("Pochodzący z Lublina mężczyzna został zatrzymany w Chełmie.", (CHELM,), 0.65),
-    ("Policjanci z KMP w Płocku zatrzymali w gminie Słupno.", ("1419122",), 0.8),  # było 0,9: wycięto jednostkę
+    ("Policjanci z KMP w Płocku zatrzymali w gminie Słupno.", ("1419122",), 0.75),  # było 0,9: wycięto jednostkę
     ("Pożar w Chełmie, woj. lubelskie.", (CHELM,), 0.65),
     ("Pożar w Zakopanem (powiat tatrzański).", (ZAKOPANE,), 0.85),
     ("Pożar w Dąbrowie (pow. dąbrowski).", ("1204023",), 0.75),
