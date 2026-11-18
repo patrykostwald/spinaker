@@ -79,24 +79,67 @@ export interface JednostkaZMiejsca { woj: string | null; typ: TypJednostki; nazw
 export function rozbierzMiejsce(miejsce: string | undefined): JednostkaZMiejsca[] {
   const wynik: JednostkaZMiejsca[] = [];
   for (const surowa of (miejsce ?? '').split(/\r?\n/)) {
-    let linia = surowa.trim();
-    if (!linia || kodWojewodztwaZNazwy(linia)) continue;
-    let woj: string | null = null;
-    const dwukropek = linia.indexOf(':');
-    if (dwukropek > 0) {
-      woj = kodWojewodztwaZNazwy(linia.slice(0, dwukropek));
-      if (woj) linia = linia.slice(dwukropek + 1).trim();
-    }
-    let typ: TypJednostki = 'powiat';
-    const przedrostek = /^(gmin(?:a|y|ie|ę)|miast(?:o|a|em))\s+(?=\S)/i.exec(linia);
-    if (przedrostek) {
-      typ = przedrostek[1].toLowerCase().startsWith('gmin') ? 'gmina' : 'miasto';
-      linia = linia.slice(przedrostek[0].length);
-    }
-    if (linia) wynik.push({ woj, typ, nazwa: linia });
+    const linia = surowa.trim();
+    if (!linia || jestZnacznikiem(linia) || kodWojewodztwaZNazwy(linia)) continue;
+    const jednostka = rozbierzLinie(linia);
+    if (jednostka) wynik.push(jednostka);
   }
   return wynik;
 }
+
+/** Jedna linia jednostki („lubelskie: świdnicki”, „gmina Żarów”) albo null, gdy po zdjęciu przedrostków nic nie zostaje. */
+function rozbierzLinie(surowa: string): JednostkaZMiejsca | null {
+  let linia = surowa.trim();
+  let woj: string | null = null;
+  const dwukropek = linia.indexOf(':');
+  if (dwukropek > 0) {
+    woj = kodWojewodztwaZNazwy(linia.slice(0, dwukropek));
+    if (woj) linia = linia.slice(dwukropek + 1).trim();
+  }
+  let typ: TypJednostki = 'powiat';
+  const przedrostek = /^(gmin(?:a|y|ie|ę)|miast(?:o|a|em))\s+(?=\S)/i.exec(linia);
+  if (przedrostek) {
+    typ = przedrostek[1].toLowerCase().startsWith('gmin') ? 'gmina' : 'miasto';
+    linia = linia.slice(przedrostek[0].length);
+  }
+  return linia ? { woj, typ, nazwa: linia } : null;
+}
+
+/**
+ * Znaczniki parsera RCB w `miejsce` (R38d, P1-1): „wyłączone: lubelskie: miasto Lublin” to jednostka, którą komunikat wyłącza
+ * (nie jest objęta alertem), „wyłączone: nieokreślone” to wyłączenie, którego parser nie umiał wskazać, a „nieustalone: …” to lista
+ * jednostek z elementem, który nie był nazwą (lista niepełna). Zasada konserwatywna: przy znaczniku front nie mówi „wymieniony”
+ * (wyłączenia) ani „nie ma na liście” (wyłączenia i lista niepełna), najwyżej „możliwe”.
+ */
+const PREFIKS_WYLACZONE = 'wyłączone:';
+const PREFIKS_NIEUSTALONE = 'nieustalone:';
+const jestZnacznikiem = (linia: string): boolean => linia.startsWith(PREFIKS_WYLACZONE) || linia.startsWith(PREFIKS_NIEUSTALONE);
+
+export interface ZnacznikiMiejsca { wylaczone: JednostkaZMiejsca[]; ogolne: boolean; nieustalone: boolean }
+
+export function znacznikiMiejsca(miejsce: string | undefined): ZnacznikiMiejsca {
+  const wynik: ZnacznikiMiejsca = { wylaczone: [], ogolne: false, nieustalone: false };
+  for (const surowa of (miejsce ?? '').split(/\r?\n/)) {
+    const linia = surowa.trim();
+    if (linia.startsWith(PREFIKS_NIEUSTALONE)) wynik.nieustalone = true;
+    else if (linia.startsWith(PREFIKS_WYLACZONE)) {
+      const reszta = linia.slice(PREFIKS_WYLACZONE.length).trim();
+      const jednostka = !reszta || reszta === 'nieokreślone' || kodWojewodztwaZNazwy(reszta) ? null : rozbierzLinie(reszta);
+      if (jednostka) wynik.wylaczone.push(jednostka);
+      else wynik.ogolne = true;
+    }
+  }
+  return wynik;
+}
+
+/** Komunikat zastrzega coś dla województwa `woj`: wyłączenie jednostki z tego województwa (albo bez województwa) albo wyłączenie ogólne. */
+export const maWylaczenia = (z: ZnacznikiMiejsca, woj: string): boolean => z.ogolne || z.wylaczone.some(j => !j.woj || j.woj === woj);
+
+/** Wyłączenia albo lista niepełna dla województwa `woj`: wtedy nie wolno uznać go za całe ani powiedzieć „nie ma na liście”. */
+export const maZastrzezenia = (miejsce: string | undefined, woj: string): boolean => {
+  const z = znacznikiMiejsca(miejsce);
+  return z.nieustalone || maWylaczenia(z, woj);
+};
 
 /**
  * Województwo `kod` obejmuje komunikat w całości, choć zasięg wpisu jest przybliżony (R38c, P1): jego nazwa stoi w `miejsce`
@@ -108,6 +151,7 @@ export function calyRegionZMiejsca(miejsce: string | undefined, kod: string): bo
   const woj = kod.slice(0, 2);
   const linie = (miejsce ?? '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (!linie.some(l => kodWojewodztwaZNazwy(l) === woj)) return false;
+  if (maZastrzezenia(miejsce, woj)) return false; // wyłączenia albo niepełna lista: to nie jest dowód całości (R38d)
   const jednostki = rozbierzMiejsce(miejsce);
   return jednostki.length > 0 && jednostki.every(j => j.woj !== null && j.woj !== woj);
 }
@@ -125,6 +169,21 @@ export const jednostkiZMiejsca = (miejsce: string | undefined): string[] => {
   }))];
 };
 
+/** Dopisek do opisu miejsca: jednostki wyłączone w komunikacie, wyłączenie bez wskazanej jednostki, niepełna lista (R38d, P1-1). */
+function opisZnacznikow(miejsce: string | undefined): string {
+  const { wylaczone, ogolne, nieustalone } = znacznikiMiejsca(miejsce);
+  const nazwaWoj = (kod: string | null) => WOJEWODZTWA.find(w => w.kod === kod)?.nazwa;
+  const nazwy = [...new Set(wylaczone.map(j => {
+    const tekst = j.typ === 'powiat' ? j.nazwa : `${j.typ === 'gmina' ? 'gmina' : 'miasto'} ${j.nazwa}`;
+    return j.woj ? `${tekst} (${nazwaWoj(j.woj)})` : tekst;
+  }))];
+  return [
+    nazwy.length ? `; wyłączone w komunikacie: ${nazwy.join(', ')}` : '',
+    ogolne ? '; komunikat zawiera wyłączenia: sprawdź jego treść' : '',
+    nieustalone ? '; lista jednostek może być niepełna' : '',
+  ].join('');
+}
+
 /**
  * Opis miejsca wpisu do karty: „dotyczy: powiat przemyski (podkarpackie), powiat lubaczowski (podkarpackie)”. Przy zasięgu
  * przybliżonym kod nie jest zasięgiem: „w obrębie: województwo lubelskie; źródło wymienia: włodawski, Chełm…” (P1-2).
@@ -136,7 +195,8 @@ export function opisMiejsca(wpis: Pick<Wpis, 'teryt' | 'dokladnosc' | 'szerokosc
     // województwo podane bez jednostek obok jednostek z innych województw to zasięg całego województwa (R38c, P1)
     const cale = [...new Set(wpis.teryt.map(k => k.slice(0, 2)))].filter(k => calyRegionZMiejsca(wpis.miejsce, k)).map(nazwaObszaru);
     const calosc = cale.length ? `całe: ${cale.join(', ')}; ` : '';
-    return `w obrębie: ${obszary.join(', ')}; ${calosc}${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
+    const bazowy = `w obrębie: ${obszary.join(', ')}; ${calosc}${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
+    return bazowy + opisZnacznikow(wpis.miejsce);
   }
   if (obszary.length) return `dotyczy: ${obszary.join(', ')}`;
   if (wpis.szerokosc !== null && wpis.dlugosc !== null) return 'dotyczy: punkt na mapie (położenie przybliżone)';
