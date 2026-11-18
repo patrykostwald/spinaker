@@ -47,6 +47,26 @@ NAZWA_JEDNOSTKI = re.compile(r"[^\W\d_]+(?:[ -][^\W\d_]+){0,4}")
 ODSTEP_KARTY = timedelta(minutes=10)
 CZESC_REGIONU = re.compile(r"\bczęś(?:ć|ci)\s+(?:woj\.|województw)", re.I)
 WZMIANKA_JEDNOSTKI = re.compile(r"\b(?:powiat|powiec|gmin|miast)[^\W\d_]*", re.I)
+ROZDZIELNIK = r"[\s,;:\-\u2013\u2014]"
+# Zdanie z zaleceniem, nie z odbiorcami („Omijaj miasto Chełm”).
+REKOMENDACJA = re.compile(
+    r"^\W*(?:nie|omijaj|unikaj|zachowaj|stosuj|pozostań|zostań|ogranicz|udaj|zabezpiecz|sprawdź|prosimy|zalecamy|należy|bądź)\b", re.I,
+)
+# Zdanie o odbiorcach: nagłówek („woj.”, „odbiorcy”, „dla…”), „w powiecie/gminie/mieście…” albo „powiaty: …”.
+KONTEKST_ODBIORCOW = re.compile(
+    r"\bwoj\.|\bwojewództw|\bodbiorc|\bdla\b|\b(?:w|we)\s+(?:powiat|powiec|gmin|miast)|\b(?:powiat|powiec|gmin|miast)[^\W\d_]*\s*:", re.I,
+)
+# „powiecie A w woj. X”: „w woj.” zaraz po nazwie jednostki, nie po spójniku ani znaku rozdzielającym listę.
+PO_JEDNOSTCE = re.compile(
+    r"(?<![,;:\-\u2013\u2014\s])(?<!\boraz)(?<!\bi)(?<!\ba)(?<!\btakże)\s+(?:w|we)\s+(?:woj\.|województwie)\s*$", re.I,
+)
+PO_NAZWIE_ROZDZIELNIK = re.compile(r"\s*[:\-\u2013\u2014]")  # „w woj. X: powiat…”: nazwa otwiera nową grupę, nie kończy listę
+# Między nazwą województwa a nagłówkiem listy mogą stać tylko znaki rozdzielające i słowa „na terenie”, „w tym”.
+PRZYLEGANIE = re.compile(
+    rf"{ROZDZIELNIK}*(?:\b(?:w|we|na|terenie|obszarze|tym|szczególności)\b\.?{ROZDZIELNIK}*)*", re.I,
+)
+NOWE_WOJEWODZTWO = re.compile(r"\b(?:w|we)\s+(?:woj\.|województwie)\s*$", re.I)
+SPOJNIK_PRZED =re.compile(r"\b(?:oraz|i|a|także)\s*(?:(?:w|we)\s*)?$", re.I)
 
 
 def zasieg_czesciowy(miejsce, tresc=""):
@@ -102,40 +122,89 @@ def _elementy(segment):
             yield nazwa
 
 
+def _odbiorcy(zdanie):
+    """Zdanie określa odbiorców alertu (nagłówek, „dla…”, „w powiecie…”, „woj. …”), a nie jest zaleceniem („Omijaj miasto
+    Chełm”): tylko z takich zdań czytamy zasięg (recenzja PR #38, R38c P1)."""
+    return not REKOMENDACJA.match(zdanie) and bool(TEKST_MIEJSCA.match(zdanie) or KONTEKST_ODBIORCOW.search(zdanie))
+
+
+def _wojewodztwa_zdania(zdanie, poczatek):
+    """Wzmianki o województwach w zdaniu jako (pozycja, kod, nominatyw, koniec); nazwy w adresie („ul. Lubelska”) pomijamy."""
+    adres = ADRES.search(zdanie[:poczatek])
+    koniec_nazw = adres.start() if adres else poczatek
+    nazwy = [(m.start(), m.group(1), m.group(0), m.end()) for m in NAZWA_WOJ.finditer(zdanie)]
+    nazwy += [(m.start(1), m.group(1), m.group(1) + "ie", m.end()) for m in WOJ_MIEJSCOWNIK.finditer(zdanie)]
+    return [(poz, WOJEWODZTWA[rdzen.lower()], tekst, koniec) for poz, rdzen, tekst, koniec in nazwy
+            if poz < koniec_nazw or poz >= poczatek]
+
+
+def _jednostki_zdania(zdanie, wojewodztwa, jednostki):
+    """Dopisuje do `wojewodztwa` i `jednostki` zasięg z jednego zdania o odbiorcach. Jednostka dostaje województwo tylko
+    z tego samego wyrażenia: z nazwy tuż po niej („powiecie włodawskim w woj. lubelskim”) albo z nazwy tuż przed jej
+    nagłówkiem („woj. lubelskie: powiaty …”, „woj. lubelskim w powiatach …”; to samo województwo obejmuje kolejne nagłówki
+    w jednym wyliczeniu, do spójnika „oraz”/„i” albo nowej nazwy województwa). Nazwa województwa, która nie przylega do
+    żadnej jednostki, oznacza całe województwo. Gdy przypisania nie da się ustalić, jednostka zostaje bez województwa."""
+    naglowki = list(NAGLOWEK_JEDNOSTEK.finditer(zdanie))
+    poczatek = naglowki[0].start() if naglowki else len(zdanie)
+    zdarzenia = sorted([(poz, "woj", (kod, tekst, koniec)) for poz, kod, tekst, koniec in _wojewodztwa_zdania(zdanie, poczatek)]
+                       + [(m.start(), "lista", m) for m in naglowki], key=lambda zdarzenie: zdarzenie[0])
+    listy = []  # [typ, nazwy, kod województwa albo None]
+    grupa, koniec_grupy, swieza, lancuch, poprzednia = [], 0, False, None, None
+    wspomniane, z_jednostkami = [], set()
+    for i, (poz, rodzaj, m) in enumerate(zdarzenia):
+        if rodzaj == "woj":
+            kod, tekst, koniec = m
+            wojewodztwa.append(tekst)
+            wspomniane.append((kod, tekst))
+            if i and zdarzenia[i - 1][1] == "lista" and listy:
+                opis = zdanie[zdarzenia[i - 1][2].end():poz]
+                if PO_JEDNOSTCE.search(opis) and not PO_NAZWIE_ROZDZIELNIK.match(zdanie, koniec):
+                    listy[-1][2] = kod  # „powiecie A w woj. X”: województwo należy do jednostki przed nim
+                    lancuch = None
+                    continue
+            # nazwa po wyliczeniu zaczyna nową grupę („…: powiat A; w woj. Y: powiat B”), tak samo „w woj. Y” po samej
+            # nazwie („woj. X oraz w woj. Y w powiecie A”: powiat należy do Y); „X i Y - powiaty: …” to jedna grupa
+            if not swieza or NOWE_WOJEWODZTWO.search(zdanie[koniec_grupy:poz]):
+                grupa = []
+            grupa.append(kod)
+            swieza, koniec_grupy, lancuch = True, koniec, None
+            continue
+        przypisane = None
+        if swieza:
+            # kilka województw przed listą („lubelskiego i podkarpackiego - powiaty: …”): nie wiadomo, które
+            if len(set(grupa)) == 1 and PRZYLEGANIE.fullmatch(zdanie[koniec_grupy:m.start()]):
+                przypisane = grupa[0]
+            swieza, lancuch = False, przypisane
+        elif lancuch and poprzednia is not None and not SPOJNIK_PRZED.search(zdanie[poprzednia.end():m.start()]):
+            przypisane = lancuch
+        else:
+            lancuch = None
+        poprzednia = m
+        koniec = zdarzenia[i + 1][0] if i + 1 < len(zdarzenia) else len(zdanie)
+        listy.append([TYPY_JEDNOSTEK[m.group("typ").lower()], list(_elementy(zdanie[m.end():koniec])), przypisane])
+    for typ, nazwy, kod in listy:
+        z_jednostkami.add(kod)
+        for nazwa in nazwy:
+            jednostki.append(f"{WOJ_NOMINATYW[kod]}: {typ}{nazwa}" if kod else f"{typ}{nazwa}")
+    if CZESC_REGIONU.search(zdanie) and any(z_jednostkami - {None}):
+        # „części woj. X” obok jednostek z innego województwa: X nie może wyglądać na całe województwo
+        for kod, tekst in wspomniane:
+            if kod not in z_jednostkami:
+                jednostki.append(f"{WOJ_NOMINATYW[kod]}: część województwa")
+
+
 def _jednostki(linie):
     """Linie pola `miejsce`: nazwy województw („lubelskiego”) i jednostki węższe, każda z województwem, pod które
-    podpada w treści: „lubelskie: świdnicki”, „lubelskie: gmina Świdnik”, „dolnośląskie: miasto Świdnica”. Powiat jest
-    bez przedrostka typu. Jednostka bez rozpoznanego województwa zostaje sama („Chełm”): odbiorca czyta ją jako
-    niejednoznaczną, gdy komunikat obejmuje więcej niż jedno województwo (recenzja PR #38, R38b P1-1)."""
+    podpada w tym samym wyrażeniu: „lubelskie: świdnicki”, „lubelskie: gmina Świdnik”, „dolnośląskie: miasto Świdnica”.
+    Powiat jest bez przedrostka typu. Jednostka bez rozpoznanego województwa zostaje sama („Chełm”): odbiorca czyta ją jako
+    niejednoznaczną, gdy komunikat obejmuje więcej niż jedno województwo (recenzja PR #38, R38b P1-1). Czytamy tylko
+    zdania o odbiorcach, każde osobno: zalecenie („Omijaj miasto Chełm”) nie dopisuje jednostek do zasięgu (R38c P1)."""
     wojewodztwa, jednostki = [], []
     for linia in linie:
-        przypisane = None  # województwo wiążemy tylko w obrębie linii: kolejna linia może dotyczyć czegoś innego
-        naglowki = list(NAGLOWEK_JEDNOSTEK.finditer(linia))
-        if not naglowki and not TEKST_MIEJSCA.match(linia) and not NAGLOWEK_WOJEWODZTW.search(linia):
-            continue
-        poczatek = naglowki[0].start() if naglowki else len(linia)
-        adres = ADRES.search(linia[:poczatek])
-        koniec_nazw = adres.start() if adres else poczatek  # w adresie („ul. Lubelska”) nazwa nie jest województwem
-        nazwy = [(m.start(), m.group(1), m.group(0)) for m in NAZWA_WOJ.finditer(linia)]
-        nazwy += [(m.start(1), m.group(1), m.group(1) + "ie") for m in WOJ_MIEJSCOWNIK.finditer(linia)]
-        zdarzenia = sorted([(pozycja, "woj", (rodzaj, tekst)) for pozycja, rodzaj, tekst in nazwy
-                            if pozycja < koniec_nazw or pozycja >= poczatek]
-                           + [(m.start(), "lista", m) for m in naglowki], key=lambda zdarzenie: zdarzenie[0])
-        grupa, po_liscie = [], False
-        for i, (_, rodzaj, m) in enumerate(zdarzenia):
-            if rodzaj == "woj":
-                if po_liscie:  # nazwa po liście zaczyna nową grupę („…: powiat A; w woj. dolnośląskim: powiat B”)
-                    grupa, po_liscie = [], False
-                grupa.append(WOJEWODZTWA[m[0].lower()])
-                wojewodztwa.append(m[1])
-                continue
-            if grupa:  # kilka województw przed listą („lubelskiego i podkarpackiego - powiaty: …”): nie wiadomo, które
-                przypisane = grupa[0] if len(set(grupa)) == 1 else None
-            po_liscie = True
-            koniec = zdarzenia[i + 1][0] if i + 1 < len(zdarzenia) else len(linia)
-            typ = TYPY_JEDNOSTEK[m.group("typ").lower()]
-            for nazwa in _elementy(linia[m.end():koniec]):
-                jednostki.append(f"{WOJ_NOMINATYW[przypisane]}: {typ}{nazwa}" if przypisane else f"{typ}{nazwa}")
+        for zdanie in KONIEC_ZDANIA.split(linia):
+            zdanie = zdanie.strip()
+            if zdanie and _odbiorcy(zdanie):
+                _jednostki_zdania(zdanie, wojewodztwa, jednostki)
     return list(dict.fromkeys([*wojewodztwa, *jednostki]))
 
 
@@ -221,7 +290,7 @@ def parsuj_karte(odpowiedz, adres):
 
 class AdapterRCB(Adapter):
     limit_zadan = 2
-    wersja_parsera = "3"
+    wersja_parsera = "4"
 
     def parsuj(self, odpowiedz):
         return parsuj_karte(odpowiedz, getattr(self, "adres_aktualnej_karty", self.zrodlo.adres))
@@ -276,6 +345,11 @@ class ArchiwumRCB(AdapterRCB):
 
     def przeprowadz(self, cykl):
         stan = cykl.stan.setdefault("archiwum", {"strona": 1, "karty": []})
+        if stan.get("wersja_parsera") != self.wersja_parsera:
+            # nowa wersja parsera: karty zapisane starszą (także zakończone i w połowie przejścia) czytamy od nowa, od strony 1
+            # (R38c, P2); wpisy o tym samym identyfikatorze są aktualizowane, nie dublowane
+            stan.clear()
+            stan.update({"strona": 1, "karty": [], "wersja_parsera": self.wersja_parsera})
         if stan.get("zakonczone"):
             return
         strona = stan["strona"]

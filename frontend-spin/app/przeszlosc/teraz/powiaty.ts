@@ -1,6 +1,6 @@
 import type { Okres, Wpis } from './typy';
 import { POWIATY, dopelniaczWojewodztwa, powiatOKodzie, type PowiatTeryt } from './slownik';
-import { rozbierzMiejsce, wojewodztwoOKodzie } from './teryt';
+import { calyRegionZMiejsca, rozbierzMiejsce, wojewodztwoOKodzie } from './teryt';
 
 /**
  * „Mój powiat”: logika bez Reacta. Wyszukiwanie powiatu i miasta na prawach powiatu (także w odmienionej formie:
@@ -163,7 +163,10 @@ export function zakresDlaPowiatu(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 
     // przy zasięgu przybliżonym kod 4-cyfrowy nie jest potwierdzeniem: potrzebna zgodność nazwy i województwa z danymi wpisu
     if (k === kodPowiatu) z = wpis.zasieg === 'przyblizony' ? potwierdzonyPowiat(wpis, kodPowiatu, liczbaWojewodztw) : 'powiat';
     else if (k.length > 4 && k.startsWith(kodPowiatu)) z = 'gmina';
-    else if (k.length === 2 && kodPowiatu.startsWith(k)) z = wpis.zasieg === 'obszar' ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
+    else if (k.length === 2 && kodPowiatu.startsWith(k)) {
+      // zasięg przybliżony, ale to województwo źródło podało bez jednostek, a jednostki są w innych: całe (R38c, P1)
+      z = wpis.zasieg === 'obszar' || calyRegionZMiejsca(wpis.miejsce, k) ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
+    }
     if (z && (wynik === null || WAGA[z] > WAGA[wynik])) wynik = z;
   }
   return wynik;

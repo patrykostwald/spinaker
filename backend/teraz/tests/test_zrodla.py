@@ -211,7 +211,7 @@ def test_rcb_blad_karty_przesuwa_kolejke(monkeypatch):
 def test_rcb_usunieta_aktualizacja_nie_wraca_po_przesunieciu(monkeypatch):
     zrodlo = Zrodlo.objects.get(slug="rcb")
     adres = link_rcb("10")
-    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 2, "karty": [adres]}}
+    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 2, "karty": [adres], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo.save(update_fields=["stan_adaptera"])
     pierwsza = b"<h3>Aktualizacja 10:55</h3><p>Komunikat testowy pierwszej aktualizacji.</p>"
     druga = b"<h3>Aktualizacja 10:55</h3><p>Komunikat testowy drugiej aktualizacji.</p>"
@@ -301,7 +301,7 @@ def test_rcb_postep_archiwum(monkeypatch):
 def test_archiwum_rcb_pomija_niedostepna_karte(monkeypatch):
     zrodlo = Zrodlo.objects.get(slug="rcb")
     pierwsza, druga = link_rcb("03"), link_rcb("09")
-    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga]}}
+    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo.save(update_fields=["stan_adaptera"])
     pobierz = Mock(side_effect=[(odpowiedz(None, 404), SCOPE), (odpowiedz(karta_rcb("09")), SCOPE)])
     monkeypatch.setattr(Adapter, "pobierz", pobierz)
