@@ -49,33 +49,10 @@ www.przeszlosc.today {
 	redir https://przeszlosc.today{uri} permanent
 }
 
-# Panel administratora Django dla modułu „Teraz” (moderacja źródeł i wpisów), 18.11.2026.
-# Dwie warstwy ochrony: hasło Caddy (basic_auth) i logowanie Django. Wymaga w .env.production:
-# PANEL_UZYTKOWNIK oraz PANEL_HASLO_HASH (wynik `caddy hash-password` w apostrofach: PANEL_HASLO_HASH='$2a$...'),
-# a w DJANGO_ALLOWED_HOSTS i CSRF_TRUSTED_ORIGINS adresu panel.przeszlosc.today. Zmienne ustawić PRZED git pull:
-# każdy restart Caddy bez nich kładzie wszystkie strony z tego pliku.
-panel.przeszlosc.today {
-	encode zstd gzip
-	header {
-		Strict-Transport-Security "max-age=31536000"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "same-origin"
-		X-Robots-Tag "noindex, nofollow"
-		-Server
-		-X-Powered-By
-	}
-	basic_auth {
-		{$PANEL_UZYTKOWNIK} {$PANEL_HASLO_HASH}
-	}
-	@django path /admin /admin/* /static/*
-	handle @django {
-		reverse_proxy backend:8000
-	}
-	handle {
-		redir /admin/ 302
-	}
-}
+# Panel administratora (panel.przeszlosc.today) jest w osobnym pliku deploy/caddy-panel/panel.caddy.
+# Włącza się go dopiero po ustawieniu PANEL_* w .env.production, kopiując plik do deploy/caddy-panel-aktywny/
+# (montowane jako /etc/caddy/panel). Gdy katalog jest pusty, import niczego nie dodaje i pozostałe strony działają.
+import /etc/caddy/panel/*.caddy
 
 # spina3.pl (14.10.2026): ukryty podgląd frontu z danymi przykładowymi (bez backendu, bez indeksowania).
 # Katalog /srv/spina3/dist jest montowany tylko do odczytu (docker-compose.production.yml). Start serwisu = osobny blok api.spina3.pl, patrz docs/SPINA3_WDROZENIE.md.

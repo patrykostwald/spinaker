@@ -10,6 +10,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-panel-aktywny:/etc/caddy/panel:ro
       - /srv/spina3/dist:/srv/spina3/dist:ro
       - /srv/scrollstory/dist:/srv/scrollstory/dist:ro
       - caddy_data:/data
