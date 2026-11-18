@@ -375,3 +375,15 @@ Artefakty dla użytkownika: outputs/archive-research-20260909/Raport-archiwum.md
 Normalny scheduler poprzednio57954 zatrzymany, teraz sesja8375 USE_SQLITE=true ARCHIVE_WORKERS=32 (networkapproved). Backend/frontend odświeżone Start-Portal.ps1 po sprawdzeniu starych PID13504/21472, teraz nowePIDsprawdzać netstat. Katalogaktualny, credentials.local/admin-login.txt nigdy nie ujawniać. OpłaconeAI klucze/model nadal nieskonfigurowane; brak nowych płatnychcalli.
 
 Następne prace:1)WPmetadataAPIbatch dla potwierdzonych6;2)ELIroczniki w trwałych małych partiach, potem poprzedniekadencje;3)zliczenie pełnych drzewmap i klasyfikacja Polityka/Infor, nie udawać ichkompletności;4)kontrola cachewyszukiwarki (SQLite LocMem=5min i brakpollinguReact, wykryte lecz nienaprawione), później pulpit z licznikiem nowychwyników;5)retencja/iniezależnośćbackupów. Nie restartować schedulera bez potrzeby. Użytkownik oczekuje ciągłości prac, nie przykładowych fikcyjnych nitek.
+
+## Teraz, PR #38: poprawki po trzeciej recenzji Codexa (R38c, zlecenie Z6P4)
+
+Zrobione i sprawdzone (testy lokalne, bez wdrożenia):
+- Parser RCB (`backend/teraz/zrodla/rcb.py`): jednostka dostaje województwo tylko z tego samego wyrażenia („w powiecie A w woj. X”, „woj. X: powiaty…”); zdania zaleceń („Omijaj miasto Chełm”) nie wchodzą do zasięgu; całe województwo obok powiatu z innego zostaje osobnym zasięgiem.
+- Front (`teryt.ts`, `powiaty.ts`): `calyRegionZMiejsca` rozpoznaje całe województwo w zasięgu przybliżonym (Lublin zostaje przy „całe lubelskie + powiat dolnośląski”); karta pisze „całe: …”.
+- Wersja parsera RCB 4. Archiwum RCB (`ArchiwumRCB`, polecenie `teraz_rcb_archiwum`) zapisane starszą wersją jest czytane od nowa od strony 1; wpisy są aktualizowane, nie dublowane.
+- Licznik ukrytych komunikatów liczy unikalne identyfikatory z wykazu i ze zdarzeń.
+
+Zrobione, niesprawdzone: zgodność odbiorców spoza repozytorium z nowym zapisem `miejsce` (bez zmian formatu od R38b); zachowanie na danych produkcyjnych (po wdrożeniu pierwsze przejście archiwum odświeży stare karty, ok. jedna odpowiedź na kartę co 5 s).
+Zaplanowane: wdrożenie po zgodzie właściciela (kopia bazy przed wdrożeniem, polecenie z sekcji 7 zasad projektu).
+

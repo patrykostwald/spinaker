@@ -24,7 +24,9 @@ class Command(BaseCommand):
             zrodlo = Zrodlo.objects.select_related("zrodlo_dostepu").filter(slug="rcb").first()
             if zrodlo is None or zrodlo.tryb == Zrodlo.Tryb.WYLACZONY or zrodlo.blokada_dostepu:
                 raise CommandError("RCB jest wyłączone, wstrzymane lub brakuje źródła.")
-            if zrodlo.stan_adaptera.get("archiwum", {}).get("zakonczone"):
+            archiwum = zrodlo.stan_adaptera.get("archiwum", {})
+            # archiwum zakończone starszą wersją parsera nie jest „pobrane”: ArchiwumRCB zaczyna je od nowa (R38c, P2)
+            if archiwum.get("zakonczone") and archiwum.get("wersja_parsera") == ArchiwumRCB.wersja_parsera:
                 self.stdout.write("Archiwum RCB pobrane.")
                 return
             cache = caches["teraz"]

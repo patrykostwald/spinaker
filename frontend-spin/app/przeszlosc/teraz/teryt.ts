@@ -98,10 +98,26 @@ export function rozbierzMiejsce(miejsce: string | undefined): JednostkaZMiejsca[
   return wynik;
 }
 
+/**
+ * Województwo `kod` obejmuje komunikat w całości, choć zasięg wpisu jest przybliżony (R38c, P1): jego nazwa stoi w `miejsce`
+ * bez żadnej jednostki, a jednostki wymienione obok należą do innych województw („lubelskiego” + „dolnośląskie: świdnicki”).
+ * Jednostka bez województwa albo z tym województwem, brak jednostek (starsze wpisy, „część województwa”) i brak nazwy
+ * województwa to nie jest dowód całości: zasięg zostaje przybliżony.
+ */
+export function calyRegionZMiejsca(miejsce: string | undefined, kod: string): boolean {
+  const woj = kod.slice(0, 2);
+  const linie = (miejsce ?? '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!linie.some(l => kodWojewodztwaZNazwy(l) === woj)) return false;
+  const jednostki = rozbierzMiejsce(miejsce);
+  return jednostki.length > 0 && jednostki.every(j => j.woj !== null && j.woj !== woj);
+}
+
 /** Jednostki wymienione przez źródło w polu `miejsce`, bez nazw województw; przy kilku województwach z dopiskiem („świdnicki (lubelskie)”). */
 export const jednostkiZMiejsca = (miejsce: string | undefined): string[] => {
   const jednostki = rozbierzMiejsce(miejsce);
-  const wiele = new Set(jednostki.map(j => j.woj).filter(Boolean)).size > 1;
+  // województwa z podpisów jednostek i z samych nazw w miejsce: powiat obok całego innego województwa też dostaje dopisek (R38c)
+  const nazwane = (miejsce ?? '').split(/\r?\n/).map(l => kodWojewodztwaZNazwy(l.trim()));
+  const wiele = new Set([...jednostki.map(j => j.woj), ...nazwane].filter(Boolean)).size > 1;
   const nazwaWoj = (kod: string | null) => WOJEWODZTWA.find(w => w.kod === kod)?.nazwa;
   return [...new Set(jednostki.map(j => {
     const tekst = j.typ === 'powiat' ? j.nazwa : `${j.typ === 'gmina' ? 'gmina' : 'miasto'} ${j.nazwa}`;
@@ -117,7 +133,10 @@ export function opisMiejsca(wpis: Pick<Wpis, 'teryt' | 'dokladnosc' | 'szerokosc
   const obszary = nazwyObszarow(wpis.teryt);
   if (obszary.length && wpis.zasieg === 'przyblizony') {
     const lista = jednostkiZMiejsca(wpis.miejsce);
-    return `w obrębie: ${obszary.join(', ')}; ${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
+    // województwo podane bez jednostek obok jednostek z innych województw to zasięg całego województwa (R38c, P1)
+    const cale = [...new Set(wpis.teryt.map(k => k.slice(0, 2)))].filter(k => calyRegionZMiejsca(wpis.miejsce, k)).map(nazwaObszaru);
+    const calosc = cale.length ? `całe: ${cale.join(', ')}; ` : '';
+    return `w obrębie: ${obszary.join(', ')}; ${calosc}${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
   }
   if (obszary.length) return `dotyczy: ${obszary.join(', ')}`;
   if (wpis.szerokosc !== null && wpis.dlugosc !== null) return 'dotyczy: punkt na mapie (położenie przybliżone)';

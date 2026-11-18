@@ -235,8 +235,9 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const adresPowiatow = useCallback(() => adresZestawu(window.location.origin, window.location.pathname, powiaty, okres, probne), [powiaty, okres, probne]);
   const opisFiltrow = `${OKRESY.find(o => o.id === okres)?.etykieta ?? okres}, ${woj ? `województwo ${WOJEWODZTWA.find(w => w.kod === woj)?.nazwa ?? woj} (granice przybliżone)` : 'cała Polska'}, włączone warstwy: ${wlaczone.size}`;
 
-  // ukryte wpisy główne i same powiązania ze zdarzeń: oba przypadki dostają ostrzeżenie (R38b, P2-4)
-  const ukryteWarstwy = warstwyQ.isPending ? 0 : (wMapie ? mapaPotw.ukryte : powiatyPotw.ukryte) + zdarzeniaPotw.ukrytePowiazane;
+  // ukryte wpisy główne i same powiązania ze zdarzeń: oba przypadki dostają ostrzeżenie (R38b, P2-4); liczymy różne identyfikatory,
+  // bo ten sam wpis może stać i na liście, i w zdarzeniu (R38c, P2)
+  const ukryteWarstwy = warstwyQ.isPending ? 0 : new Set([...(wMapie ? mapaPotw : powiatyPotw).ukryteId, ...zdarzeniaPotw.ukryteId]).size;
   const stanWarstw = { niedostepne: warstwyQ.isError && !warstwyQ.data, nieaktualne: warstwyQ.isError && !!warstwyQ.data, niepotwierdzone: ukryteWarstwy };
   const stanZdarzen = {
     niedostepne: zdarzeniaQ.isError && !zdarzeniaQ.data, nieaktualne: zdarzeniaQ.isError && !!zdarzeniaQ.data,

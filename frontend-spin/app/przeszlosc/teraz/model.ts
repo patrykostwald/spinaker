@@ -52,17 +52,21 @@ export function potwierdzoneWarstwy(warstwy: Warstwa[] | undefined, aktualne: bo
  * których warstwa nie jest jawnie wyłączona (czyli brak potwierdzenia, a nie decyzja redakcji): o nich mówi ostrzeżenie.
  * `ukrytePowiazane` = liczba różnych wpisów powiązanych ze zdarzeniami, ukrytych z tego samego powodu: znikają wtedy
  * same powiązania (statusy, „inne komunikaty”), choć żaden wpis główny nie został ukryty, więc też wymagają ostrzeżenia (R38b, P2-4).
+ * `ukryteId` = identyfikatory ukrytych wpisów z obu list razem: ten sam wpis w wykazie i w zdarzeniu to jeden komunikat (R38c, P2),
+ * więc do ostrzeżenia liczymy `ukryteId.size`, a nie sumę `ukryte` i `ukrytePowiazane`.
  */
-export function tylkoPotwierdzone(wpisy: Wpis[], zdarzenia: Zdarzenie[], potwierdzone: ReadonlySet<string>, wylaczone: ReadonlySet<string>): { wpisy: Wpis[]; zdarzenia: Zdarzenie[]; ukryte: number; ukrytePowiazane: number } {
+export function tylkoPotwierdzone(wpisy: Wpis[], zdarzenia: Zdarzenie[], potwierdzone: ReadonlySet<string>, wylaczone: ReadonlySet<string>): { wpisy: Wpis[]; zdarzenia: Zdarzenie[]; ukryte: number; ukrytePowiazane: number; ukryteId: Set<number> } {
   const ok = (w: Wpis) => potwierdzone.has(w.warstwa);
   const brakPotwierdzenia = (w: Wpis) => !ok(w) && !wylaczone.has(w.warstwa);
+  const powiazane = new Set(zdarzenia.flatMap(z => z.wpisy.filter(brakPotwierdzenia).map(w => w.id)));
   return {
     wpisy: wpisy.filter(ok),
     zdarzenia: zdarzenia
       .map(z => (z.wpisy.every(ok) ? z : { ...z, wpisy: z.wpisy.filter(ok) }))
       .filter(z => z.wpisy.length > 0),
     ukryte: wpisy.filter(brakPotwierdzenia).length,
-    ukrytePowiazane: new Set(zdarzenia.flatMap(z => z.wpisy.filter(brakPotwierdzenia).map(w => w.id))).size,
+    ukrytePowiazane: powiazane.size,
+    ukryteId: new Set([...wpisy.filter(brakPotwierdzenia).map(w => w.id), ...powiazane]),
   };
 }
 

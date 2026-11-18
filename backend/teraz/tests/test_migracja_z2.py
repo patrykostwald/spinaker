@@ -74,7 +74,7 @@ def test_migracja_i_import_rcb_z_dotychczasowym_id(zrob_wpis, monkeypatch, usuni
     assert not stary.miejsce
     if not usuniety:
         assert stary.zewnetrzny_id == aktualizacja["zewnetrzny_id"] and stary.wersje == [{"miejsce": ""}]
-    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [adres]}}
+    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [adres], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo.save(update_fields=["stan_adaptera"])
     monkeypatch.setattr(rcb.ArchiwumRCB, "pobierz", lambda *args: (karta, SCOPE))
     adapter.zbierz()
