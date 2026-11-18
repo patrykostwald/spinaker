@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Warstwa, WidokWpisu } from './typy';
-import { dataIGodzina, host } from './czas';
+import { czasPobrania, czasPublikacji, dataIGodzina, host } from './czas';
 import { adresZrodla } from './link';
 import { etykietaDokladnosci, opisMiejsca } from './teryt';
 import { nazwaZrodla } from './model';
@@ -11,7 +11,9 @@ import { EtykietaStatusu, IkonaWarstwy } from './Ikony';
 /**
  * Karta wpisu (boczny panel na komputerze, dolny arkusz na telefonie): tytuł, źródło, dwie godziny (publikacja u źródła
  * i pobranie), status, odnośnik do oryginału, oznaczenie „przygotowane automatycznie”, miejsce z dokładnością, kopiowanie linku.
- * Godziny podajemy zawsze jako dwie osobne informacje: pobranie nie jest chwilą wydarzenia.
+ * Godziny podajemy zawsze jako dwie osobne informacje: pobranie nie jest chwilą wydarzenia. Gdy źródło podało tylko datę,
+ * pokazujemy samą datę (bez fikcyjnej północy); brak czasu pobrania to „brak danych”. Podpis źródła (`atrybucja` z API,
+ * np. IMGW o przetworzeniu danych) jest osobnym wierszem (recenzja PR #38, P1-5 i P1-6).
  */
 export interface KartaWpisuProps {
   widok: WidokWpisu;
@@ -54,9 +56,10 @@ export function KartaWpisu({ widok, warstwy, adres, onZamknij }: KartaWpisuProps
 
     <dl className="tz-karta__dane">
       <div><dt>Źródło</dt><dd>{zrodlo.nazwa}{zrodlo.instytucja && zrodlo.instytucja !== zrodlo.nazwa ? `, ${zrodlo.instytucja}` : ''}</dd></div>
-      <div><dt>Opublikowano u źródła</dt><dd>{dataIGodzina(wpis.opublikowano_at)}{meta.uwagaCzas && <small>{meta.uwagaCzas}</small>}</dd></div>
-      <div><dt>Pobrano przez nas</dt><dd>{dataIGodzina(wpis.pobrano_at)}</dd></div>
+      <div><dt>Opublikowano u źródła</dt><dd>{czasPublikacji(wpis)}{meta.uwagaCzas && <small>{meta.uwagaCzas}</small>}</dd></div>
+      <div><dt>Pobrano przez nas</dt><dd>{czasPobrania(wpis.pobrano_at)}</dd></div>
       <div><dt>Miejsce</dt><dd>{opisMiejsca(wpis)}<small>Dokładność: {etykietaDokladnosci(wpis.dokladnosc)}</small></dd></div>
+      {wpis.atrybucja && <div><dt>Podpis źródła</dt><dd className="tz-karta__atrybucja">{wpis.atrybucja}</dd></div>}
     </dl>
 
     <p className="tz-karta__oryginal">
@@ -77,7 +80,7 @@ export function KartaWpisu({ widok, warstwy, adres, onZamknij }: KartaWpisuProps
       {zdarzenie.zweryfikowal && <p className="tz-karta__weryfikacja">Zweryfikował: {zdarzenie.zweryfikowal}{zdarzenie.zweryfikowano_at ? `, ${dataIGodzina(zdarzenie.zweryfikowano_at)}` : ''}</p>}
       {inne.length > 0 && <>
         <p className="tz-karta__podtytul">Inne komunikaty w tym zdarzeniu ({inne.length})</p>
-        <ul>{inne.slice(0, 6).map(w => <li key={w.id}><span>{dataIGodzina(w.opublikowano_at)}</span> {w.tytul}</li>)}</ul>
+        <ul>{inne.slice(0, 6).map(w => <li key={w.id}><span>{czasPublikacji(w)}</span> {w.tytul}</li>)}</ul>
       </>}
     </section>}
   </article>;

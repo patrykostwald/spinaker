@@ -106,10 +106,19 @@ test('warstwy: każdy kod z kontraktu ma wygląd; stałe zdania zgodne z zasadam
 test('dane próbne mają dokładnie pola kontraktu API i obejmują wymagane przypadki', () => {
   const d = load(`${dir}/dane-probne/index`);
   const teraz = Date.parse('2026-11-17T14:40:00+01:00');
-  const polaWpisu = ['bbox', 'dlugosc', 'dokladnosc', 'id', 'klasa', 'link', 'opublikowano_at', 'pewnosc_lokalizacji', 'pobrano_at', 'szerokosc', 'teryt', 'tresc', 'tytul', 'warstwa', 'zrodlo'];
+  // kontrakt czytany z serializerów Django (backend/teraz/api.py), a nie z ręcznej listy (recenzja PR #38: lista pomijała precyzję czasu i atrybucję)
+  const api = fs.readFileSync(path.join(root, '..', 'backend', 'teraz', 'api.py'), 'utf8');
+  const polaSerializera = klasa => {
+    const blok = api.slice(api.indexOf(`class ${klasa}(`));
+    const krotka = /fields = \(([\s\S]*?)\)/.exec(blok)[1];
+    return [...krotka.matchAll(/"([a-z_]+)"/g)].map(x => x[1]).sort();
+  };
+  const polaWpisu = polaSerializera('WpisSerializer');
+  for (const pole of ['atrybucja', 'dokladna_godzina_publikacji', 'miejsce', 'zasieg']) assert.ok(polaWpisu.includes(pole), `kontrakt API zawiera ${pole}`);
   const wpisy = d.probneWpisy(teraz);
   for (const x of wpisy) assert.deepEqual(Object.keys(x).sort(), polaWpisu, `pola wpisu ${x.id}`);
-  const polaZdarzenia = ['id', 'ostatni_wpis_at', 'pierwszy_wpis_at', 'przygotowane_automatycznie', 'status', 'tytul_roboczy', 'wpisy', 'zweryfikowal', 'zweryfikowano_at'];
+  // `odrzucone_wpisy` liczy klient (walidator), API go nie zwraca
+  const polaZdarzenia = [...polaSerializera('ZdarzenieSerializer'), 'odrzucone_wpisy'].sort();
   for (const z of d.probneZdarzenia(teraz)) assert.deepEqual(Object.keys(z).sort(), polaZdarzenia);
   const polaSwiezosci = ['liczba_wpisow_24h', 'luka', 'blad', 'ostatni_sukces_at', 'ostatnie_pobranie_at'];
   const warstwy = d.probneWarstwy(teraz);
@@ -122,6 +131,7 @@ test('dane próbne mają dokładnie pola kontraktu API i obejmują wymagane przy
   const stan = d.probneStan(teraz);
   assert.equal(stan.informacja, 'To nie jest strona urzędowa');
   for (const l of stan.warstwy) assert.deepEqual(Object.keys(l).sort(), ['komunikat', 'komunikaty', 'ostatnie_pobranie', 'warstwa']);
+  assert.equal(stan.pominiete, 0, 'stan próbny: nic nie odrzucono');
   // przypadki ze zlecenia
   const rcb = wpisy.filter(x => x.warstwa === 'rcb' && x.teryt.length >= 3);
   assert.ok(rcb.some(x => x.teryt.every(k => k.length === 4)), 'RCB dla kilku powiatów');
@@ -179,7 +189,7 @@ test('model: status tylko ze zdarzenia, GeoJSON z kształtem statusu, region, wp
   assert.equal(obszar.properties.styl, 'ciagla');
   assert.deepEqual(obszar.geometry.coordinates[0][0], obszar.geometry.coordinates[0][4], 'pierścień zamknięty');
   const bez = widoki.filter(v => m.bezPolozenia(v.wpis)).map(v => v.wpis.id).sort();
-  assert.deepEqual(bez, [9001, 9002, 9003, 9004, 9030], 'wpisy tylko z TERYT albo bez miejsca idą na listę');
+  assert.deepEqual(bez, [9001, 9002, 9003, 9004, 9006, 9030], 'wpisy tylko z TERYT albo bez miejsca idą na listę');
   const wRegionie = woj => widoki.filter(v => m.zgodnyZRegionem(v.wpis, woj)).map(v => v.wpis.id).sort();
   assert.deepEqual(wRegionie('18'), [9001, 9005], 'podkarpackie: RCB dla powiatów 18xx oraz prostokąt IMGW nad Małopolską, który sięga prostokąta podkarpackiego (przecięcie zasięgów, przybliżenie)');
   assert.ok(wRegionie('02').includes(9020), 'punkt bez TERYT w prostokącie dolnośląskiego (wstrząs koło Lubina)');
@@ -211,7 +221,8 @@ test('model: warstwy włączone, sortowanie, nazwa źródła, adres wpisu', () =
   assert.equal(m.posortujWarstwy(warstwy)[0].warstwa, 'rcb');
   assert.deepEqual({ ...m.nazwaZrodla(warstwy, 'nasa-firms') }, { nazwa: 'Źródła ciepła NASA FIRMS (VIIRS)', instytucja: 'NASA' });
   assert.deepEqual({ ...m.nazwaZrodla(warstwy, 'nieznane') }, { nazwa: 'nieznane', instytucja: '' });
-  assert.equal(m.adresWpisu('https://przeszlosc.today', '/teraz', { warstwy: ['rcb'], okres: '7d', woj: null, wpis: null, widok: 'mapa', probne: false }, 9001), 'https://przeszlosc.today/teraz?warstwy=rcb&okres=7d&wpis=9001');
+  // link udostępniany ma pełny zakres filtrów, także „cała Polska” (woj=pl), żeby pamięć odbiorcy go nie zmieniła (P2-12)
+  assert.equal(m.adresWpisu('https://przeszlosc.today', '/teraz', { warstwy: ['rcb'], okres: '7d', woj: null, wpis: null, widok: 'mapa', probne: false }, 9001), 'https://przeszlosc.today/teraz?warstwy=rcb&okres=7d&woj=pl&wpis=9001');
 });
 
 test('parametry URL: parsowanie z walidacją i zapis bez wartości domyślnych', () => {

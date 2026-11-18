@@ -58,9 +58,27 @@ const DOKLADNOSC: Record<Dokladnosc, string> = {
 };
 export const etykietaDokladnosci = (d: Dokladnosc): string => DOKLADNOSC[d] ?? DOKLADNOSC.brak;
 
-/** Opis miejsca wpisu do karty: „dotyczy: powiat przemyski (podkarpackie), powiat lubaczowski (podkarpackie)”. */
-export function opisMiejsca(wpis: Pick<Wpis, 'teryt' | 'dokladnosc' | 'szerokosc' | 'dlugosc' | 'bbox'>): string {
+/** Linia z nazwą województwa w dowolnym przypadku („lubelskiego”), nie powiatu („lubelski”). */
+const KONCOWKI_WOJ = /(?:ie|iego|iem|ich)$/;
+const jestNazwaWojewodztwa = (linia: string): boolean => {
+  const l = linia.trim().toLowerCase().replace(/^woj(?:\.|ewództwo)?\s+/, '');
+  return KONCOWKI_WOJ.test(l) && WOJEWODZTWA.some(w => l.replace(KONCOWKI_WOJ, '') === w.nazwa.replace(/ie$/, ''));
+};
+
+/** Jednostki wymienione przez źródło w polu `miejsce` (po jednej w linii), bez nazw województw. */
+export const jednostkiZMiejsca = (miejsce: string | undefined): string[] =>
+  [...new Set((miejsce ?? '').split(/\r?\n/).map(l => l.trim()).filter(l => l && !jestNazwaWojewodztwa(l)))];
+
+/**
+ * Opis miejsca wpisu do karty: „dotyczy: powiat przemyski (podkarpackie), powiat lubaczowski (podkarpackie)”. Przy zasięgu
+ * przybliżonym kod nie jest zasięgiem: „w obrębie: województwo lubelskie; źródło wymienia: włodawski, Chełm…” (P1-2).
+ */
+export function opisMiejsca(wpis: Pick<Wpis, 'teryt' | 'dokladnosc' | 'szerokosc' | 'dlugosc' | 'bbox'> & Partial<Pick<Wpis, 'zasieg' | 'miejsce'>>): string {
   const obszary = nazwyObszarow(wpis.teryt);
+  if (obszary.length && wpis.zasieg === 'przyblizony') {
+    const lista = jednostkiZMiejsca(wpis.miejsce);
+    return `w obrębie: ${obszary.join(', ')}; ${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
+  }
   if (obszary.length) return `dotyczy: ${obszary.join(', ')}`;
   if (wpis.szerokosc !== null && wpis.dlugosc !== null) return 'dotyczy: punkt na mapie (położenie przybliżone)';
   if (wpis.bbox) return 'dotyczy: prostokątny obszar na mapie';

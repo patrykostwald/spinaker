@@ -32,6 +32,14 @@ NAGLOWEK_JEDNOSTEK = re.compile(r"\b(?:powiat(?:y|ów)?|gmin(?:a|y|ę)?|miast(?:
 ADRES = re.compile(r"\d|\b(?:ul(?:ica|icy|icę)?|al(?:eja|ei|eję)?|plac|os(?:iedle)?|nr)\b", re.I)
 NAZWA_JEDNOSTKI = re.compile(r"[^\W\d_]+(?:[ -][^\W\d_]+){0,4}")
 ODSTEP_KARTY = timedelta(minutes=10)
+CZESC_REGIONU = re.compile(r"\bczęś(?:ć|ci)\s+(?:woj\.|województw)", re.I)
+
+
+def zasieg_czesciowy(miejsce, tresc=""):
+    """Komunikat obejmuje tylko część województwa: wymienia jednostki węższe (powiaty, gminy, miasta) albo mówi o „części
+    województwa”. Kod województwa jest wtedy przybliżeniem położenia, nie potwierdzonym zasięgiem alertu."""
+    jednostki = [linia.strip() for linia in (miejsce or "").splitlines() if linia.strip()]
+    return any(not NAZWA_WOJ.fullmatch(nazwa) for nazwa in jednostki) or bool(CZESC_REGIONU.search(tresc or ""))
 
 
 def adres_karty(adres):
@@ -151,6 +159,8 @@ def parsuj_karte(odpowiedz, adres):
         miejsce = "\n".join(dict.fromkeys([*miejsca, *_jednostki(linie)]))
         kody = sorted({WOJEWODZTWA[nazwa.lower()] for nazwa in NAZWA_WOJ.findall(miejsce)})
         tresc = "\n".join(linie)
+        # wybrane powiaty w województwie: kod 2-cyfrowy to tylko przybliżenie (pewność 0,5); cały region: pewność 1
+        pewnosc = (0.5 if zasieg_czesciowy(miejsce, tresc) else 1) if kody else 0
         ident = grupa
         if aktualizacja:
             godzina_id = f"{czas:%H:%M}" if czas else "bez-godziny"
@@ -161,7 +171,7 @@ def parsuj_karte(odpowiedz, adres):
             ident, tytul, adres, publikacja, tresc=tresc, czas_zrodlowy_at=czas,
             dokladna_godzina_publikacji=dokladna, miejsce=miejsce[:16000], teryt=kody,
             dokladnosc=Wpis.Dokladnosc.WOJEWODZTWO if kody else Wpis.Dokladnosc.BRAK,
-            pewnosc_lokalizacji=1 if kody else 0, zdarzenie_id=grupa, status_zdarzenia=status,
+            pewnosc_lokalizacji=pewnosc, zdarzenie_id=grupa, status_zdarzenia=status,
         ))
     return wynik
 

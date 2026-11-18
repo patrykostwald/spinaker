@@ -83,19 +83,21 @@ test('wylaczona: wyłączona warstwa znika z wpisów, zdarzeń (karta, powiązan
 
 test('wylaczona: strona stosuje wyłączenie do wszystkich widoków (mapa, lista, tabela, „Mój powiat”, karta, powiązania)', () => {
   const strona = read(`${dir}/TerazPage.tsx`);
-  assert.match(strona, /bezWylaczonych\(wpisyQ\.data\?\.wpisy \?\? \[\], \[\], wylaczone\)/, 'wpisy mapy, listy i tabeli');
-  assert.match(strona, /bezWylaczonych\(powiatyQ\.data\?\.wpisy \?\? \[\], \[\], wylaczone\)/, 'wpisy „Mój powiat”');
-  assert.match(strona, /bezWylaczonych\(\[\], zdarzeniaQ\.data\?\.wyniki \?\? \[\], wylaczone\)/, 'zdarzenia: karta i powiązania');
+  // od recenzji PR #38 (P2-7): tylko warstwy potwierdzone w bieżącej odpowiedzi warstwy/ (wyłączone nigdy nie są potwierdzone)
+  assert.match(strona, /tylkoPotwierdzone\(wpisyQ\.data\?\.wpisy \?\? \[\], \[\], potwierdzone, wylaczone\)/, 'wpisy mapy, listy i tabeli');
+  assert.match(strona, /tylkoPotwierdzone\(powiatyQ\.data\?\.wpisy \?\? \[\], \[\], potwierdzone, wylaczone\)/, 'wpisy „Mój powiat”');
+  assert.match(strona, /tylkoPotwierdzone\(\[\], zdarzeniaQ\.data\?\.wyniki \?\? \[\], potwierdzone, wylaczone\)/, 'zdarzenia: karta i powiązania');
+  assert.match(strona, /potwierdzoneWarstwy\(warstwyQ\.data, warstwyQ\.isSuccess\)/);
   assert.match(strona, /zbudujWidoki\(wpisyMapy, zdarzenia, polityka\)/); assert.match(strona, /zbudujWidoki\(wpisyPowiatow, zdarzenia, polityka\)/);
   assert.match(strona, /\(warstwyQ\.data \?\? \[\]\)\.filter\(dostepna\)/, 'panel: bez wyłączonych, także bez „w przygotowaniu”');
-  assert.match(strona, /widoki\.find\(v => v\.wpis\.id === wybranyId\)/, 'karta liczona z danych bez wyłączonych');
+  assert.match(strona, /widoczne\.find\(v => v\.wpis\.id === wybranyId\)/, 'karta liczona z widocznych danych (bez wyłączonych i spoza filtrów)');
   assert.match(strona, /warstwy=\{warstwyDlaNazw\}/, 'nazwy źródeł z warstw bez wyłączonych');
-  assert.match(strona, /bezFiltraWarstw/, 'awaria listy warstw nie ukrywa komunikatów');
+  assert.ok(!/bezFiltraWarstw/.test(strona), 'bez listy warstw nie odsłaniamy wpisów z cache (P2-7)');
 });
 
 // ---------- P1-2: awaria / obcięcie / brak, walidacja ----------
 
-test('statusy: bez zdarzeń „status niedostępny”, nie „Komunikat bez zdarzenia”; obcięcie zna granicę', () => {
+test('statusy: bez zdarzeń „status niedostępny”, nie „Komunikat bez zdarzenia”; przy obcięciu nierozstrzygnięte powiązania też', () => {
   const mod = m();
   const wpisy = [wpisApi(1, { opublikowano_at: '2026-11-18T10:00:00Z' }), wpisApi(2, { opublikowano_at: '2026-11-18T08:00:00Z' }), wpisApi(3, { opublikowano_at: '2026-11-18T06:00:00Z' })];
   const zd = { id: 7, status: 'odwolane', tytul_roboczy: 'x', pierwszy_wpis_at: '2026-11-18T09:00:00Z', ostatni_wpis_at: '2026-11-18T09:00:00Z', przygotowane_automatycznie: true, zweryfikowal: null, zweryfikowano_at: null, wpisy: [wpisy[1]] };
@@ -106,10 +108,12 @@ test('statusy: bez zdarzeń „status niedostępny”, nie „Komunikat bez zdar
   assert.deepEqual(status(mod.politykaStatusu(undefined), []), { 1: 'niedostepny', 2: 'niedostepny', 3: 'niedostepny' });
   // rekordy o złym formacie: też nie wiemy
   assert.equal(mod.politykaStatusu({ wyniki: [zd], uciete: false, pominiete: 2 }).wszystkie, true);
-  // limit stron: wpisy starsze niż najstarsze pobrane zdarzenie mogą należeć do pominiętego, nowsze na pewno nie
+  // limit stron (P2-9): bez porównywania dwóch zegarów (oś czasu źródła w backendzie, czas publikacji wpisu) każdy wpis bez
+  // pobranego zdarzenia ma „Status niedostępny”, także nowszy niż najstarsze pobrane zdarzenie
   const ucieta = mod.politykaStatusu({ wyniki: [zd], uciete: true, pominiete: 0 });
-  assert.equal(ucieta.nieWiekszeNiz, Date.parse('2026-11-18T09:00:00Z'));
-  assert.deepEqual(status(ucieta), { 1: 'brak', 2: 'odwolane', 3: 'niedostepny' });
+  assert.equal(ucieta.wszystkie, true);
+  assert.equal(ucieta.nieWiekszeNiz, undefined);
+  assert.deepEqual(status(ucieta), { 1: 'niedostepny', 2: 'odwolane', 3: 'niedostepny' });
   assert.equal(mod.politykaStatusu({ wyniki: [], uciete: true, pominiete: 0 }).wszystkie, true, 'ucięte bez żadnego zdarzenia: wszystko nieznane');
   // domyślnie (bez polityki) zachowanie jak dotąd
   assert.deepEqual(Object.fromEntries(mod.zbudujWidoki(wpisy, []).map(v => [v.wpis.id, v.status])), { 1: 'brak', 2: 'brak', 3: 'brak' });
@@ -138,6 +142,35 @@ test('walidacja odpowiedzi: zła struktura to błąd, zły rekord jest pomijany 
   assert.equal(v.walidujZdarzenie({ id: 1, status: 'nieznany', wpisy: [] }), null);
   const zd = v.walidujZdarzenie({ id: 1, status: 'odwolane', tytul_roboczy: 't', pierwszy_wpis_at: '2026-11-18T10:00:00Z', ostatni_wpis_at: '2026-11-18T10:00:00Z', wpisy: [wpisApi(1), 'smiec'] });
   assert.equal(zd.wpisy.length, 1); assert.equal(zd.przygotowane_automatycznie, true, 'brak pola liczymy jako przygotowane automatycznie');
+  assert.equal(zd.odrzucone_wpisy, 1, 'odrzucone powiązanie jest liczone (P2-8)');
+});
+
+test('P2-8: brak `next` to błąd struktury; odrzucone wiersze stanu i powiązania są liczone i przekazane do widoku', async () => {
+  const v = w();
+  assert.throws(() => v.walidujStrone({ count: 1, previous: null, results: [wpisApi(1)] }, v.walidujWpis), /nieznanym formacie/, 'brak next nie kończy listy po cichu');
+  assert.throws(() => v.walidujStrone({ count: 1, next: 5, previous: null, results: [] }, v.walidujWpis), /nieznanym formacie/);
+  assert.equal(v.walidujStrone({ count: 0, next: null, previous: null, results: [] }, v.walidujWpis).nastepna, false, 'jawny null to koniec');
+  const a = load(`${dir}/api`);
+  stub.fetch = async () => odpowiedz({ count: 1, previous: null, results: [wpisApi(1)] });
+  await assert.rejects(a.pobierzWpisy('24h', null), err => err.name === 'BladApi', 'uszkodzona strona to „dane niedostępne”, nie kompletna lista');
+  // stan/: odrzucone wiersze → niepewność zamiast „brak aktywnych źródeł”
+  const stan = v.walidujStan({ informacja: 'To nie jest strona urzędowa', warstwy: [{ warstwa: 'rcb' }, 5] });
+  assert.equal(stan.pominiete, 2);
+  const mod = m();
+  const podsumowanie = mod.podsumujStan(stan, d().probneWarstwy());
+  assert.equal(podsumowanie.niepelne, true);
+  const { LiniaStanu } = load(`${dir}/LiniaStanu`);
+  const tekst = tekstZHtml(renderToStaticMarkup(React.createElement(LiniaStanu, { probne: false, podsumowanie, online: true, blad: false, odswiezonoWpisy: null, odswiezonoStan: null, ladowanie: false })));
+  assert.ok(!/brak aktywnych źródeł/.test(tekst), tekst);
+  assert.match(tekst, /stan źródeł niepełny/);
+  assert.match(tekst, /Stan części źródeł ma nieznany format/);
+  // zdarzenia: odrzucony wpis wewnątrz zdarzenia trafia do `pominiete`, więc wpisy bez zdarzenia mają „Status niedostępny”
+  const zdarzenie = { id: 7, status: 'odwolane', tytul_roboczy: 'x', pierwszy_wpis_at: '2026-11-18T09:00:00Z', ostatni_wpis_at: '2026-11-18T09:00:00Z', przygotowane_automatycznie: true, zweryfikowal: null, zweryfikowano_at: null, wpisy: [wpisApi(1), { zly: true }] };
+  stub.fetch = async () => odpowiedz({ count: 1, next: null, previous: null, results: [zdarzenie] });
+  const zdarzenia = await a.pobierzZdarzenia();
+  assert.equal(zdarzenia.pominiete, 1);
+  assert.equal(zdarzenia.uciete, false);
+  assert.equal(mod.zbudujWidoki([v.walidujWpis(wpisApi(2))], zdarzenia.wyniki, mod.politykaStatusu(zdarzenia))[0].status, 'niedostepny', 'nie „Komunikat bez zdarzenia”');
 });
 
 test('API: błędny JSON o złej strukturze daje BladApi (stan niedostępności), nie pustą listę; obcięcie i pominięcia są zachowane', async () => {
@@ -162,7 +195,9 @@ test('KomunikatyDanych: awaria, obcięcie, nieaktualne dane i brak komunikatów 
   const awaria = draw({ wpisy: { niedostepne: true } });
   assert.match(awaria, /Dane niedostępne\. Nie udało się pobrać komunikatów, więc nie wiemy, co się dzieje: nie mamy pewności, sprawdź Alert RCB i 112\./);
   assert.ok(!/Brak komunikatów/.test(awaria));
-  assert.match(draw({ wpisy: { niedostepne: false, uciete: true } }), /Dane obcięte: pokazujemy najnowsze komunikaty, starsze pominięto/);
+  assert.match(draw({ wpisy: { niedostepne: false, uciete: true } }), /Dane obcięte: pobraliśmy najnowsze komunikaty, starsze pominięto/);
+  assert.match(draw({ wpisy: { niedostepne: false, uciete: true, pobrane: 300 } }), /Dane obcięte: pobraliśmy 300 komunikatów, najnowsze, starsze pominięto/, 'liczba pobranych (P1-3)');
+  assert.match(draw({ warstwy: { niedostepne: false, niepotwierdzone: 4 } }), /ukrywamy komunikaty z warstw bez potwierdzenia \(4\)/, 'P2-7');
   assert.match(draw({ wpisy: { niedostepne: false, nieaktualne: true } }), /Pokazujemy ostatnio pobrane, mogą być nieaktualne/);
   assert.match(draw({ wpisy: { niedostepne: false, pominiete: 3 } }), /Pominięto komunikaty o nieznanym formacie: 3/);
   assert.match(draw({ zdarzenia: { niedostepne: true } }), /Statusy niedostępne\. Nie wiemy, które komunikaty są potwierdzone, a które odwołane/);
@@ -173,8 +208,12 @@ test('KomunikatyDanych: awaria, obcięcie, nieaktualne dane i brak komunikatów 
   const html = renderToStaticMarkup(React.createElement(KomunikatyDanych, { wpisy: { niedostepne: true }, warstwy: { niedostepne: false }, zdarzenia: { niedostepne: true } }));
   assert.match(html, /role="alert"/);
   const strona = read(`${dir}/TerazPage.tsx`);
-  assert.match(strona, /udanaOdpowiedz = wpisyQ\.isSuccess && !wpisyQ\.isPlaceholderData/, '„brak komunikatów” tylko po udanej odpowiedzi');
-  assert.match(strona, /udanaOdpowiedz && widoczne\.length === 0/);
+  assert.match(strona, /udanaOdpowiedz = wpisyQ\.isSuccess && !wpisyQ\.isPlaceholderData/, 'odpowiedź dla bieżącego filtra');
+  // P1-3: „brak komunikatów” tylko przy kompletnej odpowiedzi (wszystkie strony, nic odrzuconego, warstwy potwierdzone)
+  assert.match(strona, /kompletneWpisy = udanaOdpowiedz && !!wpisyQ\.data && !wpisyQ\.data\.uciete && wpisyQ\.data\.pominiete === 0 && mapaPotw\.ukryte === 0 && warstwyQ\.isSuccess/);
+  assert.match(strona, /kompletneWpisy && widoczne\.length === 0/);
+  assert.match(strona, /udanaOdpowiedz && !kompletneWpisy && !warstwyQ\.isPending && widoczne\.length === 0 && <p className="tz-komunikat" role="status">\{tekstNiepelnych\}/);
+  assert.match(strona, /Dane niepełne: pobraliśmy \$\{liczbaKomunikatow\(pobraneWpisy\)\}/, 'liczba pobranych także przy zerze');
   assert.match(strona, /wpisyNiedostepne\s*\?\s*`Dane niedostępne/, 'lista i tabela przy awarii mówią o niedostępności');
 });
 
@@ -245,8 +284,14 @@ test('link „kopiuj”: tylko parametry widoku z listy dozwolonych, bez obcych 
   const adres = mod.adresWpisu('https://przeszlosc.today', '/teraz', { warstwy: ['rcb'], okres: '7d', woj: '14', wpis: null, widok: 'lista', probne: true }, 9001);
   assert.equal(adres, 'https://przeszlosc.today/teraz?warstwy=rcb&okres=7d&woj=14&wpis=9001&widok=lista&probne=1');
   assert.ok(!/utm_|fbclid|token|sesja/.test(adres));
+  // P2-12: pełny zakres filtrów także dla wartości domyślnych (wszystkie warstwy, 24 godz., cała Polska)
   const domyslne = mod.adresWpisu('https://spin.clinic', '/przeszlosc/teraz', { warstwy: null, okres: '24h', woj: null, wpis: null, widok: 'mapa', probne: false }, 5);
-  assert.equal(domyslne, 'https://spin.clinic/przeszlosc/teraz?wpis=5');
+  assert.equal(domyslne, 'https://spin.clinic/przeszlosc/teraz?warstwy=wszystkie&okres=24h&woj=pl&wpis=5');
+  const par = load(`${dir}/parametry`);
+  const odebrany = par.parsuj(new URL(domyslne).searchParams);
+  assert.equal(odebrany.warstwy, null); assert.equal(odebrany.okres, '24h'); assert.equal(odebrany.woj, null); assert.equal(odebrany.wpis, 5);
+  const q = new URL(domyslne).searchParams;
+  assert.ok(q.has('warstwy') && q.has('okres') && q.has('woj'), 'każdy filtr jawnie w adresie, więc pamięć odbiorcy go nie nadpisze');
   const strona = read(`${dir}/TerazPage.tsx`);
   assert.ok(!/window\.location\.search, wybranyId/.test(strona), 'adres wpisu nie przekazuje bieżącego zapytania');
   // zestaw powiatów też z listy dozwolonych (Z6b)
@@ -290,7 +335,9 @@ test('stałe ostrzeżenie: zdanie nad przewijaną treścią, arkusze pod nim; os
 test('fokus i dotyk: scena nieaktywna pod arkuszem (inert), cele min. 44 px, miejsce na przycisk „Warstwy”', () => {
   const strona = read(`${dir}/TerazPage.tsx`);
   const css = read(`${dir}/teraz.css`);
-  assert.match(strona, /scenaNieaktywna = waski && \(panel \|\| \(kartaOtwarta && widok !== 'mapa'\)\)/);
+  // P2-10: inert z faktycznie widocznego arkusza (panel jest tylko w widokach z mapą)
+  assert.match(strona, /panelWidoczny = panel && wMapie/);
+  assert.match(strona, /scenaNieaktywna = waski && \(panelWidoczny \|\| \(kartaOtwarta && widok !== 'mapa'\)\)/);
   assert.match(strona, /inert: '' as unknown as boolean/, 'atrybut inert przekazany tak, by React 18 go zapisał w DOM');
   assert.match(strona, /aria-label=\{NAZWY_WIDOKOW\[widok\]\} \{\.\.\.inert\}/);
   assert.match(strona, /window\.matchMedia\(WASKI_EKRAN\)/);

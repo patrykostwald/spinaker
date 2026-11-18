@@ -44,9 +44,27 @@ export function oczyscWarstwy(x: unknown): string[] | null {
   return [...new Set(x.filter((k): k is string => typeof k === 'string' && KODY_WARSTW.has(k.trim())).map(k => k.trim()))];
 }
 
+/** Wartość `warstwy=wszystkie`: jawnie „wszystkie aktywne” (link udostępniany nie zależy wtedy od pamięci odbiorcy). */
+export const WSZYSTKIE_WARSTWY = 'wszystkie';
+/** Wartość `woj=pl`: jawnie „cała Polska”. */
+export const CALA_POLSKA = 'pl';
+
+/**
+ * Parametr `warstwy` z adresu: brak = null (decyduje pamięć), `wszystkie` = null, pusty tekst = jawnie żadna warstwa (pusta lista),
+ * lista kodów = znane kody. Same nieznane kody to `bledne`: wtedy domyślne warstwy (null), a wybór nie trafia do pamięci.
+ */
+export function warstwyZAdresu(tekst: string | undefined): { warstwy: string[] | null; bledne: boolean } {
+  if (tekst === undefined) return { warstwy: null, bledne: false };
+  const surowe = tekst.split(',').map(k => k.trim()).filter(Boolean);
+  if (!surowe.length) return { warstwy: [], bledne: false };
+  if (surowe.length === 1 && surowe[0] === WSZYSTKIE_WARSTWY) return { warstwy: null, bledne: false };
+  const czyste = oczyscWarstwy(surowe) ?? [];
+  return czyste.length ? { warstwy: czyste, bledne: false } : { warstwy: null, bledne: true };
+}
+
 export function parsuj(wejscie: Wejscie): Parametry {
   const warstwyTekst = pierwszy(wejscie, 'warstwy');
-  const warstwy = warstwyTekst === undefined ? null : oczyscWarstwy(warstwyTekst.split(','));
+  const { warstwy } = warstwyZAdresu(warstwyTekst);
   const okresTekst = pierwszy(wejscie, 'okres');
   const okres = poprawnyOkres(okresTekst) ? okresTekst : OKRES_DOMYSLNY;
   const wojTekst = pierwszy(wejscie, 'woj');
@@ -58,13 +76,19 @@ export function parsuj(wejscie: Wejscie): Parametry {
   return { warstwy, okres, woj, wpis, widok, probne: probneTekst === '1' || probneTekst === 'true' };
 }
 
-/** Nakłada parametry widoku na istniejący ciąg zapytania (inne parametry zostają); wartości domyślne znikają z adresu. */
-export function zbudujZapytanie(p: Parametry, obecne: string = ''): string {
+/**
+ * Nakłada parametry widoku na istniejący ciąg zapytania (inne parametry zostają). Pasek adresu: wartości domyślne znikają.
+ * `pelne` (link do udostępnienia): warstwy, okres i województwo zawsze jawnie, także domyślne („wszystkie”, „24h”, „pl”),
+ * żeby zapamiętane ustawienia odbiorcy nie zmieniły tego, co zobaczy.
+ */
+export function zbudujZapytanie(p: Parametry, obecne: string = '', pelne: boolean = false): string {
   const q = new URLSearchParams(obecne);
   for (const k of ['warstwy', 'okres', 'woj', 'wpis', 'widok', 'probne']) q.delete(k);
   if (p.warstwy !== null) q.set('warstwy', p.warstwy.join(','));
-  if (p.okres !== OKRES_DOMYSLNY) q.set('okres', p.okres);
+  else if (pelne) q.set('warstwy', WSZYSTKIE_WARSTWY);
+  if (pelne || p.okres !== OKRES_DOMYSLNY) q.set('okres', p.okres);
   if (p.woj) q.set('woj', p.woj);
+  else if (pelne) q.set('woj', CALA_POLSKA);
   if (p.wpis !== null) q.set('wpis', String(p.wpis));
   if (p.widok !== 'mapa') q.set('widok', p.widok);
   if (p.probne) q.set('probne', '1');

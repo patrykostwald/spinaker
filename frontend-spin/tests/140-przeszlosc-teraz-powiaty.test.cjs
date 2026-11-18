@@ -162,9 +162,10 @@ test('wyszukiwarka: odmiana nazw, autouzupełnianie, kod TERYT, słowa pomijane'
   assert.equal(p.normalizuj('Jastrzębie-Zdrój'), 'jastrzebie zdroj');
 });
 
-test('dopasowanie wpisów: powiat, gmina w powiecie i całe województwo (po kodach TERYT wpisu)', () => {
+test('dopasowanie wpisów: powiat, gmina w powiecie i całe województwo (po kodach TERYT wpisu i potwierdzonym zasięgu)', () => {
   const p = powiaty();
-  const zakres = (teryt, kod) => p.zakresDlaPowiatu({ teryt }, kod);
+  // kod województwa to „całe województwo” tylko przy potwierdzonym zasięgu (`zasieg: obszar`, recenzja PR #38, P1-2)
+  const zakres = (teryt, kod) => p.zakresDlaPowiatu({ teryt, zasieg: 'obszar', miejsce: '' }, kod);
   assert.equal(zakres(['1813'], '1813'), 'powiat');
   assert.equal(zakres(['1813011'], '1813'), 'gmina');
   assert.equal(zakres(['18'], '1813'), 'wojewodztwo');
@@ -174,14 +175,17 @@ test('dopasowanie wpisów: powiat, gmina w powiecie i całe województwo (po kod
   assert.equal(zakres(['18', '1813'], '1813'), 'powiat', 'najwęższy zakres wygrywa');
   assert.equal(zakres(['18', '1813011'], '1813'), 'gmina');
   assert.equal(zakres([], '1813'), null, 'wpis bez kodu nie dotyczy żadnego powiatu');
+  assert.equal(p.zakresDlaPowiatu({ teryt: ['18'] }, '1813'), 'bezListy', 'brak informacji o zasięgu: nie poszerzamy do całego województwa');
+  assert.equal(p.zakresDlaPowiatu({ teryt: ['18'], zasieg: 'przyblizony', miejsce: '' }, '1813'), 'bezListy');
   assert.equal(p.zakresTekstem('wojewodztwo', '1813'), 'dotyczy całego województwa podkarpackiego');
   assert.equal(p.zakresTekstem('gmina', '1813'), 'dotyczy gminy w tym powiecie');
   const d = load(`${dir}/dane-probne/index`);
   const wpisy = d.probneWpisy();
-  const dla = kod => wpisy.filter(w => zakres(w.teryt, kod)).map(w => [w.id, zakres(w.teryt, kod)]);
+  const dla = kod => wpisy.filter(w => p.zakresDlaPowiatu(w, kod)).map(w => [w.id, p.zakresDlaPowiatu(w, kod)]);
   assert.deepEqual(dla('1813'), [[9001, 'powiat']]);
-  assert.deepEqual(dla('0604').sort(), [[9002, 'powiat'], [9003, 'wojewodztwo']].sort());
-  assert.deepEqual(dla('0663'), [[9003, 'wojewodztwo']], 'Lublin: tylko komunikat dla całego województwa lubelskiego');
+  assert.deepEqual(dla('0604').sort(), [[9002, 'powiat'], [9003, 'wojewodztwo'], [9006, 'pozaLista']].sort());
+  assert.deepEqual(dla('0663').sort(), [[9003, 'wojewodztwo'], [9006, 'pozaLista']].sort(), 'Lublin: komunikat dla całego województwa i osobno alert, który Lublina nie wymienia');
+  assert.deepEqual(dla('0662').sort(), [[9003, 'wojewodztwo'], [9006, 'wymieniony']].sort(), 'Chełm: wymieniony w alercie z 10.11');
   assert.deepEqual(dla('3064'), [], 'Poznań: nic w danych');
   assert.deepEqual(p.kodyWojewodztw(['1813', '0663', '1809', '0604']), ['06', '18']);
 });
@@ -198,7 +202,7 @@ test('parametry adresu „Mój powiat”: walidacja, limit 5, zapis, link do zes
   assert.equal(p.zapytanieZPowiatami('?okres=7d&powiaty=1813', []), '?okres=7d');
   assert.equal(p.zapytanieZPowiatami('', []), '');
   const adres = p.adresZestawu('https://przeszlosc.today', '/teraz', ['1813', '0663'], '24h', false);
-  assert.equal(adres, 'https://przeszlosc.today/teraz?widok=powiat&powiaty=1813%2C0663');
+  assert.equal(adres, 'https://przeszlosc.today/teraz?widok=powiat&powiaty=1813%2C0663&okres=24h', 'okres zawsze w linku, także domyślny (P2-12)');
   assert.equal(p.adresZestawu('https://x.pl', '/teraz', ['1813'], '7d', true), 'https://x.pl/teraz?widok=powiat&powiaty=1813&okres=7d&probne=1');
   const q = new URL(adres).searchParams;
   assert.deepEqual(p.parsujPowiaty(q), ['1813', '0663'], 'link odtwarza zestaw');
@@ -254,7 +258,7 @@ function renderuj(props) {
   const wpisy = props.probne === false ? [] : d.probneWpisy(teraz);
   const domyslne = {
     powiaty: ['1813'], onZmien() {}, okres: '7d', onOkres() {}, widoki: m.zbudujWidoki(wpisy, d.probneZdarzenia(teraz)), warstwy: d.probneWarstwy(teraz),
-    ladowanie: false, blad: false, uciete: false, pominiete: 0, lukaWDanych: false, poczatekOkresu: new Date(teraz - 7 * 86_400_000).toISOString(), adres: () => 'x',
+    ladowanie: false, blad: false, uciete: false, pominiete: 0, pobrane: wpisy.length, niepotwierdzone: 0, nieaktualne: false, lukaWDanych: false, poczatekOkresu: new Date(teraz - 7 * 86_400_000).toISOString(), adres: () => 'x',
   };
   const { probne, ...reszta } = props; void probne;
   return renderToStaticMarkup(React.createElement(MojPowiat, { ...domyslne, ...reszta }));
@@ -275,9 +279,10 @@ test('„Mój powiat”: powiat z komunikatem pokazuje te same godziny i status 
   assert.ok(!/Brak w naszych danych/.test(tekst));
 });
 
-test('„Mój powiat”: całe województwo jako „dotyczy całego województwa”, odwołanie z innym statusem', () => {
+test('„Mój powiat”: całe województwo (potwierdzony zasięg) jako „dotyczy całego województwa”, odwołanie z innym statusem', () => {
   const tekst = bezZnacznikow(renderuj({ powiaty: ['0604'] }));
   assert.match(tekst, /dotyczy całego województwa lubelskiego/);
+  assert.match(tekst, /Inne komunikaty z województwa: 1/, 'alert do wybranych powiatów (9006) bez powiatu hrubieszowskiego stoi osobno');
   assert.match(tekst, /Odwołane/);
   assert.match(tekst, /2 komunikaty w ostatnich 7 dniach/);
   const html = renderuj({ powiaty: ['0604'] });
@@ -295,17 +300,76 @@ test('„Mój powiat”: brak komunikatów to „Brak w naszych danych dla powia
   assert.match(stary, /Brak w naszych danych dla powiatu przemyskiego od \d+ \p{L}+, godz\. \d{2}:\d{2}\./u, 'dłuższy okres: z datą');
 });
 
-test('„Mój powiat”: ładowanie i błąd nie udają braku komunikatów; ucięcie i luka są dopisane do zdania o braku', () => {
+test('„Mój powiat”: ładowanie i błąd nie udają braku komunikatów; przy ucięciu nie ma „Brak w naszych danych”, jest liczba pobranych', () => {
   const laduje = bezZnacznikow(renderuj({ powiaty: ['1813'], widoki: [], ladowanie: true }));
   assert.match(laduje, /Wczytujemy komunikaty/);
   assert.ok(!/Brak w naszych danych/.test(laduje));
   const blad = bezZnacznikow(renderuj({ powiaty: ['1813'], widoki: [], blad: true }));
   assert.match(blad, /Nie udało się pobrać komunikatów: nie mamy pewności, sprawdź Alert RCB i 112\./);
   assert.ok(!/Brak w naszych danych/.test(blad));
-  const ucieta = bezZnacznikow(renderuj({ powiaty: ['1813'], widoki: [], uciete: true, lukaWDanych: true }));
-  assert.match(ucieta, /Brak w naszych danych dla powiatu przemyskiego/);
-  assert.match(ucieta, /mogło ich być więcej/);
+  // P1-3: przy danych częściowych zamiast „brak” liczba pobranych i ograniczenie, także przy zerze
+  const ucieta = bezZnacznikow(renderuj({ powiaty: ['1813'], widoki: [], uciete: true, pobrane: 0, lukaWDanych: true }));
+  assert.ok(!/Brak w naszych danych/.test(ucieta), ucieta);
+  assert.match(ucieta, /Dane niepełne: pobraliśmy 0 komunikatów z województwa; pobraliśmy tylko najnowsze/);
+  assert.match(ucieta, /mogło być więcej/);
   assert.match(ucieta, /lukę w danych/);
+  const pominiete = bezZnacznikow(renderuj({ powiaty: ['1813'], widoki: [], pominiete: 2, pobrane: 300 }));
+  assert.match(pominiete, /pobraliśmy 300 komunikatów z województwa; pominęliśmy komunikaty o nieznanym formacie \(2\)/);
+  assert.ok(!/Brak w naszych danych/.test(pominiete));
+  const niepotwierdzone = bezZnacznikow(renderuj({ powiaty: ['1813'], widoki: [], niepotwierdzone: 4 }));
+  assert.match(niepotwierdzone, /ukrywamy komunikaty z warstw bez aktualnego potwierdzenia \(4\)/);
+});
+
+test('„Mój powiat”: ostrzeżenie o obcięciu nie znika przez jedno trafienie', () => {
+  const tekst = bezZnacznikow(renderuj({ powiaty: ['1813'], uciete: true, pobrane: 300 }));
+  assert.match(tekst, /Przykład: zagrożenie z powietrza w powiatach przemyskim/, 'trafienie jest pokazane');
+  assert.match(tekst, /Dane niepełne: pobraliśmy 300 komunikatów/, 'a ostrzeżenie zostaje');
+  assert.match(tekst, /1 komunikat w ostatnich 7 dniach, od najnowszego \(wśród pobranych\)/);
+});
+
+test('„Mój powiat”: alert RCB z 10.11 dla wybranych powiatów: Chełm wymieniony, Lublin osobno, bez „całego województwa”', () => {
+  const { POWIATY_ALERTU_RCB_1011 } = load(`${dir}/dane-probne/index`);
+  const p = powiaty();
+  // `miejsce` dokładnie w formie z parsera RCB dla próbki backend/teraz/tests/fixtures/alert-rcb-2026-11-10-zagrozenie-z-powietrza.html
+  const miejsce = ['lubelskiego', ...POWIATY_ALERTU_RCB_1011].join('\n');
+  const fs2 = require('node:fs');
+  const html = fs2.readFileSync(path.join(root, '..', 'backend', 'teraz', 'tests', 'fixtures', 'alert-rcb-2026-11-10-zagrozenie-z-powietrza.html'), 'utf8');
+  for (const nazwa of POWIATY_ALERTU_RCB_1011) assert.ok(html.includes(nazwa), `próbka wymienia: ${nazwa}`);
+  const alert = { teryt: ['06'], zasieg: 'przyblizony', miejsce };
+  assert.equal(p.zakresDlaPowiatu(alert, '0662'), 'wymieniony', 'Chełm (miasto na prawach powiatu)');
+  assert.equal(p.zakresDlaPowiatu(alert, '0603'), 'wymieniony', 'powiat chełmski');
+  assert.equal(p.zakresDlaPowiatu(alert, '0661'), 'wymieniony', 'Biała Podlaska');
+  assert.equal(p.zakresDlaPowiatu(alert, '0619'), 'wymieniony', 'powiat włodawski');
+  assert.equal(p.zakresDlaPowiatu(alert, '0663'), 'pozaLista', 'Lublina nie ma na liście');
+  assert.equal(p.zakresDlaPowiatu(alert, '0609'), 'pozaLista', 'powiatu lubelskiego nie ma na liście („lubelskiego” to województwo)');
+  assert.equal(p.zakresDlaPowiatu(alert, '1813'), null, 'inne województwo');
+  // niejednoznaczne: na liście tylko miasto Chełm, bez powiatu chełmskiego (i odwrotnie)
+  assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: 'lubelskiego\nChełm' }, '0603'), 'mozliwy');
+  assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: 'lubelskiego\nchełmski' }, '0662'), 'mozliwy');
+  assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: 'lubelskiego\nChełm' }, '0662'), 'wymieniony');
+  // odmiana: „w Chełmie”, „powiatu włodawskiego”
+  assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: 'Chełmie\npowiatu włodawskiego' }, '0662'), 'wymieniony');
+  assert.equal(p.zakresDlaPowiatu({ ...alert, miejsce: 'Chełmie\npowiatu włodawskiego' }, '0619'), 'wymieniony');
+  assert.equal(p.zakresTekstem('wymieniony', '0662'), 'Twój powiat jest wymieniony w komunikacie');
+  assert.equal(p.zakresTekstem('pozaLista', '0663'), 'Komunikat w Twoim województwie, Twojego powiatu nie ma na liście');
+  assert.match(p.zakresTekstem('mozliwy', '0603'), /możliwe.*sprawdź treść komunikatu/);
+
+  // render: Chełm ma alert na liście, Lublin tylko w osobnej grupie; nigdzie „całego województwa” dla tego alertu
+  const m = load(`${dir}/model`);
+  const d = load(`${dir}/dane-probne/index`);
+  const tylkoAlert = d.probneWpisy().filter(w => w.id === 9006);
+  assert.equal(tylkoAlert[0].miejsce, miejsce);
+  const widoki = m.zbudujWidoki(tylkoAlert, []);
+  const chelm = bezZnacznikow(renderuj({ powiaty: ['0662'], widoki }));
+  assert.match(chelm, /Twój powiat jest wymieniony w komunikacie/);
+  assert.match(chelm, /1 komunikat w ostatnich 7 dniach/);
+  assert.ok(!/całego województwa/.test(chelm));
+  const lublin = bezZnacznikow(renderuj({ powiaty: ['0663'], widoki }));
+  assert.ok(!/Twój powiat jest wymieniony/.test(lublin));
+  assert.ok(!/całego województwa/.test(lublin));
+  assert.match(lublin, /Brak w naszych danych dla miasta Lublina/);
+  assert.match(lublin, /Inne komunikaty z województwa: 1/);
+  assert.match(lublin, /Komunikat w Twoim województwie, Twojego powiatu nie ma na liście/);
 });
 
 test('„Mój powiat”: pole wyboru ma wzorzec combobox, limit 5 blokuje dodawanie, chipy mają przyciski „Usuń” z nazwą', () => {

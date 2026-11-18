@@ -1,4 +1,4 @@
-import type { Bbox, KodWarstwy, LiniaStanu, Stan, StatusZdarzenia, Warstwa, Wpis, Zdarzenie, Zrodlo } from './typy';
+import type { Bbox, KodWarstwy, LiniaStanu, Stan, StatusZdarzenia, Warstwa, Wpis, Zasieg, Zdarzenie, Zrodlo } from './typy';
 
 /**
  * Walidacja odpowiedzi API „Teraz” (GET /api/teraz/{warstwy,wpisy,zdarzenia,stan}/). Poprawny składniowo JSON o złej strukturze
@@ -21,6 +21,7 @@ const czas = (x: unknown): x is string => jestTekstem(x) && Number.isFinite(Date
 const tekstLubNull = (x: unknown): string | null => (jestTekstem(x) ? x : null);
 
 const STATUSY: readonly string[] = ['komunikat_oficjalny', 'zgloszone', 'potwierdzone', 'ocena', 'odwolane'];
+const ZASIEGI: readonly string[] = ['obszar', 'przyblizony', 'brak'];
 
 function bbox(x: unknown): Bbox | null {
   return Array.isArray(x) && x.length === 4 && x.every(jestLiczba) ? [x[0], x[1], x[2], x[3]] : null;
@@ -31,6 +32,9 @@ export function walidujWpis(x: unknown): Wpis | null {
   if (!jestObiektem(x)) return null;
   if (!jestLiczba(x.id) || !jestTekstem(x.warstwa) || !jestTekstem(x.tytul) || !czas(x.opublikowano_at)) return null;
   if (x.teryt !== undefined && !(Array.isArray(x.teryt) && x.teryt.every(jestTekstem))) return null;
+  const teryt = (x.teryt as string[] | undefined) ?? [];
+  // nieznany albo brakujący zasięg przy kodach liczymy jako przybliżony: nie poszerzamy zasięgu ponad źródło
+  const zasieg: Zasieg = jestTekstem(x.zasieg) && ZASIEGI.includes(x.zasieg) ? (x.zasieg as Zasieg) : teryt.length ? 'przyblizony' : 'brak';
   return {
     id: x.id,
     zrodlo: jestTekstem(x.zrodlo) ? x.zrodlo : '',
@@ -39,14 +43,20 @@ export function walidujWpis(x: unknown): Wpis | null {
     tresc: jestTekstem(x.tresc) ? x.tresc : '',
     link: jestTekstem(x.link) ? x.link : '',
     opublikowano_at: x.opublikowano_at,
-    pobrano_at: czas(x.pobrano_at) ? x.pobrano_at : x.opublikowano_at,
+    czas_zrodlowy_at: czas(x.czas_zrodlowy_at) ? x.czas_zrodlowy_at : null,
+    // brak pola to brak pewności co do godziny: pokazujemy samą datę
+    dokladna_godzina_publikacji: x.dokladna_godzina_publikacji === true,
+    pobrano_at: czas(x.pobrano_at) ? x.pobrano_at : null,
+    atrybucja: jestTekstem(x.atrybucja) ? x.atrybucja.trim() : '',
+    miejsce: jestTekstem(x.miejsce) ? x.miejsce : '',
     klasa: jestTekstem(x.klasa) ? (x.klasa as Wpis['klasa']) : 'nieznana',
-    teryt: (x.teryt as string[] | undefined) ?? [],
+    teryt,
     szerokosc: jestLiczba(x.szerokosc) ? x.szerokosc : null,
     dlugosc: jestLiczba(x.dlugosc) ? x.dlugosc : null,
     bbox: bbox(x.bbox),
     dokladnosc: jestTekstem(x.dokladnosc) ? (x.dokladnosc as Wpis['dokladnosc']) : 'brak',
     pewnosc_lokalizacji: jestLiczba(x.pewnosc_lokalizacji) ? x.pewnosc_lokalizacji : 0,
+    zasieg,
   };
 }
 
@@ -54,6 +64,7 @@ export function walidujZdarzenie(x: unknown): Zdarzenie | null {
   if (!jestObiektem(x)) return null;
   if (!jestLiczba(x.id) || !jestTekstem(x.status) || !STATUSY.includes(x.status) || !Array.isArray(x.wpisy)) return null;
   if (!czas(x.pierwszy_wpis_at) || !czas(x.ostatni_wpis_at)) return null;
+  const wpisy = x.wpisy.map(walidujWpis).filter((w): w is Wpis => w !== null);
   return {
     id: x.id,
     status: x.status as StatusZdarzenia,
@@ -63,7 +74,8 @@ export function walidujZdarzenie(x: unknown): Zdarzenie | null {
     przygotowane_automatycznie: x.przygotowane_automatycznie !== false,
     zweryfikowal: tekstLubNull(x.zweryfikowal),
     zweryfikowano_at: tekstLubNull(x.zweryfikowano_at),
-    wpisy: x.wpisy.map(walidujWpis).filter((w): w is Wpis => w !== null),
+    wpisy,
+    odrzucone_wpisy: x.wpisy.length - wpisy.length,
   };
 }
 
@@ -103,14 +115,19 @@ function walidujLinie(x: unknown): LiniaStanu | null {
   return { warstwa: x.warstwa as KodWarstwy, ostatnie_pobranie: x.ostatnie_pobranie, komunikaty: x.komunikaty, komunikat: jestTekstem(x.komunikat) ? x.komunikat : '' };
 }
 
+/** Odpowiedź stan/. Odrzucone wiersze są liczone (`pominiete`): bez nich „brak aktywnych źródeł” byłby fałszywy. */
 export function walidujStan(x: unknown): Stan {
   if (!jestObiektem(x) || !jestTekstem(x.informacja) || !Array.isArray(x.warstwy)) throw new BladFormatu('stan');
-  return { informacja: x.informacja, warstwy: x.warstwy.map(walidujLinie).filter((l): l is LiniaStanu => l !== null) };
+  const warstwy = x.warstwy.map(walidujLinie).filter((l): l is LiniaStanu => l !== null);
+  return { informacja: x.informacja, warstwy, pominiete: x.warstwy.length - warstwy.length };
 }
 
-/** Strona DRF: `results` musi być tablicą, `next` tekstem albo null. Rekordy walidowane `waliduj`; nieprawidłowe liczone w `pominiete`. */
+/**
+ * Strona DRF: `results` musi być tablicą, a `next` jest obowiązkowy (tekst albo jawny null). Brak `next` to błąd struktury,
+ * nie koniec listy: inaczej uszkodzona odpowiedź wyglądałaby na kompletną. Rekordy walidowane `waliduj`; nieprawidłowe liczone w `pominiete`.
+ */
 export function walidujStrone<T>(x: unknown, waliduj: (rekord: unknown) => T | null): { wyniki: T[]; nastepna: boolean; pominiete: number } {
-  if (!jestObiektem(x) || !Array.isArray(x.results) || !(x.next === null || x.next === undefined || jestTekstem(x.next))) throw new BladFormatu('strona wyników');
+  if (!jestObiektem(x) || !Array.isArray(x.results) || !('next' in x) || !(x.next === null || jestTekstem(x.next))) throw new BladFormatu('strona wyników');
   const wyniki: T[] = [];
   let pominiete = 0;
   for (const rekord of x.results) {

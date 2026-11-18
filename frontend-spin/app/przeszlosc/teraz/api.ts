@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { Okres, Stan, Warstwa, Wpis, WynikListy, Zdarzenie } from './typy';
 import { OKRESY } from './warstwy';
@@ -148,7 +148,11 @@ export function useWarstwy(probne: boolean) {
   });
 }
 
-/** `aktywne` = false wstrzymuje zapytania (widok „Mój powiat” nie potrzebuje danych mapy; przed odczytem preferencji też czekamy). */
+/**
+ * `aktywne` = false wstrzymuje zapytania (widok „Mój powiat” nie potrzebuje danych mapy; przed odczytem preferencji też czekamy).
+ * Celowo bez keepPreviousData (recenzja PR #38, P1-4): po zmianie okresu albo regionu wiersze z poprzedniego filtra nie mogą
+ * udawać wyniku nowego (tabela, podpis i eksport CSV czekają na odpowiedź dla bieżącego filtra).
+ */
 export function useWpisy(probne: boolean, okres: Okres, woj: string | null, aktywne: boolean = true) {
   return useQuery<WynikWpisow>({
     enabled: aktywne,
@@ -158,7 +162,6 @@ export function useWpisy(probne: boolean, okres: Okres, woj: string | null, akty
       const wpisy = filtrujProbneWpisy(probneWpisy(), { od: odKiedy(okres) });
       return Promise.resolve({ wpisy, uciete: false, pominiete: 0 });
     },
-    placeholderData: keepPreviousData,
     ...wspolne, ...co(ODSWIEZANIE_MS),
   });
 }
@@ -181,13 +184,22 @@ export function useWpisyPowiatow(probne: boolean, okres: Okres, kodyWojewodztw: 
   });
 }
 
+/**
+ * Zdarzenia z limitem stron. `pominiete` liczy także powiązane wpisy odrzucone przez walidację wewnątrz zdarzeń: bez tego wpis
+ * z odrzuconym powiązaniem dostałby fałszywe „Komunikat bez zdarzenia” (P2-8).
+ */
+export async function pobierzZdarzenia(signal?: AbortSignal): Promise<WynikZdarzen> {
+  const wynik = await pobierzStrony<Zdarzenie>('zdarzenia', {}, MAKS_STRON_ZDARZEN, signal, walidujZdarzenie);
+  return { ...wynik, pominiete: wynik.pominiete + wynik.wyniki.reduce((suma, z) => suma + z.odrzucone_wpisy, 0) };
+}
+
 /** Zdarzenia dają status wpisów. Awaria albo ucięcie (`uciete`) oznacza, że status części wpisów jest nieznany (patrz zbudujWidoki). */
 export function useZdarzenia(probne: boolean) {
   return useQuery<WynikZdarzen>({
     queryKey: ['teraz', 'zdarzenia', probne],
     queryFn: async ({ signal }) => probne
       ? { wyniki: probneZdarzenia(), uciete: false, pominiete: 0 }
-      : pobierzStrony<Zdarzenie>('zdarzenia', {}, MAKS_STRON_ZDARZEN, signal, walidujZdarzenie),
+      : pobierzZdarzenia(signal),
     ...wspolne, ...co(ODSWIEZANIE_ZDARZEN_MS),
   });
 }

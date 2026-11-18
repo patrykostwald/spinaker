@@ -28,6 +28,42 @@ export function dataIGodzina(iso: string | null | undefined, teraz: number = Dat
   return `${formatKrotki.format(ms)} o godz. ${g}`;
 }
 
+/** „dziś”, „wczoraj”, „10 listopada”: sama data, gdy źródło nie podało godziny. */
+export function samaData(iso: string | null | undefined, teraz: number = Date.now()): string {
+  if (!iso) return '';
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  const d = dzien(ms);
+  if (d === dzien(teraz)) return 'dziś';
+  if (d === dzien(teraz - 86_400_000)) return 'wczoraj';
+  return formatKrotki.format(ms);
+}
+
+/** Pola wpisu potrzebne do opisu czasu publikacji. */
+export interface CzasPublikacji { opublikowano_at: string; dokladna_godzina_publikacji: boolean }
+
+/** Dopisek przy dacie bez godziny (karta, powiat, tabela). */
+export const BEZ_GODZINY = 'źródło podało tylko datę';
+/** Tekst przy niepoprawnym albo brakującym czasie pobrania. */
+export const BRAK_DANYCH = 'brak danych';
+
+/** Publikacja u źródła po polsku: z godziną tylko wtedy, gdy źródło ją podało („10 listopada (źródło podało tylko datę)”). */
+export function czasPublikacji(w: CzasPublikacji, teraz: number = Date.now()): string {
+  if (w.dokladna_godzina_publikacji) return dataIGodzina(w.opublikowano_at, teraz);
+  const d = samaData(w.opublikowano_at, teraz);
+  return d ? `${d} (${BEZ_GODZINY})` : '';
+}
+
+/** Publikacja do tabeli i CSV: „2026-11-18 14:32” albo sama data „2026-11-10”, gdy źródło nie podało godziny. */
+export function czasPublikacjiLokalny(w: CzasPublikacji): string {
+  if (w.dokladna_godzina_publikacji) return czasLokalny(w.opublikowano_at);
+  const ms = Date.parse(w.opublikowano_at);
+  return Number.isFinite(ms) ? dzien(ms) : '';
+}
+
+/** Czas pobrania: „dziś o godz. 14:32” albo „brak danych” (nigdy czas publikacji w zastępstwie). */
+export const czasPobrania = (iso: string | null | undefined, teraz: number = Date.now()): string => dataIGodzina(iso, teraz) || BRAK_DANYCH;
+
 /** „od godz. 14:32” (dziś), „od wczoraj, godz. 14:32”, „od 12 listopada, godz. 09:40”: początek okresu w zdaniu. */
 export function odGodziny(iso: string | null | undefined, teraz: number = Date.now()): string {
   if (!iso) return '';

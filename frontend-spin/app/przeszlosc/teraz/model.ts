@@ -6,19 +6,18 @@ import { zbudujZapytanie, type Parametry } from './parametry';
 /** Czysta logika widoku (bez Reacta i mapy), żeby dało się ją sprawdzić testami. */
 
 /**
- * Które wpisy mogą mieć status, którego nie znamy. Wpis bez zdarzenia jest „bez zdarzenia” tylko wtedy, gdy mamy pełne zdarzenia:
- *  - `wszystkie`: nie ma danych o zdarzeniach (awaria, wczytywanie) albo część rekordów miała zły format,
- *  - `nieWiekszeNiz`: zdarzenia pobrano z limitem stron (od najnowszych); zdarzenie spoza limitu ma `ostatni_wpis_at` nie
- *    późniejszy niż najstarsze pobrane, więc wpis opublikowany później niż ta granica na pewno nie należy do pominiętego zdarzenia.
+ * Które wpisy mogą mieć status, którego nie znamy. Wpis bez zdarzenia jest „bez zdarzenia” tylko wtedy, gdy mamy pełne zdarzenia.
+ * `wszystkie`: nie ma danych o zdarzeniach (awaria, wczytywanie), część rekordów (także powiązanych wpisów) miała zły format
+ * albo zdarzenia pobrano z limitem stron. Przy obcięciu nie porównujemy czasów: backend porządkuje zdarzenia po osi czasu źródła
+ * (dla RCB `czas_zrodlowy_at`), a wpis ma czas publikacji, więc granica z dwóch zegarów mogłaby dać fałszywe „bez zdarzenia”
+ * (recenzja PR #38, P2-9). Nierozstrzygnięte powiązanie to wtedy „Status niedostępny”.
  */
-export interface PolitykaStatusu { wszystkie: boolean; nieWiekszeNiz: number | null }
-export const PELNE_ZDARZENIA: PolitykaStatusu = { wszystkie: false, nieWiekszeNiz: null };
+export interface PolitykaStatusu { wszystkie: boolean }
+export const PELNE_ZDARZENIA: PolitykaStatusu = { wszystkie: false };
 
 export function politykaStatusu(zdarzenia: WynikListy<Zdarzenie> | undefined): PolitykaStatusu {
-  if (!zdarzenia || zdarzenia.pominiete > 0) return { wszystkie: true, nieWiekszeNiz: null };
-  if (!zdarzenia.uciete) return PELNE_ZDARZENIA;
-  const czasy = zdarzenia.wyniki.map(z => Date.parse(z.ostatni_wpis_at)).filter(Number.isFinite);
-  return czasy.length ? { wszystkie: false, nieWiekszeNiz: Math.min(...czasy) } : { wszystkie: true, nieWiekszeNiz: null };
+  if (!zdarzenia || zdarzenia.pominiete > 0 || zdarzenia.uciete) return { wszystkie: true };
+  return PELNE_ZDARZENIA;
 }
 
 /** Kody warstw wyłączonych przez redakcję (pole `wylaczona` z warstwy/). */
@@ -38,6 +37,31 @@ export function bezWylaczonych(wpisy: Wpis[], zdarzenia: Zdarzenie[], wylaczone:
   };
 }
 
+/**
+ * Warstwy potwierdzone w bieżącej, poprawnej odpowiedzi warstwy/ (obecne i niewyłączone). Bez takiej odpowiedzi (wczytywanie,
+ * błąd ostatniego odświeżenia) zbiór jest pusty: wpisów z cache nie pokazujemy, dopóki redakcja „nie potwierdzi” ich warstwy
+ * (recenzja PR #38, P2-7). Warstwa pominięta przez walidator też nie jest potwierdzona.
+ */
+export function potwierdzoneWarstwy(warstwy: Warstwa[] | undefined, aktualne: boolean): Set<string> {
+  if (!aktualne || !warstwy) return new Set();
+  return new Set(warstwy.filter(w => !w.wylaczona).map(w => w.warstwa));
+}
+
+/**
+ * Zostawia tylko wpisy (także powiązane w zdarzeniach) z potwierdzonych warstw. `ukryte` = liczba pominiętych wpisów list,
+ * których warstwa nie jest jawnie wyłączona (czyli brak potwierdzenia, a nie decyzja redakcji): o nich mówi ostrzeżenie.
+ */
+export function tylkoPotwierdzone(wpisy: Wpis[], zdarzenia: Zdarzenie[], potwierdzone: ReadonlySet<string>, wylaczone: ReadonlySet<string>): { wpisy: Wpis[]; zdarzenia: Zdarzenie[]; ukryte: number } {
+  const ok = (w: Wpis) => potwierdzone.has(w.warstwa);
+  return {
+    wpisy: wpisy.filter(ok),
+    zdarzenia: zdarzenia
+      .map(z => (z.wpisy.every(ok) ? z : { ...z, wpisy: z.wpisy.filter(ok) }))
+      .filter(z => z.wpisy.length > 0),
+    ukryte: wpisy.filter(w => !ok(w) && !wylaczone.has(w.warstwa)).length,
+  };
+}
+
 /** Wpis → zdarzenie (przy kilku zdarzeniach wygrywa to z najświeższym wpisem); status tylko ze zdarzenia, a gdy zdarzeń nie znamy, „status niedostępny”. */
 export function zbudujWidoki(wpisy: Wpis[], zdarzenia: Zdarzenie[], polityka: PolitykaStatusu = PELNE_ZDARZENIA): WidokWpisu[] {
   const poWpisie = new Map<number, Zdarzenie>();
@@ -49,8 +73,7 @@ export function zbudujWidoki(wpisy: Wpis[], zdarzenia: Zdarzenie[], polityka: Po
   }
   return wpisy.map(wpis => {
     const zdarzenie = poWpisie.get(wpis.id) ?? null;
-    const nieznany = !zdarzenie && (polityka.wszystkie || (polityka.nieWiekszeNiz !== null && Date.parse(wpis.opublikowano_at) <= polityka.nieWiekszeNiz));
-    const status: StatusKlucz = zdarzenie ? zdarzenie.status : nieznany ? 'niedostepny' : 'brak';
+    const status: StatusKlucz = zdarzenie ? zdarzenie.status : polityka.wszystkie ? 'niedostepny' : 'brak';
     return { wpis, status, zdarzenie };
   });
 }
@@ -60,7 +83,8 @@ const poprawnyPunkt = (w: Wpis): boolean =>
   && Math.abs(w.szerokosc) <= 90 && Math.abs(w.dlugosc) <= 180;
 
 export const maPunkt = (w: Wpis): boolean => poprawnyPunkt(w);
-export const maObszar = (w: Wpis): boolean => !poprawnyPunkt(w) && Array.isArray(w.bbox) && w.bbox.length === 4 && w.bbox.every(Number.isFinite);
+const poprawnyProstokat = (w: Wpis): boolean => Array.isArray(w.bbox) && w.bbox.length === 4 && w.bbox.every(Number.isFinite);
+export const maObszar = (w: Wpis): boolean => !poprawnyPunkt(w) && poprawnyProstokat(w);
 /** Wpis bez punktu i bez prostokąta: pokazujemy tylko na liście („dotyczy: powiat X”). */
 export const bezPolozenia = (w: Wpis): boolean => !poprawnyPunkt(w) && !maObszar(w);
 
@@ -71,16 +95,16 @@ export const przecinaSie = (a: Bbox, b: Bbox): boolean => a[0] <= b[2] && a[2] >
  * Filtr województwa: kod TERYT zaczyna się od kodu województwa. Wpis bez TERYT z punktem liczy się, gdy punkt leży w przybliżonym
  * prostokącie województwa, a z prostokątem, gdy jego zasięg ma z tym prostokątem część wspólną (tak samo filtruje API: `bbox=`).
  * To przybliżenie: prostokąty województw nie są granicami, więc przy brzegach mogą trafić się wpisy z sąsiedniego województwa
- * (interfejs mówi o tym w panelu filtrów). Zasięg obejmujący część regionu nie znika.
+ * (interfejs mówi o tym w panelu filtrów). Zasięg obejmujący część regionu nie znika. Jak w Django (`bbox=`): wystarczy, że
+ * pasuje punkt albo prostokąt; punkt poza regionem nie ukrywa wpisu, którego prostokąt region przecina (P2-11).
  */
 export function zgodnyZRegionem(w: Wpis, woj: string | null): boolean {
   if (!woj) return true;
   if (w.teryt.length) return w.teryt.some(k => k.startsWith(woj));
   const region = WOJEWODZTWA.find(r => r.kod === woj);
   if (!region) return true;
-  if (poprawnyPunkt(w)) return wBbox(w.dlugosc as number, w.szerokosc as number, region.bbox);
-  if (maObszar(w)) return przecinaSie(w.bbox as Bbox, region.bbox);
-  return false;
+  if (poprawnyPunkt(w) && wBbox(w.dlugosc as number, w.szerokosc as number, region.bbox)) return true;
+  return poprawnyProstokat(w) && przecinaSie(w.bbox as Bbox, region.bbox);
 }
 
 /** Warstwa działa: nie jest wyłączona przez redakcję i ma publiczne źródło. Wyłączona nie pojawia się nigdzie, także w „w przygotowaniu”. */
@@ -126,6 +150,8 @@ export interface PodsumowanieStanu {
   wiersze: WierszStanu[];
   /** Warstwy ze źródłami, które mają luki albo błędy: tu pokazujemy zdanie z API. */
   ostrzezenia: WierszStanu[];
+  /** Część wierszy stanu miała zły format (walidator je pominął): brak wiersza nie znaczy „brak aktywnych źródeł”. */
+  niepelne: boolean;
 }
 
 export function podsumujStan(stan: Stan | undefined, warstwy: Warstwa[] | undefined): PodsumowanieStanu | null {
@@ -144,7 +170,7 @@ export function podsumujStan(stan: Stan | undefined, warstwy: Warstwa[] | undefi
     };
   });
   const posortowane = [...wiersze].sort((a, b) => KOLEJNOSC_WARSTW.indexOf(a.warstwa) - KOLEJNOSC_WARSTW.indexOf(b.warstwa));
-  return { informacja: stan.informacja, wiersze: posortowane, ostrzezenia: posortowane.filter(x => x.aktywna && x.komunikat) };
+  return { informacja: stan.informacja, wiersze: posortowane, ostrzezenia: posortowane.filter(x => x.aktywna && x.komunikat), niepelne: (stan.pominiete ?? 0) > 0 };
 }
 
 /** `ikona` to nazwa obrazu znacznika: ik-<kształt>-<kolor bez #> (rysowany na żądanie w Mapa.tsx). */
@@ -188,8 +214,9 @@ export function naGeoJson(widoki: WidokWpisu[]): {
 
 /**
  * Adres do skopiowania: ścieżka strony i wyłącznie parametry widoku z listy dozwolonych (warstwy, okres, województwo, widok, tryb próbny)
- * plus wpis. Obcych parametrów z bieżącego adresu (np. śledzących) nie kopiujemy.
+ * plus wpis. Obcych parametrów z bieżącego adresu (np. śledzących) nie kopiujemy. Zakres filtrów jest pełny (także wartości domyślne),
+ * więc pamięć przeglądarki odbiorcy nie ukryje wskazanego wpisu (P2-12).
  */
 export function adresWpisu(origin: string, sciezka: string, widok: Parametry, id: number): string {
-  return `${origin}${sciezka}${zbudujZapytanie({ ...widok, wpis: id }, '')}`;
+  return `${origin}${sciezka}${zbudujZapytanie({ ...widok, wpis: id }, '', true)}`;
 }
