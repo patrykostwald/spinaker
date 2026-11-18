@@ -6,7 +6,7 @@ Zasilanie danymi i raport doby działają osobno na serwerze (`backend/news/prze
 
 ## Zasady dla rutyny (czytaj w całości przed pracą)
 
-1. Gałąź integracyjna: `claude/przeszlosc-samorozwoj`. Pracujesz od niej i do niej otwierasz PR. Nie dotykasz `main`.
+1. Gałąź bazowa: `main` (od 17.11.2026 odzwierciedla produkcję). Pracujesz od niej i do niej otwierasz PR; nigdy nie wypychasz bezpośrednio na `main`. Commity po angielsku, krótkie (CONTRIBUTING.md).
 2. **Jedna pozycja naraz.** Jeśli istnieje otwarty PR z gałęzi `auto/przeszlosc-*`, nic nie buduj: zakończ z jednym zdaniem „czeka PR #N”.
 3. Wybór pozycji: najpierw otwarte Issues z etykietami `sprint` i `area:przeszlosc` (najstarsze), potem pierwsza pozycja z tabeli ze stanem `do zrobienia`.
    Pomiń pozycję, dla której istnieje zamknięty bez scalenia PR `auto/przeszlosc-<id>` (właściciel ją odrzucił).
