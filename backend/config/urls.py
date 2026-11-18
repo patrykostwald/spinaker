@@ -32,5 +32,6 @@ urlpatterns = [
         name="redoc",
     ),
     path("api/spina3/", include("spina3.urls")),
+    path("api/teraz/", include("teraz.urls")),
     path("api/", include("news.urls")),
 ]

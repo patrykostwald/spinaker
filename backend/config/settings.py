@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     "news",
     "scraper",
     "spina3",
+    "teraz.apps.TerazConfig",
 ]
 
 PREVIEW_KEY = env("PREVIEW_KEY", default="")
@@ -240,6 +241,7 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_TASK_ROUTES = {"teraz.tasks.*": {"queue": "teraz"}}
 
 NEWSAPI_KEY = env("NEWSAPI_KEY", default="")
 TWITTER_BEARER_TOKEN = env("TWITTER_BEARER_TOKEN", default="")
@@ -261,6 +263,16 @@ CACHES = {"default": {
     if DATABASES["default"]["ENGINE"].endswith("sqlite3") else "django.core.cache.backends.redis.RedisCache",
     "LOCATION": env("REDIS_URL", default="redis://localhost:6379/1"),
 }}
+CACHES["teraz"] = {
+    "BACKEND": "django.core.cache.backends.redis.RedisCache",
+    "LOCATION": env("TERAZ_REDIS_URL", default="redis://redis:6379/2"),
+    "KEY_PREFIX": "teraz",
+    "TIMEOUT": 20,
+    "OPTIONS": {"socket_connect_timeout": 0.5, "socket_timeout": 0.5},
+}
+TERAZ_ZRZUTY_ROOT = BASE_DIR / "media" / "private" / "teraz"
+TERAZ_RETENCJA_ZRZUTOW_DNI = env.int("TERAZ_RETENCJA_ZRZUTOW_DNI", default=90)
+TERAZ_RETENCJA_OSOBOWE_DNI = env.int("TERAZ_RETENCJA_OSOBOWE_DNI", default=30)
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = ["rest_framework.throttling.AnonRateThrottle", "rest_framework.throttling.UserRateThrottle"]
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"anon": "100/min", "user": "100/min"}
 REST_FRAMEWORK["NUM_PROXIES"] = env.int("TRUSTED_PROXY_COUNT", default=0)

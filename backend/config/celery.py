@@ -128,6 +128,14 @@ if os.environ.get('RCL_FETCH_ENABLED', '').strip().lower() in ('1', 'true', 'yes
 from news.daily_schedule import beat_entries
 app.conf.beat_schedule.update(beat_entries())
 
+try:
+    from teraz.schedule import beat_schedule as TERAZ_SCHEDULE
+except ModuleNotFoundError as exc:
+    if exc.name not in {"teraz", "teraz.schedule"}:
+        raise
+else:
+    app.conf.beat_schedule.update(TERAZ_SCHEDULE)
+
 # Small resumable batches; collector refresh_hours controls new scan cycles.
 for _index, _source in enumerate((
     'votes', 'statements', 'interpellations', 'questions', 'lobby_mswia',
