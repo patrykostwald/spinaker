@@ -62,8 +62,9 @@ export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezonoWpisy
     </>;
   }
   let luka: React.ReactNode = null;
-  if (!brakPolaczenia && podsumowanie && ostrzezenia.length) {
+  if (!brakPolaczenia && podsumowanie && (ostrzezenia.length || podsumowanie.niepelne)) {
     luka = <>
+      {podsumowanie.niepelne && <span className="tz-stan__zdanie"><strong>Stan części źródeł ma nieznany format:</strong> {NIEPEWNOSC}. </span>}
       {ostrzezenia.slice(0, MAKS_OSTRZEZEN).map(o => <span key={o.warstwa} className="tz-stan__zdanie"><strong>{o.nazwa}:</strong> {o.komunikat}. </span>)}
       {ostrzezenia.length > MAKS_OSTRZEZEN && <span className="tz-stan__zdanie">Jeszcze {ostrzezenia.length - MAKS_OSTRZEZEN} warstw z tą samą uwagą (szczegóły po rozwinięciu stanu).</span>}
     </>;
@@ -73,7 +74,9 @@ export function LiniaStanu({ probne, podsumowanie, online, blad, odswiezonoWpisy
   let stan: string;
   if (brakPolaczenia) stan = godzinaWpisow ? `ostatnie komunikaty z godz. ${godzinaWpisow}` : 'brak danych';
   else if (!podsumowanie) stan = ladowanie ? 'sprawdzamy stan źródeł…' : `stan źródeł niedostępny: ${NIEPEWNOSC}`;
-  else stan = pierwsza ? `${pierwsza.nazwa}: ${pierwsza.ostatniePobranie}, ${pierwsza.komunikaty}` : 'brak aktywnych źródeł';
+  else if (pierwsza) stan = `${pierwsza.nazwa}: ${pierwsza.ostatniePobranie}, ${pierwsza.komunikaty}`;
+  // wiersze odrzucone przez walidator: nie wiemy, czy źródła działają, więc nie piszemy „brak aktywnych źródeł”
+  else stan = podsumowanie.niepelne ? `stan źródeł niepełny: ${NIEPEWNOSC}` : 'brak aktywnych źródeł';
 
   return <section className="tz-stan" aria-label="Stan danych" data-poziom={alarm || luka ? 'ostrzezenie' : 'ok'}>
     <p className="tz-stan__stale">{ZDANIE_STALE}</p>

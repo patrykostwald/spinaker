@@ -1,6 +1,7 @@
 from datetime import timedelta
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.core.cache import caches
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import BooleanField, Count, FloatField, Func, Prefetch, Q
@@ -8,7 +9,7 @@ from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Coalesce
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import APIException, NotFound
 from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
@@ -16,7 +17,10 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle
 
+from news.preview import valid_preview
+
 from .cache import BLEDY_CACHE, CZAS_CACHE, klucz_odpowiedzi
+from .zrodla.rcb import zasieg_czesciowy
 from .models import Klasa, Warstwa, Wpis, WylacznikKategorii, Zdarzenie, Zrodlo, sprawdz_bbox
 
 NIEPEWNOSC = "nie mamy pewności, sprawdź Alert RCB i 112"
@@ -73,17 +77,42 @@ class FiltryWpisow(serializers.Serializer):
         return attrs
 
 
+class Zasieg:
+    """Jak czytać kody TERYT wpisu (pole `zasieg` w API; recenzja PR #38, P1-2):
+    OBSZAR: kody to zasięg podany przez źródło; PRZYBLIZONY: kody obejmują szerszy obszar niż źródło (np. województwo dla
+    alertu do wybranych powiatów albo kod uogólniony dla klasy wrażliwej), szczegóły tylko w `miejsce`; BRAK: bez kodów."""
+    OBSZAR = "obszar"
+    PRZYBLIZONY = "przyblizony"
+    BRAK = "brak"
+
+
+def zasieg_wpisu(wpis, kody, uogolniony):
+    if not kody:
+        return Zasieg.BRAK
+    if uogolniony or wpis.pewnosc_lokalizacji < 1:
+        return Zasieg.PRZYBLIZONY
+    # starsze wpisy RCB (sprzed rozróżnienia w parserze) mają pewność 1 także dla wybranych powiatów: rozstrzyga treść
+    if wpis.zrodlo.slug == "rcb" and zasieg_czesciowy(wpis.miejsce, wpis.tresc):
+        return Zasieg.PRZYBLIZONY
+    return Zasieg.OBSZAR
+
+
 class WpisSerializer(serializers.ModelSerializer):
     zrodlo = serializers.SlugRelatedField(slug_field="slug", read_only=True)
     warstwa = serializers.CharField(source="zrodlo.warstwa")
     atrybucja = serializers.CharField(source="zrodlo.atrybucja")
+    zasieg = serializers.SerializerMethodField(help_text="obszar, przyblizony albo brak (patrz Zasieg).")
 
     class Meta:
         model = Wpis
         fields = (
             "id", "zrodlo", "warstwa", "tytul", "tresc", "link", "opublikowano_at", "pobrano_at",
             "atrybucja", "miejsce", "czas_zrodlowy_at", "dokladna_godzina_publikacji", "klasa", "teryt", "szerokosc", "dlugosc", "bbox", "dokladnosc", "pewnosc_lokalizacji",
+            "zasieg",
         )
+
+    def get_zasieg(self, instance) -> str:
+        return zasieg_wpisu(instance, instance.teryt, False)
 
     def to_representation(self, instance):
         dane = super().to_representation(instance)
@@ -96,6 +125,7 @@ class WpisSerializer(serializers.ModelSerializer):
             dane.update(teryt=kody, szerokosc=None, dlugosc=None, bbox=None,
                         dokladnosc=dokladnosc, pewnosc_lokalizacji=0)
             dane["miejsce"] = ""
+            dane["zasieg"] = zasieg_wpisu(instance, kody, True)
         if instance.zrodlo.slug == "rcb" and instance.dokladna_godzina_publikacji:
             godzina = timezone.localtime(instance.opublikowano_at)
             dane["atrybucja"] += f" o godz. {godzina:%H:%M}"
@@ -210,6 +240,18 @@ class StronicowanieTeraz(PageNumberPagination):
         return self._link(self.page.previous_page_number()) if self.page.has_previous() else None
 
 
+def dostep_przed_startem(request):
+    """Przed publicznym startem: ważny podpisany podgląd (ten sam podpis co /api/preview/status/) albo zalogowany personel."""
+    if valid_preview(request.COOKIES.get("sc_preview_sig")):
+        return True
+    try:
+        uzytkownik = request.user
+    except APIException:
+        # zły nagłówek uwierzytelnienia nie może zdradzić istnienia API inną odpowiedzią niż 404
+        return False
+    return bool(uzytkownik and uzytkownik.is_authenticated and uzytkownik.is_staff)
+
+
 class PublicznyOdczyt(GenericAPIView):
     permission_classes = [AllowAny]
     renderer_classes = [JSONRenderer]
@@ -217,6 +259,28 @@ class PublicznyOdczyt(GenericAPIView):
     filtry_class = serializers.Serializer
     pagination_class = None
     cache_dostepny = True
+    publiczny = True
+
+    def perform_authentication(self, request):
+        try:
+            super().perform_authentication(request)
+        except APIException:
+            # przed startem zły nagłówek uwierzytelnienia kończy się w bramce jako 404, a nie 401/403 (DRF ustawia już anonima)
+            if settings.TERAZ_PUBLICZNE:
+                raise
+
+    def check_permissions(self, request):
+        """Bramka flagi TERAZ_PUBLICZNE: przed throttlingiem, odczytem cache i bazy. Bez dostępu 404 (nie zdradzamy istnienia)."""
+        super().check_permissions(request)
+        self.publiczny = bool(settings.TERAZ_PUBLICZNE)
+        if not self.publiczny and not dostep_przed_startem(request):
+            raise NotFound()
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        # odpowiedzi sprzed startu (podgląd, personel, 404 bramki) są prywatne; publiczne jak dotąd bez przechowywania
+        response["Cache-Control"] = "no-store" if self.publiczny else "private, no-store"
+        return response
 
     def get_throttles(self):
         throttles = super().get_throttles()
@@ -261,13 +325,14 @@ class PublicznyOdczyt(GenericAPIView):
     def get(self, request, *args, **kwargs):
         parametry = self.przygotuj_parametry(request)
         klucz = None
-        if self.cache_dostepny:
+        # przed startem wspólny cache odpowiedzi nie jest ani czytany, ani zasilany (podgląd nie może go rozgrzać dla innych)
+        if self.cache_dostepny and self.publiczny:
             try:
                 cache = caches["teraz"]
                 klucz = klucz_odpowiedzi(self.adres, parametry)
                 dane = cache.get(klucz)
                 if dane is not None:
-                    return Response(dane, headers={"Cache-Control": "no-store"})
+                    return Response(dane)
             except BLEDY_CACHE:
                 klucz = None
 
@@ -277,7 +342,6 @@ class PublicznyOdczyt(GenericAPIView):
                 cache.set(klucz, odpowiedz.data, timeout=CZAS_CACHE)
             except BLEDY_CACHE:
                 pass
-        odpowiedz["Cache-Control"] = "no-store"
         return odpowiedz
 
     def lista(self, queryset):

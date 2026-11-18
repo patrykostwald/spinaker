@@ -1,5 +1,5 @@
 import type { Warstwa, WidokWpisu } from './typy';
-import { czasLokalny, dataIGodzina } from './czas';
+import { BRAK_DANYCH, czasLokalny, czasPobrania, czasPublikacji, czasPublikacjiLokalny } from './czas';
 import { adresZrodla } from './link';
 import { nazwaZrodla } from './model';
 import { normalizuj } from './powiaty';
@@ -28,13 +28,17 @@ export interface WierszTabeli {
   tytul: string;
   status: string;
   miejsce: string;
-  /** Czytelnie: „dziś o godz. 14:32”. */
+  /** Czytelnie: „dziś o godz. 14:32” albo sama data, gdy źródło nie podało godziny („10 listopada (źródło podało tylko datę)”). */
   opublikowano: string;
+  /** „dziś o godz. 14:32” albo „brak danych”. */
   pobrano: string;
-  /** Lokalnie, sortowalnie: „2026-11-18 14:32” (do CSV). */
+  /** Lokalnie, sortowalnie: „2026-11-18 14:32” albo „2026-11-10” bez godziny (do CSV i atrybutu datetime). */
   opublikowanoCzas: string;
+  /** „2026-11-18 14:32” albo „brak danych” (wtedy bez atrybutu datetime). */
   pobranoCzas: string;
   zrodlo: string;
+  /** Podpis źródła z API (do CSV). */
+  atrybucja: string;
   link: string;
   /** Wartości do sortowania. */
   klucze: Record<IdKolumny, string | number>;
@@ -51,21 +55,21 @@ export function wierszeTabeli(widoki: WidokWpisu[], warstwy: Warstwa[] | undefin
     const zrodloTekst = zrodlo.instytucja && zrodlo.instytucja !== zrodlo.nazwa ? `${zrodlo.nazwa}, ${zrodlo.instytucja}` : zrodlo.nazwa;
     const etykietaStatusu = metaStatusu(status).etykieta;
     const miejsce = miejsceKrotko(opisMiejsca(wpis));
-    const opublikowano = dataIGodzina(wpis.opublikowano_at, teraz);
-    const pobrano = dataIGodzina(wpis.pobrano_at, teraz);
-    const opublikowanoCzas = czasLokalny(wpis.opublikowano_at);
-    const pobranoCzas = czasLokalny(wpis.pobrano_at);
+    const opublikowano = czasPublikacji(wpis, teraz);
+    const pobrano = czasPobrania(wpis.pobrano_at, teraz);
+    const opublikowanoCzas = czasPublikacjiLokalny(wpis);
+    const pobranoCzas = czasLokalny(wpis.pobrano_at) || BRAK_DANYCH;
     const miejsceWarstwy = KOLEJNOSC_WARSTW.indexOf(wpis.warstwa);
     return {
       id: wpis.id, warstwa: nazwaWarstwy, tytul: wpis.tytul, status: etykietaStatusu, miejsce, opublikowano, pobrano,
-      opublikowanoCzas, pobranoCzas, zrodlo: zrodloTekst, link: adresZrodla(wpis.link) ?? '',
+      opublikowanoCzas, pobranoCzas, zrodlo: zrodloTekst, atrybucja: wpis.atrybucja ?? '', link: adresZrodla(wpis.link) ?? '',
       klucze: {
         warstwa: miejsceWarstwy < 0 ? 999 : miejsceWarstwy,
         tytul: normalizuj(wpis.tytul),
         status: KOLEJNOSC_STATUSOW.indexOf(status),
         miejsce: normalizuj(miejsce),
         opublikowano: Date.parse(wpis.opublikowano_at) || 0,
-        pobrano: Date.parse(wpis.pobrano_at) || 0,
+        pobrano: (wpis.pobrano_at && Date.parse(wpis.pobrano_at)) || 0,
         zrodlo: normalizuj(zrodloTekst),
       },
       szukaj: normalizuj([nazwaWarstwy, wpis.tytul, etykietaStatusu, miejsce, opublikowano, opublikowanoCzas, pobrano, pobranoCzas, zrodloTekst].join(' ')),
@@ -99,9 +103,12 @@ export function sortujWiersze(wiersze: WierszTabeli[], kolumna: IdKolumny, kieru
 /** Domyślny kierunek po pierwszym kliknięciu kolumny: czas od najnowszych, reszta od A do Z. */
 export const kierunekPoczatkowy = (kolumna: IdKolumny): Kierunek => (kolumna === 'opublikowano' || kolumna === 'pobrano' ? 'malejaco' : 'rosnaco');
 
-export const NAGLOWKI_CSV: string[] = [...KOLUMNY.map(k => k.etykieta), 'Odnośnik do oryginału'];
+export const NAGLOWKI_CSV: string[] = [...KOLUMNY.map(k => k.etykieta), 'Podpis źródła', 'Odnośnik do oryginału'];
 
-/** Wiersze eksportu: te same kolumny co w tabeli, czas lokalny sortowalny, odnośnik do oryginału na końcu. */
+/**
+ * Wiersze eksportu: te same kolumny co w tabeli, czas lokalny sortowalny (sama data, gdy źródło nie podało godziny; „brak danych”
+ * przy nieznanym pobraniu), podpis źródła z API (P1-6) i odnośnik do oryginału na końcu.
+ */
 export function wierszeCsv(wiersze: WierszTabeli[]): string[][] {
-  return wiersze.map(w => [w.warstwa, w.tytul, w.status, w.miejsce, w.opublikowanoCzas, w.pobranoCzas, w.zrodlo, w.link]);
+  return wiersze.map(w => [w.warstwa, w.tytul, w.status, w.miejsce, w.opublikowanoCzas, w.pobranoCzas, w.zrodlo, w.atrybucja, w.link]);
 }

@@ -1,5 +1,5 @@
 import type { Warstwa, WidokWpisu } from './typy';
-import { dataIGodzina } from './czas';
+import { czasPublikacji } from './czas';
 import { opisMiejsca } from './teryt';
 import { nazwaZrodla } from './model';
 import { metaWarstwy } from './warstwy';
@@ -27,7 +27,7 @@ export function ListaWpisow({ widoki, warstwy, wybrany, onWybierz, etykieta, pus
           <span className="tz-pozycja__glowna">
             <span className="tz-pozycja__tytul">{wpis.tytul}</span>
             <span className="tz-pozycja__meta" title={`${nazwa} · ${nazwaZrodla(warstwy, wpis.zrodlo).nazwa}`}>{nazwa} · {nazwaZrodla(warstwy, wpis.zrodlo).nazwa}</span>
-            <span className="tz-pozycja__meta" title={`${dataIGodzina(wpis.opublikowano_at)} · ${opisMiejsca(wpis)}`}>{dataIGodzina(wpis.opublikowano_at)} · {opisMiejsca(wpis)}</span>
+            <span className="tz-pozycja__meta" title={`${czasPublikacji(wpis)} · ${opisMiejsca(wpis)}`}>{czasPublikacji(wpis)} · {opisMiejsca(wpis)}</span>
           </span>
           <EtykietaStatusu status={status} />
         </button>

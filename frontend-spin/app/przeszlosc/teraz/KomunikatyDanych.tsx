@@ -1,4 +1,5 @@
 import { NIEPEWNOSC } from './warstwy';
+import { liczbaKomunikatow } from './powiaty';
 
 /**
  * Komunikaty o stanie danych, każdy stan osobno (zlecenie Z6-poprawki, P1-2):
@@ -6,7 +7,8 @@ import { NIEPEWNOSC } from './warstwy';
  *  - dane obcięte (limit stron wpisów albo zdarzeń): pokazujemy najnowsze, starsze pominięto,
  *  - dane nieaktualne (ostatnie odświeżenie się nie udało, ale mamy wcześniejsze dane),
  *  - status niedostępny (zdarzenia): wpis dostaje „Status niedostępny”, nie „Komunikat bez zdarzenia”.
- * „Brak komunikatów” pokazuje tylko ten, kto ma udaną odpowiedź (patrz TerazPage).
+ *  - brak potwierdzenia warstw (recenzja PR #38, P2-7): wpisy z warstw nieobecnych w bieżącej, poprawnej odpowiedzi warstwy/ są ukryte.
+ * „Brak komunikatów” pokazuje tylko ten, kto ma kompletną odpowiedź (patrz TerazPage, P1-3).
  */
 export interface StanPobrania {
   /** Pierwsze pobranie jeszcze trwa. */
@@ -19,6 +21,10 @@ export interface StanPobrania {
   uciete?: boolean;
   /** Liczba rekordów o nieznanym formacie, pominiętych. */
   pominiete?: number;
+  /** Ile rekordów faktycznie pobraliśmy (przy obcięciu mówimy, ile mamy). */
+  pobrane?: number;
+  /** Warstwy: liczba wpisów ukrytych, bo ich warstwa nie jest potwierdzona w bieżącej odpowiedzi warstwy/. */
+  niepotwierdzone?: number;
 }
 
 export interface KomunikatyDanychProps {
@@ -36,7 +42,7 @@ export function KomunikatyDanych({ wpisy, warstwy, zdarzenia, brakWybranego }: K
     {wpisy?.niedostepne && <p className="tz-komunikat tz-komunikat--blad" role="alert">
       <strong>Dane niedostępne.</strong> Nie udało się pobrać komunikatów, więc nie wiemy, co się dzieje: {NIEPEWNOSC}.</p>}
     {wpisy?.nieaktualne && <p className="tz-komunikat tz-komunikat--blad" role="status">Nie udało się odświeżyć komunikatów. Pokazujemy ostatnio pobrane, mogą być nieaktualne.</p>}
-    {wpisy?.uciete && <p className="tz-komunikat tz-komunikat--mala" role="status">Dane obcięte: pokazujemy najnowsze komunikaty, starsze pominięto. Zawęź czas albo region.</p>}
+    {wpisy?.uciete && <p className="tz-komunikat tz-komunikat--mala" role="status">Dane obcięte: pobraliśmy {wpisy.pobrane !== undefined ? `${liczbaKomunikatow(wpisy.pobrane)}, najnowsze` : 'najnowsze komunikaty'}, starsze pominięto. Zawęź czas albo region.</p>}
     {!!wpisy?.pominiete && <p className="tz-komunikat tz-komunikat--mala" role="status">Pominięto komunikaty o nieznanym formacie: {wpisy.pominiete}.</p>}
 
     {zdarzenia.niedostepne && <p className="tz-komunikat tz-komunikat--blad" role="alert">
@@ -47,6 +53,8 @@ export function KomunikatyDanych({ wpisy, warstwy, zdarzenia, brakWybranego }: K
 
     {warstwy.niedostepne && <p className="tz-komunikat tz-komunikat--blad" role="status">
       <strong>Lista warstw niedostępna.</strong> Nie możemy sprawdzić nazw źródeł ani tego, czy któraś warstwa została wyłączona.</p>}
+    {!!warstwy.niepotwierdzone && <p className="tz-komunikat tz-komunikat--blad" role="status">
+      <strong>Warstwy niepotwierdzone.</strong> Nie mamy aktualnej listy warstw, więc ukrywamy komunikaty z warstw bez potwierdzenia ({warstwy.niepotwierdzone}): {NIEPEWNOSC}.</p>}
     {brakWybranego && <p className="tz-komunikat tz-komunikat--blad" role="status">Tego wpisu nie ma w bieżących danych (inny okres, region, warstwa wyłączona albo wpis wycofany). Zmień okres w panelu warstw.</p>}
   </>;
 }

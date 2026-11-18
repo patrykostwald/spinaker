@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GeoJSONSource, Map as MapaGL } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Bbox } from './typy';
@@ -24,8 +24,6 @@ export interface MapaProps {
   /** Położenie wybranego wpisu (do przelotu, gdy wybór nie pochodzi z kliknięcia w mapę). */
   polozenieWybranego: { srodek: [number, number] | null; bbox: Bbox | null } | null;
   region: Bbox | null;
-  /** Mapa i jej dane są gotowe (po zdarzeniu load): wtedy można przelecieć do wybranego wpisu z adresu URL. */
-  gotowa: boolean;
   podkladUrl: string;
   glifyUrl: string;
   onWybierz: (id: number | null) => void;
@@ -104,6 +102,9 @@ export default function Mapa(p: MapaProps) {
   najnowsze.current = p;
   const ostatniKlik = useRef<number | null>(null);
   const motyw = useRef<Motyw>(MOTYW_CIEMNY);
+  // gotowość tej instancji mapy (po jej zdarzeniu load), nie stan strony: nowa mapa po powrocie z tabeli startuje jako niegotowa,
+  // a po załadowaniu stosuje bieżący wybór (recenzja PR #38, P2-13)
+  const [gotowa, setGotowa] = useState(false);
 
   // utworzenie mapy (raz); zależności celowo puste: dalsze zmiany obsługują osobne efekty poniżej
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function Mapa(p: MapaProps) {
           if (obraz) mapaGL.addImage(e.id, obraz, { pixelRatio: 2 });
         });
         mapaGL.on('style.load', zainstalujDane);
-        mapaGL.on('load', () => najnowsze.current.onStan({ gotowa: true, podklad: tryb }));
+        mapaGL.on('load', () => { if (anulowano) return; setGotowa(true); najnowsze.current.onStan({ gotowa: true, podklad: tryb }); });
         mapaGL.on('error', ev => {
           const zrodlo = (ev as unknown as { sourceId?: string }).sourceId;
           if (zrodlo === 'podklad' && tryb === 'pmtiles') {
@@ -235,7 +236,7 @@ export default function Mapa(p: MapaProps) {
         if (!anulowano) najnowsze.current.onStan({ gotowa: false, podklad: 'zapasowy', niedostepna: true });
       }
     })();
-    return () => { anulowano = true; usun?.(); };
+    return () => { anulowano = true; usun?.(); setGotowa(false); };
   }, []);
 
   // dane
@@ -252,7 +253,7 @@ export default function Mapa(p: MapaProps) {
   const maPolozenie = p.polozenieWybranego !== null;
   useEffect(() => {
     const m = mapa.current as (MapaGL & { _tzUstawWybor?: (id: number | null) => void }) | null;
-    if (!m) return;
+    if (!m || !gotowa) return;
     m._tzUstawWybor?.(p.wybrany);
     if (p.wybrany === null) { przelecialDla.current = null; ostatniKlik.current = null; return; }
     if (p.wybrany === przelecialDla.current) return;
@@ -265,7 +266,7 @@ export default function Mapa(p: MapaProps) {
     const duration = reduced() ? 0 : 600;
     if (polozenie.srodek) m.easeTo({ center: polozenie.srodek, zoom: Math.max(m.getZoom(), 11), padding, duration });
     else if (polozenie.bbox) m.fitBounds(polozenie.bbox, { padding, duration, maxZoom: 9 });
-  }, [p.wybrany, maPolozenie, p.gotowa]);
+  }, [p.wybrany, maPolozenie, gotowa]);
 
   // region (filtr województwa): dopasowanie widoku
   const pierwszyRegion = useRef(true);

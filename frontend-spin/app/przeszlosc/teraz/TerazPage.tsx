@@ -3,11 +3,11 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useStandalone } from '../ui';
 import { odKiedy, useOnline, useStan, useWarstwy, useWpisy, useWpisyPowiatow, useZdarzenia } from './api';
-import { adresWpisu, aktywna, bezPolozenia, bezWylaczonych, dostepna, kodyWylaczonych, maObszar, maPunkt, naGeoJson, podsumujStan, politykaStatusu, posortujWarstwy, wlaczoneWarstwy, zbudujWidoki, zgodnyZRegionem } from './model';
+import { adresWpisu, aktywna, bezPolozenia, dostepna, kodyWylaczonych, maObszar, maPunkt, naGeoJson, podsumujStan, politykaStatusu, posortujWarstwy, potwierdzoneWarstwy, tylkoPotwierdzone, wlaczoneWarstwy, zbudujWidoki, zgodnyZRegionem } from './model';
 import type { WierszStanu } from './model';
-import { zbudujZapytanie, type Parametry, type Widok } from './parametry';
+import { warstwyZAdresu, zbudujZapytanie, type Parametry, type Widok } from './parametry';
 import { czytajPamiec, zapiszPamiec } from './pamiec';
-import { adresZestawu, kodyWojewodztw, oczyscKody, zapytanieZPowiatami } from './powiaty';
+import { adresZestawu, kodyWojewodztw, liczbaKomunikatow, oczyscKody, zapytanieZPowiatami } from './powiaty';
 import { WOJEWODZTWA } from './teryt';
 import type { Bbox, Okres } from './typy';
 import type { StanMapy } from './Mapa';
@@ -62,6 +62,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const [widok, setWidok] = useState<Widok>(poczatkowy.widok);
   const [powiaty, setPowiaty] = useState<string[]>(poczatkowePowiaty);
   const [panel, setPanel] = useState(false);
+  // link z samymi nieznanymi kodami warstw: domyślne warstwy, a wybór nie trafia do pamięci, dopóki użytkownik go nie zmieni (P2-12)
+  const nieZapisujWarstw = useRef(false);
   const [bezGranic, setBezGranic] = useState(false);
   const [mapa, setMapa] = useState<StanMapy>({ gotowa: false, podklad: podkladUrl ? 'pmtiles' : 'zapasowy' });
   const [pamiecGotowa, setPamiecGotowa] = useState(false);
@@ -84,13 +86,16 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const p = czytajPamiec();
-    if (!q.has('warstwy') && p.warstwy !== undefined) setWybor(p.warstwy);
+    if (q.has('warstwy')) nieZapisujWarstw.current = warstwyZAdresu(q.get('warstwy') ?? undefined).bledne;
+    else if (p.warstwy !== undefined) setWybor(p.warstwy);
     if (!q.has('okres') && p.okres) setOkres(p.okres);
     if (!q.has('woj') && p.woj) setWoj(p.woj);
     if (!q.has('powiaty') && p.powiaty) { const k = oczyscKody(p.powiaty); if (k.length) setPowiaty(k); }
     setPamiecGotowa(true);
   }, []);
-  useEffect(() => { if (pamiecGotowa) zapiszPamiec({ warstwy: wybor, okres, woj }); }, [pamiecGotowa, wybor, okres, woj]);
+  useEffect(() => {
+    if (pamiecGotowa) zapiszPamiec(nieZapisujWarstw.current ? { okres, woj } : { warstwy: wybor, okres, woj });
+  }, [pamiecGotowa, wybor, okres, woj]);
   // adres URL: replaceState (bez nowego wpisu w historii i bez ponownego renderowania serwera)
   useEffect(() => {
     if (!pamiecGotowa) return;
@@ -105,18 +110,22 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
     zapiszPamiec({ powiaty: czyste });
   }, []);
 
-  // warstwy wyłączone przez redakcję: znikają z panelu, listy, tabeli, „Mój powiat”, karty i powiązań, także z danych w cache
+  // warstwy wyłączone przez redakcję: znikają z panelu, listy, tabeli, „Mój powiat”, karty i powiązań, także z danych w cache.
+  // Wpisy pokazujemy tylko z warstw potwierdzonych w bieżącej, poprawnej odpowiedzi warstwy/ (P2-7): błąd odświeżenia albo
+  // warstwa pominięta przez walidator ukrywa wpisy tej warstwy (z ostrzeżeniem), zamiast odsłonić wpis z cache.
   const wylaczone = useMemo(() => kodyWylaczonych(warstwyQ.data), [warstwyQ.data]);
+  const potwierdzone = useMemo(() => potwierdzoneWarstwy(warstwyQ.data, warstwyQ.isSuccess), [warstwyQ.data, warstwyQ.isSuccess]);
   const warstwy = useMemo(() => posortujWarstwy((warstwyQ.data ?? []).filter(dostepna)), [warstwyQ.data]);
   const warstwyDlaNazw = useMemo(() => warstwyQ.data?.filter(dostepna), [warstwyQ.data]);
-  const warstwyZnane = (warstwyQ.data?.length ?? 0) > 0;
   const podsumowanie = useMemo(() => podsumujStan(stanQ.data, warstwyQ.data), [stanQ.data, warstwyQ.data]);
   const wiersze = useMemo(() => new Map<string, WierszStanu>((podsumowanie?.wiersze ?? []).map(w => [w.warstwa, w])), [podsumowanie]);
   const wlaczone = useMemo(() => wlaczoneWarstwy(wybor, warstwyQ.data ?? []), [wybor, warstwyQ.data]);
   const polityka = useMemo(() => politykaStatusu(zdarzeniaQ.data), [zdarzeniaQ.data]);
-  const zdarzenia = useMemo(() => bezWylaczonych([], zdarzeniaQ.data?.wyniki ?? [], wylaczone).zdarzenia, [zdarzeniaQ.data, wylaczone]);
-  const wpisyMapy = useMemo(() => bezWylaczonych(wpisyQ.data?.wpisy ?? [], [], wylaczone).wpisy, [wpisyQ.data, wylaczone]);
-  const wpisyPowiatow = useMemo(() => bezWylaczonych(powiatyQ.data?.wpisy ?? [], [], wylaczone).wpisy, [powiatyQ.data, wylaczone]);
+  const zdarzenia = useMemo(() => tylkoPotwierdzone([], zdarzeniaQ.data?.wyniki ?? [], potwierdzone, wylaczone).zdarzenia, [zdarzeniaQ.data, potwierdzone, wylaczone]);
+  const mapaPotw = useMemo(() => tylkoPotwierdzone(wpisyQ.data?.wpisy ?? [], [], potwierdzone, wylaczone), [wpisyQ.data, potwierdzone, wylaczone]);
+  const powiatyPotw = useMemo(() => tylkoPotwierdzone(powiatyQ.data?.wpisy ?? [], [], potwierdzone, wylaczone), [powiatyQ.data, potwierdzone, wylaczone]);
+  const wpisyMapy = mapaPotw.wpisy;
+  const wpisyPowiatow = powiatyPotw.wpisy;
   const widoki = useMemo(() => zbudujWidoki(wpisyMapy, zdarzenia, polityka), [wpisyMapy, zdarzenia, polityka]);
   const widokiPowiatow = useMemo(() => zbudujWidoki(wpisyPowiatow, zdarzenia, polityka), [wpisyPowiatow, zdarzenia, polityka]);
   const poczatekOkresu = useMemo(() => odKiedy(okres), [okres, powiatyQ.dataUpdatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -126,12 +135,12 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
     for (const v of wRegionie) licznik[v.wpis.warstwa] = (licznik[v.wpis.warstwa] ?? 0) + 1;
     return licznik;
   }, [wRegionie]);
-  // bez listy warstw i bez wyboru użytkownika nie ma po czym filtrować: pokazujemy wszystko (pusta lista warstw nie może ukryć komunikatów)
-  const bezFiltraWarstw = !warstwyZnane && wybor === null;
-  const widoczne = useMemo(() => wRegionie.filter(v => bezFiltraWarstw || wlaczone.has(v.wpis.warstwa)), [wRegionie, wlaczone, bezFiltraWarstw]);
+  // bez potwierdzonej listy warstw wpisy są już ukryte (tylkoPotwierdzone), więc tu zostaje tylko wybór użytkownika
+  const widoczne = useMemo(() => wRegionie.filter(v => wlaczone.has(v.wpis.warstwa)), [wRegionie, wlaczone]);
   const geo = useMemo(() => naGeoJson(widoczne), [widoczne]);
   const bezMiejsca = useMemo(() => widoczne.filter(v => bezPolozenia(v.wpis)), [widoczne]);
-  const wybranyWidok = useMemo(() => widoki.find(v => v.wpis.id === wybranyId) ?? null, [widoki, wybranyId]);
+  // karta tylko dla wpisu widocznego przy bieżących filtrach (P2-11): wpis spoza filtrów nie wisi w otwartej karcie
+  const wybranyWidok = useMemo(() => widoczne.find(v => v.wpis.id === wybranyId) ?? null, [widoczne, wybranyId]);
   const polozenie = useMemo(() => {
     const w = wybranyWidok?.wpis;
     if (!w) return null;
@@ -148,8 +157,11 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
       const wszystkie: string[] = (warstwyQ.data ?? []).filter(aktywna).map(w => w.warstwa);
       return wszystkie.length > 0 && wszystkie.every(k => nowe.includes(k)) && nowe.every(k => wszystkie.includes(k)) ? null : nowe;
     });
+    nieZapisujWarstw.current = false;
   }, [warstwyQ.data]);
-  const wszystkie = useCallback((wlacz: boolean) => setWybor(wlacz ? null : []), []);
+  const wszystkie = useCallback((wlacz: boolean) => { nieZapisujWarstw.current = false; setWybor(wlacz ? null : []); }, []);
+  // zmiana widoku zamyka panel warstw: w „Mój powiat” panelu nie ma, a otwarty stan blokowałby scenę (inert, P2-10)
+  const zmienWidok = useCallback((v: Widok) => { setWidok(v); setPanel(false); }, []);
 
   // karta wpisu zabiera fokus na swój nagłówek; po zamknięciu wraca on tam, skąd karta została otwarta (wiersz tabeli, pozycja listy)
   const fokusPrzedKarta = useRef<HTMLElement | null>(null);
@@ -160,6 +172,22 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
     if (id !== null) setPanel(false);
   }, []);
   const zamknijKarte = useCallback(() => { setWybranyId(null); przywrocFokus(); }, [przywrocFokus]);
+
+  // po zmianie filtrów (okres, region, warstwy) karta wpisu spoza widocznych się zamyka, gdy przyjdą dane dla nowych filtrów (P2-11);
+  // wpis z cudzego linku, którego nie ma w danych, zostaje wybrany i dostaje komunikat „brak wpisu”
+  const kluczFiltra = `${okres}|${woj ?? ''}|${wybor === null ? '*' : wybor.join(',')}`;
+  const poprzedniFiltr = useRef<string | null>(null);
+  const filtrZmieniony = useRef(false);
+  useEffect(() => {
+    if (!pamiecGotowa) return;
+    if (poprzedniFiltr.current !== null && poprzedniFiltr.current !== kluczFiltra) filtrZmieniony.current = true;
+    poprzedniFiltr.current = kluczFiltra;
+  }, [pamiecGotowa, kluczFiltra]);
+  useEffect(() => {
+    if (!filtrZmieniony.current || !wpisyQ.isSuccess) return;
+    filtrZmieniony.current = false;
+    if (wybranyId !== null && !widoczne.some(v => v.wpis.id === wybranyId)) { setWybranyId(null); przywrocFokus(); }
+  }, [widoczne, wpisyQ.isSuccess, wybranyId, przywrocFokus]);
   const zamknijPanel = useCallback(() => { setPanel(false); window.setTimeout(() => przyciskPanelu.current?.focus(), 60); }, []);
 
   // Esc: najpierw karta, potem panel
@@ -184,6 +212,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
 
   // brak WebGL albo błąd mapy: lista zamiast mapy
   useEffect(() => { if (mapa.niedostepna) setWidok(w => (w === 'mapa' ? 'lista' : w)); }, [mapa.niedostepna]);
+  // widok bez panelu warstw (Mój powiat): stan „otwarty” nie może zostać po zmianie widoku z innego miejsca niż przyciski
+  useEffect(() => { if (widok === 'powiat') setPanel(false); }, [widok]);
 
   const zapytanieDanych = wMapie ? wpisyQ : powiatyQ;
   const blad = stanQ.isError || zapytanieDanych.isError;
@@ -191,8 +221,11 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const odswiezonoStan = stanQ.dataUpdatedAt || null;
   const wczytano = !wpisyQ.isPending;
   const wpisyNiedostepne = wpisyQ.isError && !wpisyQ.data;
-  // „brak komunikatów” tylko przy udanej odpowiedzi (nie przy awarii, nie przy danych z poprzedniego zapytania)
+  // odpowiedź dla bieżącego filtra (bez danych zastępczych z innego klucza zapytania: P1-4)
   const udanaOdpowiedz = wpisyQ.isSuccess && !wpisyQ.isPlaceholderData;
+  // „brak komunikatów” tylko przy kompletnej odpowiedzi: wszystkie strony, nic odrzuconego, warstwy potwierdzone (P1-3)
+  const kompletneWpisy = udanaOdpowiedz && !!wpisyQ.data && !wpisyQ.data.uciete && wpisyQ.data.pominiete === 0 && mapaPotw.ukryte === 0 && warstwyQ.isSuccess;
+  const pobraneWpisy = wpisyQ.data?.wpisy.length ?? 0;
   const brakWybranego = wMapie && wybranyId !== null && wczytano && !wpisyNiedostepne && !wybranyWidok;
   const adres = useCallback(
     () => adresWpisu(window.location.origin, window.location.pathname, { warstwy: wybor, okres, woj, wpis: null, widok, probne }, wybranyId ?? 0),
@@ -201,7 +234,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const adresPowiatow = useCallback(() => adresZestawu(window.location.origin, window.location.pathname, powiaty, okres, probne), [powiaty, okres, probne]);
   const opisFiltrow = `${OKRESY.find(o => o.id === okres)?.etykieta ?? okres}, ${woj ? `województwo ${WOJEWODZTWA.find(w => w.kod === woj)?.nazwa ?? woj} (granice przybliżone)` : 'cała Polska'}, włączone warstwy: ${wlaczone.size}`;
 
-  const stanWarstw = { niedostepne: warstwyQ.isError && !warstwyQ.data, nieaktualne: warstwyQ.isError && !!warstwyQ.data };
+  const ukryteWarstwy = warstwyQ.isPending ? 0 : (wMapie ? mapaPotw.ukryte : powiatyPotw.ukryte);
+  const stanWarstw = { niedostepne: warstwyQ.isError && !warstwyQ.data, nieaktualne: warstwyQ.isError && !!warstwyQ.data, niepotwierdzone: ukryteWarstwy };
   const stanZdarzen = {
     niedostepne: zdarzeniaQ.isError && !zdarzeniaQ.data, nieaktualne: zdarzeniaQ.isError && !!zdarzeniaQ.data,
     uciete: zdarzeniaQ.data?.uciete ?? false, pominiete: zdarzeniaQ.data?.pominiete ?? 0,
@@ -210,31 +244,36 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const komunikatyDanych = <KomunikatyDanych
     wpisy={{
       ladowanie: wMapie && wpisyQ.isPending && pamiecGotowa, niedostepne: wpisyNiedostepne, nieaktualne: wpisyQ.isError && !!wpisyQ.data,
-      uciete: wpisyQ.data?.uciete ?? false, pominiete: wpisyQ.data?.pominiete ?? 0,
+      uciete: wpisyQ.data?.uciete ?? false, pominiete: wpisyQ.data?.pominiete ?? 0, pobrane: pobraneWpisy,
     }}
     warstwy={stanWarstw} zdarzenia={stanZdarzen} brakWybranego={brakWybranego} />;
+  const tekstNiepelnych = `Dane niepełne: pobraliśmy ${liczbaKomunikatow(pobraneWpisy)}, ale nie wszystkie (ograniczenie opisujemy wyżej). Żaden pobrany nie pasuje do wybranych warstw, czasu i regionu: ${NIEPEWNOSC}.`;
   const tekstPustejListy = wpisyNiedostepne
     ? `Dane niedostępne, nie pokazujemy listy: ${NIEPEWNOSC}.`
-    : !udanaOdpowiedz
+    : !udanaOdpowiedz || warstwyQ.isPending
       ? 'Wczytujemy komunikaty…'
-      : `Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: ${NIEPEWNOSC}.`;
+      : kompletneWpisy
+        ? `Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: ${NIEPEWNOSC}.`
+        : tekstNiepelnych;
 
   // arkusz (telefon) przykrywa treść: pod nim nie wolno wchodzić klawiaturą (inert). Mapa zostaje dostępna pod kartą wpisu, żeby
   // dało się dotknąć następnego znacznika; pod panelem warstw i pod kartą w innych widokach scena jest nieaktywna.
   const kartaOtwarta = !!wybranyWidok && wMapie;
-  const scenaNieaktywna = waski && (panel || (kartaOtwarta && widok !== 'mapa'));
+  // inert liczony z faktycznie widocznego arkusza: panel istnieje tylko w widokach z mapą (P2-10)
+  const panelWidoczny = panel && wMapie;
+  const scenaNieaktywna = waski && (panelWidoczny || (kartaOtwarta && widok !== 'mapa'));
   // React 18 nie zna atrybutu inert (wartość true byłaby odrzucona), więc przekazujemy pusty tekst: w DOM trafia inert=""
   const inert = scenaNieaktywna ? { inert: '' as unknown as boolean } : {};
 
-  return <div className="tz" data-widok={widok} data-panel={panel ? '' : undefined} data-karta={kartaOtwarta ? '' : undefined}>
+  return <div className="tz" data-widok={widok} data-panel={panelWidoczny ? '' : undefined} data-karta={kartaOtwarta ? '' : undefined}>
     <header className="tz-gora">
       <a className="tz-marka" href="/przeszlosc"><span className="tz-marka__ik" aria-hidden="true">←</span><span className="tz-marka__tekst">przeszłość.today</span></a>
       <h1 className="tz-tytul">Teraz</h1>
       <div className="tz-widok" role="group" aria-label="Widok: mapa, lista, tabela albo mój powiat">
-        <button type="button" aria-pressed={widok === 'mapa'} onClick={() => setWidok('mapa')} disabled={mapa.niedostepna}>Mapa</button>
-        <button type="button" aria-pressed={widok === 'lista'} onClick={() => setWidok('lista')}>Lista<span className="tz-sr"> zamiast mapy</span></button>
-        <button type="button" aria-pressed={widok === 'tabela'} onClick={() => setWidok('tabela')}>Tabela</button>
-        <button type="button" aria-pressed={widok === 'powiat'} aria-label="Mój powiat" onClick={() => setWidok('powiat')}>
+        <button type="button" aria-pressed={widok === 'mapa'} onClick={() => zmienWidok('mapa')} disabled={mapa.niedostepna}>Mapa</button>
+        <button type="button" aria-pressed={widok === 'lista'} onClick={() => zmienWidok('lista')}>Lista<span className="tz-sr"> zamiast mapy</span></button>
+        <button type="button" aria-pressed={widok === 'tabela'} onClick={() => zmienWidok('tabela')}>Tabela</button>
+        <button type="button" aria-pressed={widok === 'powiat'} aria-label="Mój powiat" onClick={() => zmienWidok('powiat')}>
           <span className="tz-widok__skrot" aria-hidden="true">Powiat</span><span className="tz-widok__pelna" aria-hidden="true">Mój powiat</span>
         </button>
       </div>
@@ -251,7 +290,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
       <section className="tz-scena" aria-label={NAZWY_WIDOKOW[widok]} {...inert}>
         {widok === 'mapa' && <>
           <button type="button" className="tz-pomin" onClick={() => { fokusTabeli.current = true; setWidok('tabela'); }}>Przejdź do tabeli komunikatów (pełny odpowiednik mapy)</button>
-          <Mapa punkty={geo.punkty as never} obszary={geo.obszary as never} wybrany={wybranyId} polozenieWybranego={polozenie} region={region} gotowa={mapa.gotowa}
+          <Mapa punkty={geo.punkty as never} obszary={geo.obszary as never} wybrany={wybranyId} polozenieWybranego={polozenie} region={region}
             podkladUrl={podkladUrl} glifyUrl={glifyUrl} onWybierz={wybierz} onStan={setMapa} />
           {bezMiejsca.length > 0 && <div className="tz-nakladka tz-nakladka--dol">
             <button type="button" className="tz-przycisk" aria-expanded={bezGranic} aria-controls="tz-bez-granic" onClick={() => setBezGranic(v => !v)}>
@@ -270,7 +309,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
         </div>}
         {widok === 'tabela' && <div className="tz-ramka">
           <div className="tz-komunikaty-inline">{komunikatyDanych}</div>
-          <TabelaWpisow widoki={widoczne} warstwy={warstwyDlaNazw} wybrany={wybranyId} onWybierz={wybierz} opisFiltrow={opisFiltrow} pusta={tekstPustejListy} />
+          <TabelaWpisow widoki={widoczne} warstwy={warstwyDlaNazw} wybrany={wybranyId} onWybierz={wybierz} opisFiltrow={opisFiltrow} pusta={tekstPustejListy}
+            gotowe={(udanaOdpowiedz || (wpisyQ.isError && !!wpisyQ.data)) && !warstwyQ.isPending} />
         </div>}
         {widok === 'powiat' && <div className="tz-ramka tz-ramka--powiat">
           <div className="tz-komunikaty-inline">
@@ -278,7 +318,8 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
           </div>
           <MojPowiat powiaty={powiaty} onZmien={zmienPowiaty} okres={okres} onOkres={setOkres}
             widoki={widokiPowiatow} warstwy={warstwyDlaNazw}
-            ladowanie={powiatyQ.isPending} blad={powiatyQ.isError && !powiatyQ.data} uciete={powiatyQ.data?.uciete ?? false} pominiete={powiatyQ.data?.pominiete ?? 0}
+            ladowanie={powiatyQ.isPending || warstwyQ.isPending} blad={powiatyQ.isError && !powiatyQ.data} uciete={powiatyQ.data?.uciete ?? false} pominiete={powiatyQ.data?.pominiete ?? 0}
+            pobrane={powiatyQ.data?.wpisy.length ?? 0} niepotwierdzone={warstwyQ.isPending ? 0 : powiatyPotw.ukryte} nieaktualne={powiatyQ.isError && !!powiatyQ.data}
             lukaWDanych={(podsumowanie?.ostrzezenia.length ?? 0) > 0} poczatekOkresu={poczatekOkresu} adres={adresPowiatow} />
         </div>}
 
@@ -286,8 +327,9 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
           {probne && <p className="tz-plakietka tz-plakietka--probne">Dane przykładowe</p>}
           {mapa.podklad === 'zapasowy' && <p className="tz-plakietka">Podkład uproszczony: granica Polski i siatka</p>}
           {komunikatyDanych}
-          {udanaOdpowiedz && widoczne.length === 0 && <p className="tz-komunikat" role="status">
+          {kompletneWpisy && widoczne.length === 0 && <p className="tz-komunikat" role="status">
             Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: {NIEPEWNOSC}.</p>}
+          {udanaOdpowiedz && !kompletneWpisy && !warstwyQ.isPending && widoczne.length === 0 && <p className="tz-komunikat" role="status">{tekstNiepelnych}</p>}
         </div>}
       </section>
 

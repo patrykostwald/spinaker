@@ -64,16 +64,27 @@ export function probneStan(teraz: number = Date.now()): Stan {
       komunikaty: `komunikatów z 24 h: ${w.liczba_wpisow_24h}`,
       komunikat: w.luka || w.blad || !w.zrodla.length ? 'nie mamy pewności, sprawdź Alert RCB i 112' : '',
     })),
+    pominiete: 0,
   };
 }
 
 const wpis = (teraz: number, d: Partial<Wpis> & Pick<Wpis, 'id' | 'zrodlo' | 'warstwa' | 'tytul' | 'link'> & { publMin: number; pobrMin: number }): Wpis => {
   const { publMin, pobrMin, ...reszta } = d;
+  const teryt = reszta.teryt ?? [];
   return {
-    tresc: '', klasa: 'zwykly', teryt: [], szerokosc: null, dlugosc: null, bbox: null, dokladnosc: 'brak', pewnosc_lokalizacji: 0,
-    ...reszta, opublikowano_at: iso(teraz, publMin), pobrano_at: iso(teraz, pobrMin),
+    tresc: '', klasa: 'zwykly', szerokosc: null, dlugosc: null, bbox: null, dokladnosc: 'brak', pewnosc_lokalizacji: 0,
+    atrybucja: '', miejsce: '', czas_zrodlowy_at: null, dokladna_godzina_publikacji: true, zasieg: teryt.length ? 'obszar' : 'brak',
+    ...reszta, teryt, opublikowano_at: iso(teraz, publMin), pobrano_at: iso(teraz, pobrMin),
   };
 };
+
+/** Podpis IMGW-PIB z rejestru źródeł (backend/teraz/migrations/0004_rejestr_zrodel.py): z informacją o przetworzeniu danych. */
+export const ATRYBUCJA_IMGW = 'Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej - Państwowy Instytut Badawczy. '
+  + 'Dane Instytutu Meteorologii i Gospodarki Wodnej - Państwowego Instytutu Badawczego zostały przetworzone.';
+
+/** Powiaty z alertu RCB z 10.11.2026 (próbka backend/teraz/tests/fixtures): część województwa lubelskiego, bez Lublina. */
+export const POWIATY_ALERTU_RCB_1011 = ['włodawski', 'łęczyński', 'świdnicki', 'Chełm', 'chełmski', 'krasnostawski', 'łukowski',
+  'Biała Podlaska', 'bialski', 'rycki', 'radzyński', 'parczewski', 'lubartowski'];
 
 /** Źródła ciepła w jednym miejscu: pokazują grupowanie znaczników przy oddaleniu. */
 const POZARY: [number, number, number][] = [[50.93, 22.88, 0.7], [50.95, 22.93, 0.7], [50.91, 22.91, 0.6], [50.97, 22.86, 0.7], [50.9, 22.84, 0.6], [53.12, 22.31, 0.5]];
@@ -102,7 +113,16 @@ export function probneWpisy(teraz: number = Date.now()): Wpis[] {
       id: 9004, zrodlo: 'imgw-meteo', warstwa: 'imgw_meteo', publMin: 55, pobrMin: 52,
       tytul: 'Przykład: ostrzeżenie 2. stopnia, silny wiatr w Krakowie i Tarnowie',
       tresc: 'Przykładowe ostrzeżenie. Prawdziwe ostrzeżenia IMGW są na stronie źródła.',
-      link: 'https://meteo.imgw.pl/', teryt: ['1261', '1263'], dokladnosc: 'powiat',
+      link: 'https://meteo.imgw.pl/', teryt: ['1261', '1263'], dokladnosc: 'powiat', pewnosc_lokalizacji: 1, atrybucja: ATRYBUCJA_IMGW,
+    }),
+    wpis(teraz, {
+      id: 9006, zrodlo: 'rcb-gov-pl', warstwa: 'rcb', publMin: 200, pobrMin: 190,
+      tytul: 'Przykład: Alert RCB, zagrożenie z powietrza w części województwa lubelskiego',
+      tresc: `Przykład na wzór alertu z 10.11: Alert RCB wysłany do odbiorców na terenie części województwa lubelskiego - powiaty: ${POWIATY_ALERTU_RCB_1011.join(', ')}.`,
+      link: 'https://www.gov.pl/web/rcb', teryt: ['06'], dokladnosc: 'wojewodztwo', pewnosc_lokalizacji: 0.5, zasieg: 'przyblizony',
+      miejsce: ['lubelskiego', ...POWIATY_ALERTU_RCB_1011].join('\n'), dokladna_godzina_publikacji: false,
+      // podpis z rejestru źródeł (0004_rejestr_zrodel.py); bez „o godz.”, bo źródło podało tylko datę
+      atrybucja: 'Źródło: RCB, gov.pl, opublikowano na gov.pl',
     }),
     wpis(teraz, {
       id: 9005, zrodlo: 'imgw-meteo', warstwa: 'imgw_meteo', publMin: 300, pobrMin: 298,
@@ -144,7 +164,7 @@ export function probneZdarzenia(teraz: number = Date.now()): Zdarzenie[] {
     const lista = wybierz(...ids);
     return {
       id, status, tytul_roboczy: tytul, pierwszy_wpis_at: lista[0].opublikowano_at, ostatni_wpis_at: lista[lista.length - 1].opublikowano_at,
-      przygotowane_automatycznie: true, zweryfikowal: null, zweryfikowano_at: null, wpisy: lista,
+      przygotowane_automatycznie: true, zweryfikowal: null, zweryfikowano_at: null, wpisy: lista, odrzucone_wpisy: 0,
     };
   };
   return [
@@ -153,7 +173,7 @@ export function probneZdarzenia(teraz: number = Date.now()): Zdarzenie[] {
     zdarzenie(8003, 'zgloszone', 'Przykład: źródła ciepła z satelity, Lubelszczyzna', [9010, 9011, 9012, 9013, 9014]),
     zdarzenie(8004, 'zgloszone', 'Przykład: źródło ciepła z satelity, Podlasie', [9015]),
     zdarzenie(8005, 'odwolane', 'Przykład: odwołanie zagrożenia z powietrza, Lubelszczyzna', [9002]),
-    // wpisy 9003, 9020, 9021 i 9030 nie mają zdarzenia: pokazują „Komunikat bez zdarzenia”
+    // wpisy 9003, 9006, 9020, 9021 i 9030 nie mają zdarzenia: pokazują „Komunikat bez zdarzenia”
   ];
 }
 

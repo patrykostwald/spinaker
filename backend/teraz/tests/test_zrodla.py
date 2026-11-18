@@ -100,12 +100,12 @@ def test_hydro_stan_wody():
         adapter.parsuj_stany(odpowiedz("zmieniony_format.txt"))
 
 
-@pytest.mark.parametrize("dzien,pierwsza,aktualizacja,kody", [
-    ("03", None, (6, 49), ["06", "18"]),
-    ("09", None, (22, 41), ["06", "20"]),
-    ("10", (10, 20), (10, 55), ["06"]),
+@pytest.mark.parametrize("dzien,pierwsza,aktualizacja,kody,pewnosc", [
+    ("03", None, (6, 49), ["06", "18"], 1),
+    ("09", None, (22, 41), ["06", "20"], 0.5),
+    ("10", (10, 20), (10, 55), ["06"], 0.5),
 ])
-def test_rcb_karty(dzien, pierwsza, aktualizacja, kody):
+def test_rcb_karty(dzien, pierwsza, aktualizacja, kody, pewnosc):
     adapter = rcb.AdapterRCB(zrodlo_parsera(link_rcb(dzien)))
     alert, odwolanie = adapter.parsuj(odpowiedz(karta_rcb(dzien)))
     assert alert["tytul"] == f"Alert RCB - zagrożenie z powietrza ({dzien}.11)"
@@ -117,6 +117,8 @@ def test_rcb_karty(dzien, pierwsza, aktualizacja, kody):
     assert odwolanie["status_zdarzenia"] == Zdarzenie.Status.ODWOLANE
     assert alert["zdarzenie_id"] == odwolanie["zdarzenie_id"]
     assert alert["teryt"] == odwolanie["teryt"] == kody
+    # całe województwa (03.11) to potwierdzony zasięg; wybrane powiaty (09.11, 10.11) dają kod województwa tylko jako przybliżenie
+    assert alert["pewnosc_lokalizacji"] == odwolanie["pewnosc_lokalizacji"] == pewnosc
     assert "lubelskiego" in alert["miejsce"]
     if dzien != "03":
         assert "włodawski" in alert["miejsce"]

@@ -116,39 +116,75 @@ test('tabela: wiersze z wszystkimi kolumnami, filtr tekstowy bez polskich znakó
   assert.equal(t.kierunekPoczatkowy('opublikowano'), 'malejaco');
   assert.equal(t.kierunekPoczatkowy('tytul'), 'rosnaco');
   // eksport: te same kolumny co tabela (+ odnośnik), tylko to, co widoczne po filtrze
-  assert.deepEqual(t.NAGLOWKI_CSV, ['Warstwa', 'Tytuł', 'Status', 'Miejsce', 'Opublikowano u źródła', 'Pobrano przez nas', 'Źródło', 'Odnośnik do oryginału']);
+  // P1-6: podpis źródła z API w osobnej kolumnie CSV (IMGW: informacja o przetworzeniu danych)
+  assert.deepEqual(t.NAGLOWKI_CSV, ['Warstwa', 'Tytuł', 'Status', 'Miejsce', 'Opublikowano u źródła', 'Pobrano przez nas', 'Źródło', 'Podpis źródła', 'Odnośnik do oryginału']);
   const eksport = t.wierszeCsv(t.filtrujWiersze(wiersze, 'krakow'));
   assert.equal(eksport.length, 1);
-  assert.equal(eksport[0].length, 8);
+  assert.equal(eksport[0].length, 9);
   assert.equal(eksport[0][0], 'Ostrzeżenia meteorologiczne');
   assert.match(eksport[0][4], /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, 'czas lokalny sortowalny, nie „dziś o godz.”');
-  assert.match(eksport[0][7], /^https:\/\//);
+  assert.match(eksport[0][7], /Dane Instytutu Meteorologii i Gospodarki Wodnej - Państwowego Instytutu Badawczego zostały przetworzone\./);
+  assert.match(eksport[0][8], /^https:\/\//);
+});
+
+test('tabela i CSV: data bez godziny, gdy źródło jej nie podało; nieznany czas pobrania to „brak danych” (P1-5)', () => {
+  const t = load(`${dir}/tabela`);
+  const czas = load(`${dir}/czas`);
+  const { widoki, warstwy, teraz } = dane();
+  const wiersze = t.wierszeTabeli(widoki, warstwy, teraz);
+  const tylkoData = wiersze.find(w => w.id === 9006);
+  assert.match(tylkoData.opublikowanoCzas, /^\d{4}-\d{2}-\d{2}$/, 'sama data, bez technicznej północy');
+  assert.ok(!/godz\./.test(tylkoData.opublikowano) && /źródło podało tylko datę/.test(tylkoData.opublikowano), tylkoData.opublikowano);
+  assert.match(t.wierszeCsv([tylkoData])[0][4], /^\d{4}-\d{2}-\d{2}$/);
+  // północ techniczna z RCB (10.11, 00:00 w Warszawie) to w CSV data 2026-11-10, nie 2026-11-09 23:00 UTC
+  assert.equal(czas.czasPublikacjiLokalny({ opublikowano_at: '2026-11-09T23:00:00Z', dokladna_godzina_publikacji: false }), '2026-11-10');
+  assert.equal(czas.czasPublikacji({ opublikowano_at: '2026-11-09T23:00:00Z', dokladna_godzina_publikacji: false }, Date.parse('2026-11-18T12:00:00Z')), '10 listopada (źródło podało tylko datę)');
+  assert.equal(czas.czasPublikacji({ opublikowano_at: '2026-11-18T09:41:00Z', dokladna_godzina_publikacji: true }, Date.parse('2026-11-18T12:00:00Z')), 'dziś o godz. 10:41');
+  const bezPobrania = t.wierszeTabeli([{ ...widoki.find(v => v.wpis.id === 9001), wpis: { ...widoki.find(v => v.wpis.id === 9001).wpis, pobrano_at: null } }], warstwy, teraz)[0];
+  assert.equal(bezPobrania.pobrano, 'brak danych');
+  assert.equal(bezPobrania.pobranoCzas, 'brak danych');
+  assert.equal(t.wierszeCsv([bezPobrania])[0][5], 'brak danych');
+  assert.ok(!t.wierszeCsv([bezPobrania])[0][5].includes(bezPobrania.opublikowanoCzas), 'czas publikacji nie zastępuje czasu pobrania');
 });
 
 test('tabela (render): nagłówki z aria-sort, nagłówek wiersza, caption, przycisk CSV, pusty stan bez „spokojnie”', () => {
   const { TabelaWpisow } = load(`${dir}/TabelaWpisow`);
   const { widoki, warstwy } = dane();
-  const html = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki, warstwy, wybrany: 9001, onWybierz() {}, opisFiltrow: '24 godz., cała Polska, włączone warstwy: 7' }));
+  const html = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki, warstwy, wybrany: 9001, onWybierz() {}, opisFiltrow: '24 godz., cała Polska, włączone warstwy: 7', gotowe: true }));
   assert.match(html, /<table/);
-  assert.match(html, /<caption[^>]*>Komunikaty \(24 godz\., cała Polska, włączone warstwy: 7\), 14 komunikatów\./);
+  assert.match(html, /<caption[^>]*>Komunikaty \(24 godz\., cała Polska, włączone warstwy: 7\), 15 komunikatów\./);
   assert.equal((html.match(/<th scope="col"/g) ?? []).length, 7, 'siedem kolumn');
   assert.equal((html.match(/<th scope="row"/g) ?? []).length, widoki.length, 'tytuł jest nagłówkiem wiersza');
   assert.match(html, /<th scope="col" aria-sort="descending"><button[^>]*>Opublikowano u źródła/, 'domyślnie od najnowszych');
   assert.equal((html.match(/aria-sort="none"/g) ?? []).length, 6);
-  assert.match(html, /Pobierz widok jako CSV \(14\)/);
+  assert.match(html, /Pobierz widok jako CSV \(15\)/);
   assert.match(html, /<label for="tz-tabela-filtr">Filtruj tabelę<\/label>/);
   assert.match(html, /role="region" aria-label="Tabela komunikatów \(przewijana strzałkami\)"/);
   assert.match(html, /tabindex="0"/, 'przewijana ramka tabeli dostępna z klawiatury');
   assert.match(html, /aria-pressed="true">Przykład: zagrożenie z powietrza/, 'wybrany wiersz oznaczony');
   assert.match(html, /rel="noopener noreferrer"/);
-  assert.match(html, /Wiersze: 14\./);
-  const pusty = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: '1 godz., cała Polska, włączone warstwy: 0', pusta: 'Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: nie mamy pewności, sprawdź Alert RCB i 112.' }));
+  assert.match(html, /Wiersze: 15\./);
+  const pusty = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: '1 godz., cała Polska, włączone warstwy: 0', gotowe: true, pusta: 'Brak komunikatów w wybranym czasie i regionie. To nie znaczy, że nic się nie dzieje: nie mamy pewności, sprawdź Alert RCB i 112.' }));
   assert.match(tekstZHtml(pusty), /Brak komunikatów w wybranym czasie i regionie\. To nie znaczy, że nic się nie dzieje: nie mamy pewności, sprawdź Alert RCB i 112\./);
-  const niedostepna = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: 'x', pusta: 'Dane niedostępne, nie pokazujemy listy: nie mamy pewności, sprawdź Alert RCB i 112.' }));
+  const niedostepna = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki: [], warstwy, wybrany: null, onWybierz() {}, opisFiltrow: 'x', gotowe: true, pusta: 'Dane niedostępne, nie pokazujemy listy: nie mamy pewności, sprawdź Alert RCB i 112.' }));
   assert.ok(!/Brak komunikatów/.test(tekstZHtml(niedostepna)), 'awaria nie udaje braku komunikatów');
   assert.match(pusty, /<button[^>]*disabled[^>]*>Pobierz widok jako CSV \(0\)/);
   assert.ok(!/<table/.test(pusty));
   assert.ok(!/spokojn|bezpieczn/i.test(tekstZHtml(html + pusty)));
+});
+
+test('tabela w trakcie zmiany filtra (P1-4): bez starych wierszy, eksport CSV i podpis z filtrami zablokowane', () => {
+  const { TabelaWpisow } = load(`${dir}/TabelaWpisow`);
+  const { widoki, warstwy } = dane();
+  // stare widoki podane mimo braku odpowiedzi dla nowego filtra (np. 7 dni → 1 godzina): tabela nie może ich pokazać ani wyeksportować
+  const html = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki, warstwy, wybrany: null, onWybierz() {}, opisFiltrow: '1 godz., cała Polska, włączone warstwy: 7', gotowe: false, pusta: 'Wczytujemy komunikaty…' }));
+  assert.ok(!/<table/.test(html), 'bez wierszy z poprzedniego filtra');
+  assert.ok(!/<caption/.test(html), 'bez podpisu tabeli z nowym filtrem');
+  assert.match(html, /<button[^>]*disabled[^>]*aria-busy="true"[^>]*>Pobierz widok jako CSV \(0\)/);
+  assert.match(tekstZHtml(html), /Wczytujemy komunikaty dla filtrów: 1 godz\./);
+  assert.ok(!/Filtry: 1 godz/.test(tekstZHtml(html)));
+  const gotowa = renderToStaticMarkup(React.createElement(TabelaWpisow, { widoki, warstwy, wybrany: null, onWybierz() {}, opisFiltrow: '1 godz., cała Polska, włączone warstwy: 7', gotowe: true, pusta: '' }));
+  assert.match(gotowa, /<button type="button" class="tz-przycisk">Pobierz widok jako CSV \(15\)/, 'po odpowiedzi eksport wraca');
 });
 
 test('linia stanu: stałe zdanie i ostrzeżenie widoczne bez dotykania, „Dane przykładowe” i stan w jednej zwiniętej linii', () => {

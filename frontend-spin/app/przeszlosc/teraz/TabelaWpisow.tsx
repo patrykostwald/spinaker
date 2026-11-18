@@ -21,14 +21,19 @@ export interface TabelaWpisowProps {
   opisFiltrow: string;
   /** Tekst, gdy tabela jest pusta (brak komunikatów, dane niedostępne albo wczytywanie: o tym decyduje strona). */
   pusta: string;
+  /**
+   * Są dane dla bieżących filtrów (odpowiedź na bieżące zapytanie). Do tego czasu tabela nie pokazuje wierszy, a eksport CSV
+   * i podpis z filtrami są zablokowane: stare wiersze nie mogą trafić do pliku pod nowym filtrem (recenzja PR #38, P1-4).
+   */
+  gotowe: boolean;
 }
 
-export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow, pusta }: TabelaWpisowProps) {
+export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow, pusta, gotowe }: TabelaWpisowProps) {
   const [tekst, setTekst] = useState('');
   const [sortowanie, setSortowanie] = useState<{ kolumna: IdKolumny; kierunek: Kierunek }>({ kolumna: 'opublikowano', kierunek: 'malejaco' });
   const [komunikat, setKomunikat] = useState('');
 
-  const wszystkie = useMemo(() => wierszeTabeli(widoki, warstwy), [widoki, warstwy]);
+  const wszystkie = useMemo(() => (gotowe ? wierszeTabeli(widoki, warstwy) : []), [gotowe, widoki, warstwy]);
   const wiersze = useMemo(() => sortujWiersze(filtrujWiersze(wszystkie, tekst), sortowanie.kolumna, sortowanie.kierunek), [wszystkie, tekst, sortowanie]);
   const etykietaKolumny = (id: IdKolumny) => KOLUMNY.find(k => k.id === id)?.etykieta ?? id;
 
@@ -39,6 +44,7 @@ export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow,
   };
 
   const pobierz = () => {
+    if (!gotowe) return;
     try {
       const csv = budujCsv(NAGLOWKI_CSV, wierszeCsv(wiersze));
       const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8' });
@@ -59,17 +65,17 @@ export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow,
   // sam widok jest regionem (section.tz-scena z nazwą widoku), więc tu zwykły kontener: dwa landmarki o tej samej nazwie myliłyby czytnik
   return <div className="tz-tabela">
     <h2 id="tz-tabela-tytul" className="tz-tabela__tytul" tabIndex={-1}>Tabela komunikatów</h2>
-    <p className="tz-tabela__opis">Pełny odpowiednik mapy: te same warstwy, czas i województwo co w panelu. Filtry: {opisFiltrow}.</p>
+    <p className="tz-tabela__opis">Pełny odpowiednik mapy: te same warstwy, czas i województwo co w panelu. {gotowe ? `Filtry: ${opisFiltrow}.` : `Wczytujemy komunikaty dla filtrów: ${opisFiltrow}.`}</p>
 
     <div className="tz-tabela__narzedzia">
       <div className="tz-tabela__filtr">
         <label htmlFor="tz-tabela-filtr">Filtruj tabelę</label>
         <input id="tz-tabela-filtr" type="search" value={tekst} autoComplete="off" onChange={e => setTekst(e.target.value)} placeholder="np. wiatr, Kraków, Zgłoszone" />
       </div>
-      <button type="button" className="tz-przycisk" onClick={pobierz} disabled={!wiersze.length}>Pobierz widok jako CSV ({wiersze.length})</button>
+      <button type="button" className="tz-przycisk" onClick={pobierz} disabled={!gotowe || !wiersze.length} aria-busy={!gotowe || undefined}>Pobierz widok jako CSV ({wiersze.length})</button>
     </div>
     <p className="tz-tabela__licznik">Wiersze: {wiersze.length}{wiersze.length !== wszystkie.length ? ` z ${wszystkie.length}` : ''}. Plik CSV: średnik jako separator, kodowanie UTF-8.</p>
-    <p className="tz-sr" role="status" aria-live="polite" aria-atomic="true">{komunikat || `${liczbaKomunikatow(wiersze.length)} w tabeli.`}</p>
+    <p className="tz-sr" role="status" aria-live="polite" aria-atomic="true">{komunikat || (gotowe ? `${liczbaKomunikatow(wiersze.length)} w tabeli.` : 'Wczytujemy komunikaty dla nowych filtrów.')}</p>
 
     {!wszystkie.length
       ? <p className="tz-lista__pusta" role="status">{pusta}</p>
@@ -95,7 +101,7 @@ export function TabelaWpisow({ widoki, warstwy, wybrany, onWybierz, opisFiltrow,
               <td>{w.status}</td>
               <td>{w.miejsce}</td>
               <td><time dateTime={w.opublikowanoCzas.replace(' ', 'T')}>{w.opublikowano}</time></td>
-              <td><time dateTime={w.pobranoCzas.replace(' ', 'T')}>{w.pobrano}</time></td>
+              <td>{/^\d{4}-/.test(w.pobranoCzas) ? <time dateTime={w.pobranoCzas.replace(' ', 'T')}>{w.pobrano}</time> : w.pobrano}</td>
               <td>
                 {w.zrodlo}
                 {adresZrodla(w.link)

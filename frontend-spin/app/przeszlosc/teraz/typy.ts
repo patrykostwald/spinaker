@@ -12,6 +12,13 @@ export type KlasaWpisu = 'zwykly' | 'wrazliwy' | 'wojsko_granica' | 'osoba_poszu
 
 export type Dokladnosc = 'punkt' | 'gmina' | 'powiat' | 'wojewodztwo' | 'kraj' | 'brak';
 
+/**
+ * Jak czytać kody TERYT wpisu (pole `zasieg` z API): `obszar` = zasięg podany przez źródło, `przyblizony` = kod szerszy niż
+ * źródło (np. województwo dla alertu RCB do wybranych powiatów; szczegóły tylko w `miejsce`), `brak` = bez kodów.
+ * Nigdy nie poszerzamy zasięgu ponad źródło: kod przybliżony nie znaczy „całe województwo”.
+ */
+export type Zasieg = 'obszar' | 'przyblizony' | 'brak';
+
 export type StatusZdarzenia = 'komunikat_oficjalny' | 'zgloszone' | 'potwierdzone' | 'ocena' | 'odwolane';
 
 /** Zasięg: zachód, południe, wschód, północ (stopnie). */
@@ -26,7 +33,16 @@ export interface Wpis {
   tresc: string;
   link: string;
   opublikowano_at: string;
-  pobrano_at: string;
+  /** Czas zdarzenia według źródła (np. godzina sekcji alertu RCB), gdy różni się od publikacji; null, gdy go nie ma. */
+  czas_zrodlowy_at: string | null;
+  /** false: źródło podało tylko datę (backend zapisuje techniczną północ), więc pokazujemy i eksportujemy samą datę. */
+  dokladna_godzina_publikacji: boolean;
+  /** null: brak albo niepoprawny czas pobrania („brak danych”); nigdy nie zastępujemy go czasem publikacji. */
+  pobrano_at: string | null;
+  /** Podpis źródła z API dla tego wpisu (np. IMGW: informacja o przetworzeniu danych); pokazywany w karcie i w CSV. */
+  atrybucja: string;
+  /** Miejsce słowami ze źródła (np. lista powiatów z alertu RCB, po jednej nazwie w linii). */
+  miejsce: string;
   klasa: KlasaWpisu;
   /** Kody TERYT z zachowaniem początkowych zer (2 cyfry: województwo, 4: powiat, 7: gmina). */
   teryt: string[];
@@ -36,6 +52,7 @@ export interface Wpis {
   dokladnosc: Dokladnosc;
   /** 0 do 1. */
   pewnosc_lokalizacji: number;
+  zasieg: Zasieg;
 }
 
 export interface Zdarzenie {
@@ -49,6 +66,8 @@ export interface Zdarzenie {
   zweryfikowal: string | null;
   zweryfikowano_at: string | null;
   wpisy: Wpis[];
+  /** Tylko po stronie klienta: powiązane wpisy odrzucone przez walidację (wtedy status części wpisów jest nieznany). */
+  odrzucone_wpisy: number;
 }
 
 export interface Swiezosc {
@@ -88,6 +107,8 @@ export interface Stan {
   /** „To nie jest strona urzędowa”. */
   informacja: string;
   warstwy: LiniaStanu[];
+  /** Tylko po stronie klienta: wiersze stanu odrzucone przez walidację (stan źródeł jest wtedy niepewny). */
+  pominiete: number;
 }
 
 /** Paginacja DRF (PageNumberPagination, 50 na stronę, parametr ?page=). */

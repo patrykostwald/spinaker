@@ -1,9 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Okres, Warstwa, WidokWpisu } from './typy';
-import { dataIGodzina, host, odGodziny } from './czas';
+import { czasPobrania, czasPublikacji, host, odGodziny } from './czas';
 import { adresZrodla } from './link';
 import { nazwaZrodla } from './model';
-import { MAKS_POWIATOW, liczbaKomunikatow, szukajPowiatow, zakresDlaPowiatu, zakresTekstem } from './powiaty';
+import { MAKS_POWIATOW, ZAKRESY_POWIATU, liczbaKomunikatow, szukajPowiatow, zakresDlaPowiatu, zakresTekstem } from './powiaty';
 import type { Zakres } from './powiaty';
 import { dlaPowiatu, pelnaNazwaPowiatu, powiatOKodzie } from './slownik';
 import { kopiujDoSchowka } from './schowek';
@@ -14,8 +14,10 @@ import { WyborOkresu } from './WyborOkresu';
 /**
  * Widok „Mój powiat”: bez mapy, duży druk, do 5 powiatów (albo miast na prawach powiatu) zapisanych w przeglądarce.
  * Dla każdego powiatu: komunikaty z wybranego okresu, które go dotyczą po kodzie TERYT wpisu (powiat, gmina w powiecie,
- * całe województwo), z tymi samymi godzinami i statusem co karta. Brak komunikatów to „Brak w naszych danych...”,
- * nigdy „spokojnie”: brak wpisu nie jest informacją o braku zagrożenia.
+ * całe województwo tylko przy potwierdzonym zasięgu), z tymi samymi godzinami i statusem co karta. Alert z kodem województwa,
+ * ale z listą wybranych powiatów, dopasowujemy po nazwach z listy (powiaty.ts, `dopasujDoListy`); komunikat z województwa, który
+ * powiatu nie wymienia, stoi osobno („Inne komunikaty z województwa”). Brak komunikatów to „Brak w naszych danych...”, tylko przy
+ * kompletnych danych; przy obcięciu albo pominięciu rekordów mówimy, ile pobraliśmy (recenzja PR #38, P1-2 i P1-3).
  * Laws of UX: Hick (jeden główny wybór: dodaj powiat), Fitts (cele min. 48 px), Proximity i Common Region (sekcja na powiat),
  * Tesler (odmiana i literówki bierze na siebie wyszukiwarka), Jakob (pole z podpowiedziami jak w każdym wyszukiwaniu).
  */
@@ -35,6 +37,12 @@ export interface MojPowiatProps {
   uciete: boolean;
   /** Liczba wpisów o nieznanym formacie, pominiętych przy pobraniu (wtedy „brak” też nie jest pewny). */
   pominiete: number;
+  /** Ile wpisów z województw wybranych powiatów faktycznie pobraliśmy. */
+  pobrane: number;
+  /** Wpisy ukryte, bo ich warstwa nie jest potwierdzona w bieżącej odpowiedzi warstwy/. */
+  niepotwierdzone: number;
+  /** Ostatnie odświeżenie się nie udało (pokazujemy wcześniejsze dane). */
+  nieaktualne: boolean;
   /** Któraś warstwa ma lukę w danych (zdanie o tym jest też w linii stanu u góry). */
   lukaWDanych: boolean;
   /** Początek okresu (ISO), liczony od ostatniego pobrania wpisów (stały między odświeżeniami). */
@@ -129,9 +137,10 @@ function Wpis({ widok, warstwy, zakres, kodPowiatu }: { widok: WidokWpisu; warst
     <p className="tz-mp-wpis__status">{metaStatusu(status).opis}</p>
     {wpis.tresc && <p className="tz-mp-wpis__tresc">{wpis.tresc}</p>}
     <dl className="tz-mp-wpis__dane">
-      <div><dt>Opublikowano u źródła</dt><dd>{dataIGodzina(wpis.opublikowano_at)}{meta.uwagaCzas && <small>{meta.uwagaCzas}</small>}</dd></div>
-      <div><dt>Pobrano przez nas</dt><dd>{dataIGodzina(wpis.pobrano_at)}</dd></div>
+      <div><dt>Opublikowano u źródła</dt><dd>{czasPublikacji(wpis)}{meta.uwagaCzas && <small>{meta.uwagaCzas}</small>}</dd></div>
+      <div><dt>Pobrano przez nas</dt><dd>{czasPobrania(wpis.pobrano_at)}</dd></div>
       <div><dt>Źródło</dt><dd>{zrodlo.nazwa}{zrodlo.instytucja && zrodlo.instytucja !== zrodlo.nazwa ? `, ${zrodlo.instytucja}` : ''}</dd></div>
+      {wpis.atrybucja && <div><dt>Podpis źródła</dt><dd>{wpis.atrybucja}</dd></div>}
     </dl>
     {adresZrodla(wpis.link)
       ? <p><a className="tz-przycisk tz-przycisk--glowny" href={adresZrodla(wpis.link) as string} target="_blank" rel="noopener noreferrer">
@@ -146,6 +155,14 @@ export function MojPowiat(p: MojPowiatProps) {
   const [skopiowano, setSkopiowano] = useState<'tak' | 'nie' | null>(null);
   const pelny = p.powiaty.length >= MAKS_POWIATOW;
   const poczatek = odGodziny(p.poczatekOkresu);
+  // kompletne dane: wszystkie strony, nic odrzuconego, wszystkie warstwy potwierdzone, ostatnie odświeżenie udane
+  const niepelne = p.uciete || p.pominiete > 0 || p.niepotwierdzone > 0 || p.nieaktualne;
+  const powodyNiepelnych = [
+    p.uciete && 'pobraliśmy tylko najnowsze komunikaty z województwa, starsze pominęliśmy',
+    p.pominiete > 0 && `pominęliśmy komunikaty o nieznanym formacie (${p.pominiete})`,
+    p.niepotwierdzone > 0 && `ukrywamy komunikaty z warstw bez aktualnego potwierdzenia (${p.niepotwierdzone})`,
+    p.nieaktualne && 'ostatnie odświeżenie się nie udało',
+  ].filter(Boolean).join('; ');
 
   const dodaj = (kod: string) => {
     if (p.powiaty.includes(kod) || p.powiaty.length >= MAKS_POWIATOW) return;
@@ -166,11 +183,14 @@ export function MojPowiat(p: MojPowiatProps) {
   };
 
   const sekcje = useMemo(() => p.powiaty.map(kod => {
-    const wpisy = p.widoki
+    const wszystkie = p.widoki
       .map(v => ({ v, zakres: zakresDlaPowiatu(v.wpis, kod) }))
       .filter((x): x is { v: WidokWpisu; zakres: Zakres } => x.zakres !== null)
       .sort((a, b) => Date.parse(b.v.wpis.opublikowano_at) - Date.parse(a.v.wpis.opublikowano_at));
-    return { kod, powiat: powiatOKodzie(kod), wpisy };
+    // nigdy nie poszerzamy zasięgu: komunikat z województwa, który powiatu nie wymienia, nie trafia na listę powiatu
+    const wpisy = wszystkie.filter(x => ZAKRESY_POWIATU.has(x.zakres));
+    const inne = wszystkie.filter(x => !ZAKRESY_POWIATU.has(x.zakres));
+    return { kod, powiat: powiatOKodzie(kod), wpisy, inne };
   }), [p.powiaty, p.widoki]);
 
   // sam widok jest regionem (section.tz-scena z nazwą „Mój powiat”), więc tu zwykły kontener; regiony dostają dopiero sekcje powiatów
@@ -206,25 +226,41 @@ export function MojPowiat(p: MojPowiatProps) {
 
     {p.powiaty.length === 0 && <p className="tz-mp-pusto">Nie wybrano jeszcze żadnego powiatu. Wpisz nazwę w polu powyżej.</p>}
 
-    {sekcje.map(({ kod, powiat, wpisy }) => {
+    {sekcje.map(({ kod, powiat, wpisy, inne }) => {
       const idNaglowka = `tz-mp-h-${kod}`;
       const nazwa = powiat ? pelnaNazwaPowiatu(powiat) : `powiat o kodzie ${kod}`;
+      const dla = powiat ? dlaPowiatu(powiat) : `dla powiatu o kodzie ${kod}`;
       return <section key={kod} className="tz-mp-sekcja" aria-labelledby={idNaglowka}>
         <h3 id={idNaglowka} className="tz-mp-sekcja__tytul">{nazwa}</h3>
         {p.ladowanie && <p className="tz-mp-stan" role="status">Wczytujemy komunikaty…</p>}
         {!p.ladowanie && p.blad && <p className="tz-mp-stan tz-mp-stan--uwaga" role="alert">Nie udało się pobrać komunikatów: {NIEPEWNOSC}.</p>}
-        {!p.ladowanie && !p.blad && wpisy.length > 0 && <>
-          <p className="tz-mp-liczba">{liczbaKomunikatow(wpisy.length)} {OPIS_OKRESU[p.okres]}, od najnowszego.</p>
-          <ul className="tz-mp-wpisy">
-            {wpisy.map(({ v, zakres }) => <li key={v.wpis.id}><Wpis widok={v} warstwy={p.warstwy} zakres={zakres} kodPowiatu={kod} /></li>)}
-          </ul>
+        {!p.ladowanie && !p.blad && <>
+          {/* ostrzeżenie o niepełnych danych nie znika przez jedno trafienie (P1-3) */}
+          {niepelne && <p className="tz-mp-stan tz-mp-stan--uwaga" role="status">
+            Dane niepełne: pobraliśmy {liczbaKomunikatow(p.pobrane)} z województwa; {powodyNiepelnych}. Komunikatów {dla} mogło być więcej: sprawdź Alert RCB i 112.
+          </p>}
+          {wpisy.length > 0 && <>
+            <p className="tz-mp-liczba">{liczbaKomunikatow(wpisy.length)} {OPIS_OKRESU[p.okres]}, od najnowszego{niepelne ? ' (wśród pobranych)' : ''}.</p>
+            <ul className="tz-mp-wpisy">
+              {wpisy.map(({ v, zakres }) => <li key={v.wpis.id}><Wpis widok={v} warstwy={p.warstwy} zakres={zakres} kodPowiatu={kod} /></li>)}
+            </ul>
+          </>}
+          {wpisy.length === 0 && !niepelne && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
+            Brak w naszych danych {dla} {poczatek}. Sprawdź Alert RCB i 112.
+            {p.lukaWDanych && ' Część źródeł ma lukę w danych (ostrzeżenie u góry strony).'}
+          </p>}
+          {wpisy.length === 0 && niepelne && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
+            Wśród pobranych komunikatów {poczatek} żaden nie dotyczy tego powiatu. Dane są niepełne, więc to nie znaczy, że ich nie było.
+            {p.lukaWDanych && ' Część źródeł ma lukę w danych (ostrzeżenie u góry strony).'}
+          </p>}
+          {inne.length > 0 && <div className="tz-mp-inne">
+            <h4 className="tz-mp-inne__tytul">Inne komunikaty z województwa: {inne.length}</h4>
+            <p className="tz-mp-pomoc">Źródło nie wymienia w nich tego powiatu albo nie podaje powiatów. Pokazujemy je osobno, żeby nie poszerzać zasięgu komunikatu.</p>
+            <ul className="tz-mp-wpisy">
+              {inne.map(({ v, zakres }) => <li key={v.wpis.id}><Wpis widok={v} warstwy={p.warstwy} zakres={zakres} kodPowiatu={kod} /></li>)}
+            </ul>
+          </div>}
         </>}
-        {!p.ladowanie && !p.blad && wpisy.length === 0 && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
-          Brak w naszych danych {powiat ? dlaPowiatu(powiat) : `dla powiatu o kodzie ${kod}`} {poczatek}. Sprawdź Alert RCB i 112.
-          {p.uciete && ' Pokazujemy tylko najnowsze komunikaty z województwa, więc mogło ich być więcej.'}
-          {p.pominiete > 0 && ' Część komunikatów miała nieznany format i została pominięta.'}
-          {p.lukaWDanych && ' Część źródeł ma lukę w danych (ostrzeżenie u góry strony).'}
-        </p>}
       </section>;
     })}
   </div>;
