@@ -3,6 +3,7 @@ import type { Warstwa, WidokWpisu } from './typy';
 import { dataIGodzina, host } from './czas';
 import { etykietaDokladnosci, opisMiejsca } from './teryt';
 import { nazwaZrodla } from './model';
+import { kopiujDoSchowka } from './schowek';
 import { metaStatusu, metaWarstwy } from './warstwy';
 import { EtykietaStatusu, IkonaWarstwy } from './Ikony';
 
@@ -17,22 +18,6 @@ export interface KartaWpisuProps {
   /** Zwraca adres do skopiowania (liczony w chwili kliknięcia, bo zależy od adresu strony). */
   adres: () => string;
   onZamknij: () => void;
-}
-
-async function kopiujDoSchowka(tekst: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(tekst);
-    return true;
-  } catch {
-    try {
-      const pole = document.createElement('textarea');
-      pole.value = tekst; pole.setAttribute('readonly', ''); pole.style.position = 'fixed'; pole.style.opacity = '0';
-      document.body.appendChild(pole); pole.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(pole);
-      return ok;
-    } catch { return false; }
-  }
 }
 
 export function KartaWpisu({ widok, warstwy, adres, onZamknij }: KartaWpisuProps) {

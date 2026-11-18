@@ -19,10 +19,11 @@ const cache = new Map();
 const stub = { fetch: () => { throw new Error("fetch nie jest podstawiony"); } };
 /** Wczytuje moduł TS z katalogu teraz razem z jego względnymi importami (bez Reacta i mapy). */
 function load(file) {
+  if (file.endsWith('.json')) return JSON.parse(fs.readFileSync(path.join(root, file), 'utf8')); // słownik powiatów (public/teraz)
   const bez = file.endsWith('.ts') ? file.slice(0, -3) : file;
   const abs = path.join(root, fs.existsSync(path.join(root, `${bez}.ts`)) ? `${bez}.ts` : `${bez}/index.ts`);
   if (cache.has(abs)) return cache.get(abs).exports;
-  const source = ts.transpileModule(fs.readFileSync(abs, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const source = ts.transpileModule(fs.readFileSync(abs, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
   const module = { exports: {} };
   cache.set(abs, module);
   const req = name => {
@@ -242,11 +243,11 @@ test('TERYT: nazwy województw i powiatów, nieznany powiat po kodzie, opis miej
   const t = load(`${dir}/teryt`);
   assert.equal(t.WOJEWODZTWA.length, 16);
   assert.equal(t.nazwaObszaru('06'), 'województwo lubelskie');
-  assert.equal(t.nazwaObszaru('1814'), 'powiat przemyski (podkarpackie)');
-  assert.equal(t.nazwaObszaru('1263'), 'powiat m. Tarnów (małopolskie)');
+  assert.equal(t.nazwaObszaru('1813'), 'powiat przemyski (podkarpackie)');
+  assert.equal(t.nazwaObszaru('1263'), 'miasto Tarnów (małopolskie)');
   assert.equal(t.nazwaObszaru('1899'), 'powiat o kodzie 1899 (podkarpackie)', 'nie zgadujemy nazwy');
   assert.equal(t.nazwaObszaru('1814011'), 'gmina o kodzie 1814011 (podkarpackie)');
-  assert.equal(t.opisMiejsca({ teryt: ['1814', '1810'], dokladnosc: 'powiat', szerokosc: null, dlugosc: null, bbox: null }), 'dotyczy: powiat lubaczowski (podkarpackie), powiat przemyski (podkarpackie)');
+  assert.equal(t.opisMiejsca({ teryt: ['1813', '1809'], dokladnosc: 'powiat', szerokosc: null, dlugosc: null, bbox: null }), 'dotyczy: powiat lubaczowski (podkarpackie), powiat przemyski (podkarpackie)');
   assert.equal(t.opisMiejsca({ teryt: [], dokladnosc: 'punkt', szerokosc: 51.5, dlugosc: 16.1, bbox: null }), 'dotyczy: punkt na mapie (położenie przybliżone)');
   assert.equal(t.opisMiejsca({ teryt: [], dokladnosc: 'kraj', szerokosc: null, dlugosc: null, bbox: null }), 'dotyczy: całego kraju');
   assert.equal(t.opisMiejsca({ teryt: [], dokladnosc: 'brak', szerokosc: null, dlugosc: null, bbox: null }), 'miejsce nieznane');

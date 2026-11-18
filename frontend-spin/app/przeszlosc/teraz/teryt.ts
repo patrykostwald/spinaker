@@ -1,10 +1,11 @@
 import type { Bbox, Dokladnosc, Wpis } from './typy';
+import { powiatOKodzie } from './slownik';
 
 /**
  * Nazwy i przybliżone prostokąty województw (kody TERYT, 2 cyfry). Prostokąty służą tylko do przybliżenia widoku mapy
  * i do filtra wpisów bez kodu TERYT, które mają punkt (np. wstrząs); to nie są granice administracyjne.
- * Granice powiatów (PRG) i pełną listę nazw powiatów dostarcza później Z3/Z6b; do tego czasu nieznany powiat
- * pokazujemy jako „powiat o kodzie 1814”, bez zgadywania nazwy.
+ * Nazwy powiatów pochodzą ze słownika (slownik.ts, plik public/teraz/teryt-powiaty.json). Kod spoza słownika
+ * pokazujemy jako „powiat o kodzie 1899”, bez zgadywania nazwy. Granice powiatów (PRG) dostarcza osobne zlecenie.
  */
 export interface Wojewodztwo { kod: string; nazwa: string; bbox: Bbox }
 
@@ -30,23 +31,17 @@ export const WOJEWODZTWA: Wojewodztwo[] = [
 /** Prostokąt Polski do widoku startowego. */
 export const POLSKA_BBOX: Bbox = [14.0, 48.9, 24.2, 54.9];
 
-/** Powiaty używane w danych próbnych; reszta po kodzie (patrz wyżej). */
-const POWIATY: Record<string, string> = {
-  '0602': 'biłgorajski', '0604': 'hrubieszowski', '0620': 'zamojski', '0663': 'm. Lublin',
-  '1261': 'm. Kraków', '1263': 'm. Tarnów', '1465': 'm.st. Warszawa',
-  '1804': 'jarosławski', '1810': 'lubaczowski', '1814': 'przemyski', '1863': 'm. Rzeszów',
-};
-
 export const wojewodztwoOKodzie = (kod: string): Wojewodztwo | undefined => WOJEWODZTWA.find(w => w.kod === kod.slice(0, 2));
 
-/** „powiat przemyski (podkarpackie)”, „województwo lubelskie”, „gmina o kodzie 1814011 (podkarpackie)”. */
+/** „powiat przemyski (podkarpackie)”, „miasto Tarnów (małopolskie)”, „województwo lubelskie”, „gmina o kodzie 1814011 (podkarpackie)”. */
 export function nazwaObszaru(kod: string): string {
   const woj = wojewodztwoOKodzie(kod)?.nazwa;
   if (kod.length === 2) return woj ? `województwo ${woj}` : `obszar o kodzie ${kod}`;
   const w = woj ? ` (${woj})` : '';
   if (kod.length === 4) {
-    const nazwa = POWIATY[kod];
-    return nazwa ? `powiat ${nazwa}${w}` : `powiat o kodzie ${kod}${w}`;
+    const p = powiatOKodzie(kod);
+    if (!p) return `powiat o kodzie ${kod}${w}`;
+    return p.miasto ? `miasto ${p.nazwa}${w}` : `powiat ${p.nazwa}${w}`;
   }
   return `gmina o kodzie ${kod}${w}`;
 }

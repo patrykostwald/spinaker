@@ -36,8 +36,8 @@ export function PanelWarstw(p: PanelWarstwProps) {
 
     <fieldset className="tz-filtr">
       <legend>Czas</legend>
-      <div className="tz-segmenty" role="radiogroup" aria-label="Okres, z którego pokazujemy komunikaty">
-        {OKRESY.map(o => <button key={o.id} type="button" role="radio" aria-checked={p.okres === o.id} data-on={p.okres === o.id ? '' : undefined} onClick={() => p.onOkres(o.id)}>{o.etykieta}</button>)}
+      <div className="tz-segmenty" role="group" aria-label="Okres, z którego pokazujemy komunikaty">
+        {OKRESY.map(o => <button key={o.id} type="button" aria-pressed={p.okres === o.id} data-on={p.okres === o.id ? '' : undefined} onClick={() => p.onOkres(o.id)}>{o.etykieta}</button>)}
       </div>
     </fieldset>
 

@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { serverFeature } from '../../../lib/features';
 import { parsuj } from './parametry';
+import { parsujPowiaty } from './powiaty';
 import { TerazPage } from './TerazPage';
 
 /**
- * „Teraz”: mapa Polski na żywo z warstwami komunikatów służb i instytucji (Z6a). Za flagą NEXT_PUBLIC_TERAZ_ENABLED
+ * „Teraz”: mapa Polski na żywo z warstwami komunikatów służb i instytucji (Z6a) oraz widoki tabela i „Mój powiat” (Z6b). Za flagą NEXT_PUBLIC_TERAZ_ENABLED
  * (albo tryb podglądu), bez niej przekierowanie na stronę główną przeszłości. Na domenie przeszlosc.today adres to /teraz
  * (middleware). Do publicznego startu strona nie jest indeksowana (noindex); właściciel zdejmuje to przy starcie.
  * Konfiguracja czytana na serwerze w czasie żądania (bez przebudowy):
@@ -26,6 +27,7 @@ export default async function TerazRoute({ searchParams }: { searchParams: Recor
   const probne = poczatkowy.probne || process.env.NEXT_PUBLIC_TERAZ_PROBNE === '1';
   return <TerazPage
     poczatkowy={{ ...poczatkowy, probne }}
+    poczatkowePowiaty={parsujPowiaty(searchParams)}
     podkladUrl={process.env.NEXT_PUBLIC_TERAZ_PODKLAD_URL || ''}
     glifyUrl={process.env.NEXT_PUBLIC_TERAZ_GLIFY_URL || ''} />;
 }

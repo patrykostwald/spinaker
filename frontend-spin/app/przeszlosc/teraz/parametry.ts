@@ -3,16 +3,20 @@ import { OKRES_DOMYSLNY, OKRESY } from './warstwy';
 import { WOJEWODZTWA } from './teryt';
 
 /**
- * Stan widoku w adresie URL (udostępnianie): warstwy (lista włączonych), okres, woj (kod TERYT), wpis (id), widok, probne.
+ * Stan widoku w adresie URL (udostępnianie): warstwy (lista włączonych), okres, woj (kod TERYT), wpis (id), widok
+ * (mapa, lista, tabela, powiat), probne. Parametr `powiaty` („Mój powiat”) obsługuje powiaty.ts i nie jest tu zmieniany.
  * Moduł jest czysty: używa go serwer (początkowy stan z searchParams) i przeglądarka (zapis przez history.replaceState).
  */
+export type Widok = 'mapa' | 'lista' | 'tabela' | 'powiat';
+export const WIDOKI: Widok[] = ['mapa', 'lista', 'tabela', 'powiat'];
+
 export interface Parametry {
   /** null = wszystkie aktywne warstwy włączone (brak parametru). */
   warstwy: string[] | null;
   okres: Okres;
   woj: string | null;
   wpis: number | null;
-  widok: 'mapa' | 'lista';
+  widok: Widok;
   probne: boolean;
 }
 
@@ -38,7 +42,7 @@ export function parsuj(wejscie: Wejscie): Parametry {
   const woj = WOJEWODZTWA.some(w => w.kod === wojTekst) ? wojTekst ?? null : null;
   const wpisTekst = pierwszy(wejscie, 'wpis');
   const wpis = wpisTekst && /^[0-9]{1,12}$/.test(wpisTekst) ? Number(wpisTekst) : null;
-  const widok = pierwszy(wejscie, 'widok') === 'lista' ? 'lista' : 'mapa';
+  const widok = WIDOKI.find(v => v === pierwszy(wejscie, 'widok')) ?? 'mapa';
   const probneTekst = pierwszy(wejscie, 'probne');
   return { warstwy, okres, woj, wpis, widok, probne: probneTekst === '1' || probneTekst === 'true' };
 }
@@ -51,7 +55,7 @@ export function zbudujZapytanie(p: Parametry, obecne: string = ''): string {
   if (p.okres !== OKRES_DOMYSLNY) q.set('okres', p.okres);
   if (p.woj) q.set('woj', p.woj);
   if (p.wpis !== null) q.set('wpis', String(p.wpis));
-  if (p.widok === 'lista') q.set('widok', 'lista');
+  if (p.widok !== 'mapa') q.set('widok', p.widok);
   if (p.probne) q.set('probne', '1');
   const tekst = q.toString();
   return tekst ? `?${tekst}` : '';

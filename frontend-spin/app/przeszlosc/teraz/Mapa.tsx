@@ -217,7 +217,14 @@ export default function Mapa(p: MapaProps) {
           mapaGL.getCanvas().style.cursor = jest ? 'pointer' : '';
         });
 
-        usun = () => { mapaGL.remove(); mapa.current = null; odepnijProtokol?.(); };
+        // MapLibre mierzy kontener raz przy tworzeniu i pomija pierwsze zdarzenie własnego obserwatora: gdy układ strony jeszcze
+        // się ustala (nagłówek, linia stanu), płótno zostaje za niskie. Własny obserwator przelicza rozmiar po każdej zmianie kontenera.
+        let obserwator: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== 'undefined' && kontener.current) {
+          obserwator = new ResizeObserver(() => { if (mapa.current) mapa.current.resize(); });
+          obserwator.observe(kontener.current);
+        }
+        usun = () => { obserwator?.disconnect(); mapaGL.remove(); mapa.current = null; odepnijProtokol?.(); };
         if (anulowano) usun();
       } catch {
         // brak WebGL albo błąd ładowania: strona przełącza się na listę
@@ -263,5 +270,6 @@ export default function Mapa(p: MapaProps) {
     mapa.current?.fitBounds(p.region ?? POLSKA_BBOX, { padding: 12, duration: reduced() ? 0 : 600, maxZoom: 9 });
   }, [p.region]);
 
-  return <div ref={kontener} className="tz-mapa" role="region" aria-label="Mapa Polski z komunikatami. Do listy komunikatów przejdź przełącznikiem Lista." />;
+  return <div ref={kontener} className="tz-mapa" role="region"
+    aria-label="Mapa Polski z komunikatami. Strzałki przesuwają mapę, plus i minus zmieniają przybliżenie. Pełny odpowiednik mapy to widok Tabela, a prostszy Lista." />;
 }

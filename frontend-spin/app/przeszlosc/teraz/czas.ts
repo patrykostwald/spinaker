@@ -26,6 +26,26 @@ export function dataIGodzina(iso: string | null | undefined, teraz: number = Dat
   return `${formatKrotki.format(ms)} o godz. ${g}`;
 }
 
+/** „od godz. 14:32” (dziś), „od wczoraj, godz. 14:32”, „od 12 listopada, godz. 09:40”: początek okresu w zdaniu. */
+export function odGodziny(iso: string | null | undefined, teraz: number = Date.now()): string {
+  if (!iso) return '';
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  const g = formatGodziny.format(ms);
+  const d = dzien(ms);
+  if (d === dzien(teraz)) return `od godz. ${g}`;
+  if (d === dzien(teraz - 86_400_000)) return `od wczoraj, godz. ${g}`;
+  return `od ${formatKrotki.format(ms)}, godz. ${g}`;
+}
+
+/** „2026-11-18 14:32” w strefie Warszawy (do tabeli i eksportu CSV, sortuje się jak tekst). */
+export function czasLokalny(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  return `${dzien(ms)} ${formatGodziny.format(ms)}`;
+}
+
 /** „3 min temu”, „2 godz. temu”, „3 dni temu”. */
 export function ileTemu(iso: string | null | undefined, teraz: number = Date.now()): string {
   if (!iso) return '';

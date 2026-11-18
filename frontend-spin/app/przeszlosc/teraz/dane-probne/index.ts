@@ -83,7 +83,7 @@ export function probneWpisy(teraz: number = Date.now()): Wpis[] {
       id: 9001, zrodlo: 'rcb-gov-pl', warstwa: 'rcb', publMin: 22, pobrMin: 20,
       tytul: 'Przykład: zagrożenie z powietrza w powiatach przemyskim, lubaczowskim i jarosławskim',
       tresc: 'Przykładowy komunikat do podglądu wyglądu. Treść nie jest prawdziwym komunikatem służb.',
-      link: 'https://www.gov.pl/web/rcb', teryt: ['1814', '1810', '1804'], dokladnosc: 'powiat',
+      link: 'https://www.gov.pl/web/rcb', teryt: ['1813', '1809', '1804'], dokladnosc: 'powiat',
     }),
     wpis(teraz, {
       id: 9002, zrodlo: 'rcb-gov-pl', warstwa: 'rcb', publMin: 1500, pobrMin: 1498,
