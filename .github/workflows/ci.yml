@@ -38,3 +38,23 @@ jobs:
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm --filter frontend-spin typecheck
       - run: corepack pnpm --filter frontend-spin build
+
+  caddyfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Adapt deploy/Caddyfile without the panel (empty import directory, no PANEL_*)
+        run: >-
+          mkdir -p /tmp/panel-pusty &&
+          docker run --rm
+          -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
+          -v /tmp/panel-pusty:/etc/caddy/panel:ro
+          caddy:2-alpine caddy adapt --config /etc/caddy/Caddyfile --adapter caddyfile
+      - name: Adapt deploy/Caddyfile with the panel and sample credentials
+        run: >-
+          docker run --rm
+          -e PANEL_UZYTKOWNIK=ci
+          -e 'PANEL_HASLO_HASH=$2a$14$Zkx19XLiW6VYouLHR5NmfOFU0z2GTNmpkT/5qqR7hx4IjWJPDhjvG'
+          -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro"
+          -v "$PWD/deploy/caddy-panel:/etc/caddy/panel:ro"
+          caddy:2-alpine caddy adapt --config /etc/caddy/Caddyfile --adapter caddyfile

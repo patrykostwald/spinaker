@@ -1,0 +1,28 @@
+# Panel administratora Django dla modułu „Teraz” (moderacja źródeł i wpisów), 18.11.2026.
+# Dwie warstwy ochrony: hasło Caddy (basic_auth) i logowanie Django. Wymaga w .env.production:
+# PANEL_UZYTKOWNIK oraz PANEL_HASLO_HASH (wynik `caddy hash-password` w apostrofach: PANEL_HASLO_HASH='$2a$...'),
+# a w DJANGO_ALLOWED_HOSTS i CSRF_TRUSTED_ORIGINS adresu panel.przeszlosc.today. Ten plik kopiuje się do
+# deploy/caddy-panel-aktywny/ dopiero po ustawieniu zmiennych (inaczej Caddy nie wystartuje).
+panel.przeszlosc.today {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		X-Robots-Tag "noindex, nofollow"
+		Content-Security-Policy "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+		-X-Powered-By
+	}
+	basic_auth {
+		{$PANEL_UZYTKOWNIK} {$PANEL_HASLO_HASH}
+	}
+	@django path /admin /admin/* /static/*
+	handle @django {
+		reverse_proxy backend:8000
+	}
+	handle {
+		redir /admin/ 302
+	}
+}

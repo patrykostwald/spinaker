@@ -49,6 +49,11 @@ www.przeszlosc.today {
 	redir https://przeszlosc.today{uri} permanent
 }
 
+# Panel administratora (panel.przeszlosc.today) jest w osobnym pliku deploy/caddy-panel/panel.caddy.
+# Włącza się go dopiero po ustawieniu PANEL_* w .env.production, kopiując plik do deploy/caddy-panel-aktywny/
+# (montowane jako /etc/caddy/panel). Gdy katalog jest pusty, import niczego nie dodaje i pozostałe strony działają.
+import /etc/caddy/panel/*.caddy
+
 # spina3.pl (14.10.2026): ukryty podgląd frontu z danymi przykładowymi (bez backendu, bez indeksowania).
 # Katalog /srv/spina3/dist jest montowany tylko do odczytu (docker-compose.production.yml). Start serwisu = osobny blok api.spina3.pl, patrz docs/SPINA3_WDROZENIE.md.
 spina3.pl {

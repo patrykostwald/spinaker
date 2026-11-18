@@ -55,3 +55,5 @@ backend/clinic_cards/*.png
 .pytest-tmp/
 frontend-*.log
 lat.png
+# Aktywny panel Caddy (kopiowany przy wdrożeniu, nie w repo)
+deploy/caddy-panel-aktywny/
