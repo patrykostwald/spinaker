@@ -19,9 +19,9 @@ echo "gałąź: $(git rev-parse --abbrev-ref HEAD)"; git log --oneline -1
 step "2/7 kopia bazy (potrwa kilka minut, nie przerywaj)"
 sh deploy/backup.sh || fail "kopia bazy się nie powiodła; wdrożenie wstrzymane (nic nie zmieniono na produkcji)"
 
-step "3/7 budowa i uruchomienie (frontend, backend, worker, beat; kilka minut, strona niedostępna ok. 1-3 minut)"
+step "3/7 budowa i uruchomienie (frontend, backend, worker, worker-teraz, beat; kilka minut, strona niedostępna ok. 1-3 minut)"
 GIT_COMMIT=$(git rev-parse HEAD); BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ); export GIT_COMMIT BUILD_TIME
-$DC up -d --build --no-deps frontend backend worker beat || fail "budowa albo start usług nie powiodły się"
+$DC up -d --build --no-deps frontend backend worker worker-teraz beat || fail "budowa albo start usług nie powiodły się"
 
 step "4/7 czekam, aż backend wstanie po migracjach (do 5 minut)"
 i=0
