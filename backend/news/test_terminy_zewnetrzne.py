@@ -25,6 +25,7 @@ def isolated(monkeypatch):
     for name in ('OPENROUTER_API_KEY', 'X_POLITICAL_BEARER_TOKEN', 'GITHUB_ISSUES_TOKEN', 'GITHUB_ISSUES_TOKEN_CREATED', 'HEALTHCHECK_URL',
                  'HEALTHCHECK_PING_URL'):
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv('EXPECTED_SERVER_IP', '203.0.113.10')
     with patch('django.utils.timezone.now', return_value=NOW), patch('requests.get', side_effect=AssertionError('Bez sieci')), \
          patch('requests.post', side_effect=AssertionError('Bez sieci')), patch('requests.request', side_effect=AssertionError('Bez sieci')):
         yield
@@ -166,3 +167,12 @@ def test_pulse_pings_only_when_duty_is_fresh(monkeypatch):
     from news import raport_petli
     from news.daily_schedule import BEAT_PLAN
     assert BEAT_PLAN['puls-zewnetrzny-5m'] == ('puls_zewnetrzny_task', {'minute': '2-59/5'}) and raport_petli.BY_KEY['puls']['registry'] == 'puls-zewnetrzny'
+
+
+def test_missing_expected_ip_warns_instead_of_guessing(monkeypatch):
+    probes(monkeypatch)
+    monkeypatch.delenv('EXPECTED_SERVER_IP', raising=False)
+    items, _ = tz.collect(NOW, {})
+    dns = by_key(items)['dns:spin.clinic']
+    assert dns['level'] == 'warning' and 'EXPECTED_SERVER_IP' in dns['detail']
+    assert 'EXPECTED_SERVER_IP' in dns['instruction']

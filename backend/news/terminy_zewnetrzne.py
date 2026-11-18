@@ -195,7 +195,7 @@ def collect(now, data):
     for host in DNS_HOSTS:
         try:
             if not expected_ip():
-                out.append(item(f'dns:{host}', host, 'dns', 'na', detail='brak EXPECTED_SERVER_IP',
+                out.append(item(f'dns:{host}', host, 'dns', 'warning', detail='brak EXPECTED_SERVER_IP, DNS niesprawdzony',
                                 instruction='Dopisz EXPECTED_SERVER_IP do .env.production na serwerze.'))
                 continue
             ips = dns_a(host)
