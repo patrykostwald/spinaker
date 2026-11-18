@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   if (pathname === '/manifest.webmanifest') return NextResponse.rewrite(new URL('/przeszlosc/manifest.webmanifest', request.url));
   // krótkie adresy stron przeszłości (PWA seria 2): /aplikacja i /jak-to-dziala to /przeszlosc/...; dawne /zrodla i /metodologia -> /jak-to-dziala
   const short = pathname.replace(/\/+$/, '');
-  if (short === '/aplikacja' || short === '/jak-to-dziala') return NextResponse.rewrite(new URL(`/przeszlosc${short}${search}`, request.url));
+  if (short === '/aplikacja' || short === '/jak-to-dziala' || short === '/teraz') return NextResponse.rewrite(new URL(`/przeszlosc${short}${search}`, request.url));
   if (short === '/zrodla' || short === '/metodologia') return NextResponse.redirect(new URL('/jak-to-dziala', request.url), 308);
   // raport nastrojów dla znajomego (właściciel 8.10): statyczny plik z public/raporty, noindex
   if (pathname === '/pizza') return NextResponse.rewrite(new URL('/raporty/pizza.html', request.url));

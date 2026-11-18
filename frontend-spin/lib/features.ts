@@ -5,12 +5,13 @@ export async function serverPreview() {
   const jar = await cookies();
   return jar.get('sc_preview')?.value === '1';
 }
-export async function serverFeature(name: 'ACCOUNTS_ENABLED' | 'THREADS_ENABLED' | 'APP_ENABLED' | 'PUSH_ENABLED') {
+export async function serverFeature(name: 'ACCOUNTS_ENABLED' | 'THREADS_ENABLED' | 'APP_ENABLED' | 'PUSH_ENABLED' | 'TERAZ_ENABLED') {
   const enabled = {
     ACCOUNTS_ENABLED: process.env.NEXT_PUBLIC_ACCOUNTS_ENABLED,
     THREADS_ENABLED: process.env.NEXT_PUBLIC_THREADS_ENABLED,
     APP_ENABLED: process.env.NEXT_PUBLIC_APP_ENABLED,
     PUSH_ENABLED: process.env.NEXT_PUBLIC_PUSH_ENABLED,
+    TERAZ_ENABLED: process.env.NEXT_PUBLIC_TERAZ_ENABLED,
   }[name] === 'true';
   return enabled || await serverPreview();
 }
