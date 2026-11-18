@@ -43,6 +43,7 @@ from .fleksja import (
     Token,
     rdzenie_mianownika,
     tokenizuj,
+    usun_niewidoczne,
     wyglada_na_wielkie_litery,
     wyrazy_nazwy,
     zloz_pozycyjnie,
@@ -125,19 +126,27 @@ _RZEKI = frozenset((n,) for n in (
     "gwda", "drawa", "ropa", "olza", "kaczawa", "bystrzyca", "widawa", "tanew", "huczwa", "swider", "wiar", "orla",
     "barycz", "sleza", "olawa", "leba", "suprasl", "narewka", "wilga", "gac",
 ))
-# Pierwsze wyrazy nazw klubów sportowych, które są też nazwami gmin („Wisła Kraków”, „Raków Częstochowa”).
-_KLUBY = frozenset({("rakow",)})
+# Pierwsze wyrazy nazw klubów sportowych („Wisła Kraków”, „Legia Warszawa”, „Raków Częstochowa”), w mianowniku.
+# Nazwa klubu (w każdym przypadku) blokuje też miasto stojące tuż po niej: to nazwa drużyny, nie miejsce zdarzenia.
+_KLUBY = (
+    "Legia", "Lech", "Śląsk", "Pogoń", "Jagiellonia", "Górnik", "Korona", "Zagłębie", "Wisła", "Odra", "Raków",
+    "Cracovia", "Arka", "Lechia", "Widzew", "ŁKS", "Stal", "Motor", "Warta", "Piast", "Ruch", "Polonia",
+    "Resovia", "GKS", "Puszcza", "Stomil", "Znicz",
+)
 _PRZED_RZEKA = frozenset({"na", "nad", "wzdluz", "rzeka", "rzeki", "rzece", "rzeke", "rzekach", "dorzecze", "dorzeczu", "dolinie"})
 _DRUGI_CZLON_RZEKI = ("klodzk", "luzyck")  # „Nysa Kłodzka”, „Nysa Łużycka”
 
 _PRZYIMKI_MIEJSCA = frozenset({"w", "we", "z", "ze", "do", "od", "na", "nad", "pod", "przy", "kolo", "k", "po", "za", "obok"})
 _JEDNOSTKA_PREFIKSY = ("komend", "komisariat", "prokuratur", "urzad", "posterunek", "jednostk")
 _JEDNOSTKA_WYRAZY = frozenset({"sad", "sadu", "sadzie", "sadem"})
-# Skróty jednostek służb (Policja, PSP): KPP, KMP, KWP, KSP, KP, JRG, PSP (w tym KP PSP, KW PSP).
-_JEDNOSTKA_SKROTY = frozenset({"kpp", "kmp", "kwp", "ksp", "kp", "jrg", "psp"})
+# Skróty jednostek służb (Policja, PSP): KPP, KMP, KWP, KSP, KP, JRG, PSP (w tym KP PSP, KW PSP, KM PSP).
+_JEDNOSTKA_SKROTY = frozenset({"kpp", "kmp", "kwp", "ksp", "kp", "jrg", "psp", "km"})
 # Małą literą dopuszczamy w nazwie jednostki tylko te wyrazy (reszta małych liter przerywa przeszukiwanie wstecz).
 _JEDNOSTKA_PRZEDROSTKI_MALE = ("wojewodzk", "powiatow", "rejonow", "miejsk", "stoleczn", "okregow")
 _JEDNOSTKA_SLOWA_MALE = frozenset({"policji", "policja", "straz", "strazy", "pozarnej", "granicznej", "ratowniczo", "gasnicza", "gasniczej", "gasnicze", "panstwowej"})
+_POW_MNOGA = frozenset({"powiaty", "powiatow", "powiatach", "powiatom", "powiatami"})
+# Wyrazy, które w tekście bywają odmianą nazwy gminy, a nią nie są („W Polsce obowiązują ostrzeżenia” to nie „Polska Cerekiew”).
+_NIE_NAZWY_GMIN = frozenset({"polska", "polsce", "polske", "polski", "polsko"})
 _SEP_PROSTY = re.compile(r"[ \t\u00a0\-]+")
 _SEP_PIERWSZEGO = re.compile(r"[\s:\-\u2013\u2014(.]{0,6}")
 _SEP_ZAKRESU = re.compile(r"[\s\-\u2013\u2014:,(]{0,4}")
@@ -154,6 +163,10 @@ _WZORCE_KRAJU = tuple(re.compile(w) for w in (
     rf"\b{_CZASOWNIK_ZASIEGU}\b[^.!?\n]{{0,40}}?\b({_FRAZA_KRAJU})\b",
     rf"\b({_FRAZA_KRAJU})\b[^.!?\n]{{0,40}}?\b{_CZASOWNIK_ZASIEGU}\b",
 ))
+# „z całej Polski”, „od całego kraju”: skąd pochodzą ludzie lub rzeczy, a nie zasięg ostrzeżenia.
+_PRZYIMEK_POCHODZENIA = re.compile(r"\b(?:z|ze|od)\s+$")
+# „Najwięcej … w całym kraju”: statystyka, a nie zasięg ostrzeżenia.
+_ILOSC_W_ZDANIU = re.compile(r"\b(?:najwiec\w*|najmniej\w*|najczesc\w*|najlicz\w*)\b")
 # Komunikaty hydrologiczne: nazwa rzeki, która jest też gminą, nie jest wtedy miejscem.
 _HYDROLOGIA = re.compile(
     r"hydrolog|wezbran|powodz|wylew|przybor|kulminac|\bstan\w*\s+(?:alarmow|ostrzegawcz|wod)|\bpoziom\w*\s+wod"
@@ -237,6 +250,7 @@ class _Indeksy:
     wojewodztwa: _Indeks
     regiony: _Indeks
     dzielnice: _Indeks
+    kluby: _Indeks
 
 
 @lru_cache(maxsize=1)
@@ -256,7 +270,10 @@ def _indeksy() -> _Indeksy:
         regiony.dodaj(nazwa, kod)
     for nazwa in _DZIELNICE_WARSZAWY:
         dzielnice.dodaj(nazwa, KOD_WARSZAWY)
-    return _Indeksy(gminy, powiaty, woj, regiony, dzielnice)
+    kluby = _Indeks(True)
+    for nazwa in _KLUBY:
+        kluby.dodaj(nazwa, "klub")
+    return _Indeksy(gminy, powiaty, woj, regiony, dzielnice, kluby)
 
 
 def _zgodny_rdzen(token: Token, rdzenie: dict[str, frozenset[str] | None], mianownik: str) -> bool:
@@ -380,11 +397,46 @@ class _Trafienie:
     kontekst_wielkich: bool = False  # tekst WIELKIMI LITERAMI: samodzielne trafienie słabsze
     bez_przyimka: bool = False  # nazwa bez przyimka miejsca: tylko miasto (nie wieś ani miasteczko)
     skrot: bool = False  # skrócona nazwa: wymaga kontekstu
+    poczatek: int = -1  # indeks tokenu znacznika („woj.”, „powiat”, „gmina”) albo początku nazwy bez znacznika
+    zakres_doprecyzowuje: bool = False  # zakres województwa jest nagłówkiem listy lub dopiskiem „A (woj. X)”, nie osobnym zasięgiem
 
 
-def _wczytaj_lancuch(tokeny: list[Token], p: int, indeks: _Indeks) -> list[tuple[int, int, list[str]]]:
-    """Lista nazw po znaczniku: „A, B i C”. Zwraca [(start, koniec, kody)] w tokenach."""
-    pozycje: list[tuple[int, int, list[str]]] = []
+@dataclass(slots=True)
+class _Pozycja:
+    """Jedna nazwa z listy po znaczniku: tokeny [start, koniec) i kody; `woj` to województwo w nawiasie za nazwą."""
+
+    start: int
+    koniec: int
+    kody: list[str]
+    woj: tuple[int, int, list[str]] | None = None  # (indeks znacznika „woj.”, koniec nazwy, kody), tokeny po nawiasie „(”
+
+
+def _woj_w_nawiasie(tokeny: list[Token], p: int) -> tuple[int, int, list[str]] | None:
+    """„(woj. małopolskie)” tuż za nazwą: zwraca (indeks znacznika, koniec nazwy województwa, kody) albo None.
+
+    Tokeny od `p`: znacznik „woj.” po nawiasie otwierającym, nazwa województwa, a za nią nawias zamykający.
+    """
+    n = len(tokeny)
+    if p + 1 >= n or "(" not in tokeny[p].sep or _znacznik(tokeny, p) != "woj":
+        return None
+    if tokeny[p].sep.strip() != "(" or not _SEP_PIERWSZEGO.fullmatch(tokeny[p + 1].sep):
+        return None
+    znaleziono = _szukaj(tokeny, p + 1, _indeksy().wojewodztwa)
+    if not znaleziono:
+        return None
+    koniec = p + 1 + znaleziono[0]
+    if koniec >= n or not tokeny[koniec].sep.lstrip().startswith(")"):
+        return None
+    return p, koniec, _kody(znaleziono[1])
+
+
+def _wczytaj_lancuch(tokeny: list[Token], p: int, indeks: _Indeks, nawiasy_woj: bool = False) -> list[_Pozycja]:
+    """Lista nazw po znaczniku: „A, B i C”. Zwraca pozycje w tokenach.
+
+    `nawiasy_woj`: lista powiatów może mieć za nazwą województwo w nawiasie („A (woj. X), B (woj. Y)”). Taki nawias
+    w środku listy nie przerywa jej; za ostatnią nazwą zostaje nietknięty (obsłuży go zwykłe rozpoznanie województwa).
+    """
+    pozycje: list[_Pozycja] = []
     n = len(tokeny)
     if p >= n or not _SEP_PIERWSZEGO.fullmatch(tokeny[p].sep):
         return pozycje
@@ -393,28 +445,94 @@ def _wczytaj_lancuch(tokeny: list[Token], p: int, indeks: _Indeks) -> list[tuple
         if not znaleziono:
             break
         dlugosc, grupy = znaleziono
-        pozycje.append((p, p + dlugosc, _kody(grupy)))
+        pozycje.append(_Pozycja(p, p + dlugosc, _kody(grupy)))
         p += dlugosc
         if p >= n:
             break
-        sep = tokeny[p].sep
-        if "\n" in sep or "." in sep or ";" in sep:
+        woj = _woj_w_nawiasie(tokeny, p) if nawiasy_woj else None
+        if woj:
+            p, reszta = woj[1], tokeny[woj[1]].sep.lstrip()[1:]  # separator za nawiasem zamykającym
+            kontynuacja = _kontynuacja_listy(tokeny, p, reszta)
+            if kontynuacja is None or not _szukaj(tokeny, kontynuacja, indeks):
+                p = pozycje[-1].koniec  # lista się kończy: nawias zostaje do zwykłego rozpoznania
+                break
+            pozycje[-1].woj = woj
+            p = kontynuacja
+            continue
+        kontynuacja = _kontynuacja_listy(tokeny, p, tokeny[p].sep)
+        if kontynuacja is None:
             break
-        q = p
-        if tokeny[q].zlozony in _LACZNIKI and (not sep.strip() or sep.strip() == ","):
-            q += 1
-        elif tokeny[q].zlozony == "a" and q + 1 < n and tokeny[q + 1].zlozony == "takze":
-            q += 2
-        elif "," not in sep:
-            break
-        if q >= n or "\n" in tokeny[q].sep or ("." in tokeny[q].sep):
-            break
-        p = q
+        p = kontynuacja
     return pozycje
+
+
+def _kontynuacja_listy(tokeny: list[Token], p: int, sep: str) -> int | None:
+    """Indeks tokenu następnej nazwy listy, gdy po nazwie kończącej się przed `p` lista trwa; inaczej None.
+
+    `sep` to odstęp między nazwą (lub nawiasem) a tokenem `p`.
+    """
+    n = len(tokeny)
+    if "\n" in sep or "." in sep or ";" in sep:
+        return None
+    q = p
+    if tokeny[q].zlozony in _LACZNIKI and (not sep.strip() or sep.strip() == ","):
+        q += 1
+    elif tokeny[q].zlozony == "a" and q + 1 < n and tokeny[q + 1].zlozony == "takze":
+        q += 2
+    elif "," not in sep:
+        return None
+    if q >= n or "\n" in tokeny[q].sep or ("." in tokeny[q].sep):
+        return None
+    return q
 
 
 def _przyimek_przed(tokeny: list[Token], i: int) -> bool:
     return i > 0 and tokeny[i - 1].zlozony in _PRZYIMKI_MIEJSCA
+
+
+def _naglowek_listy(tokeny: list[Token], koniec_woj: int, znacznik: int) -> bool:
+    """Czy województwo kończące się przed `koniec_woj` jest nagłówkiem listy powiatów od tokenu `znacznik`.
+
+    Tak, gdy lista jest w liczbie mnogiej („powiaty:”) albo województwo oddziela od niej dwukropek lub myślnik
+    („woj. lubelskie - powiat chełmski”). „woj. lubelskie, powiat chełmski” to osobne wzmianki.
+    """
+    if tokeny[znacznik].zlozony in _POW_MNOGA:
+        return True
+    return any(c in tokeny[k].sep for k in range(koniec_woj, znacznik + 1) for c in ":-–—")
+
+
+def _po_dla(tokeny: list[Token], poczatek: int) -> bool:
+    """Czy tuż przed `poczatek` (do trzech wyrazów, w tym samym zdaniu) stoi „dla”: „dla powiatu”, „dla mieszkańców powiatu”."""
+    if poczatek < 0:
+        return False
+    for k in range(poczatek - 1, max(poczatek - 4, -1), -1):
+        if not _bez_konca_zdania(tokeny, k + 1, poczatek + 1):
+            return False
+        if tokeny[k].zlozony == "dla":
+            return True
+    return False
+
+
+def _w_przed(tokeny: list[Token], poczatek: int) -> bool:
+    """Czy znacznik od `poczatek` poprzedza przyimek „w”/„we” („w powiecie”, „w gminie”)."""
+    return poczatek > 0 and tokeny[poczatek - 1].zlozony in ("w", "we")
+
+
+def _kraina_po(tokeny: list[Token], nastepny: int, ind: _Indeksy) -> bool:
+    """Czy po jednowyrazowej nazwie stoi człon nazwy własnej spoza słownika gmin: „Kotlinie Kłodzkiej”, „Górach Stołowych”.
+
+    Nazwa regionu geograficznego („Kotlina Kłodzka”, „Góry Stołowe”, „Puszcza Białowieska”) nie jest gminą o nazwie
+    pierwszego wyrazu. Kolejny wyraz wielką literą po zwykłym odstępie, w formie przymiotnika (-ej, -ych, -ich,
+    -iego...), który sam nie jest gminą, tworzy taką nazwę.
+    """
+    if nastepny >= len(tokeny):
+        return False
+    t = tokeny[nastepny]
+    if not t.wielka or t.cyfra or not t.sep or not _SEP_PROSTY.fullmatch(t.sep) or len(t.zlozony) < 5:
+        return False
+    if not t.zlozony.endswith(tuple(KONCOWKI_PRZYMIOTNIKA)):
+        return False
+    return not _szukaj(tokeny, nastepny, ind.gminy)
 
 
 def _slowo_dozwolone(slowo: str, token: Token, wielkie: bool) -> bool:
@@ -435,28 +553,44 @@ def _jest_miastem(kod: str) -> bool:
     return sl.jednostka(kod).rodzaj in ("miejska", "miejsko-wiejska")
 
 
-def _blokada_rzeki_lub_klubu(tokeny: list[Token], i: int, dlugosc: int, grupy: list[_Grupa], hydrologia: bool, ind: _Indeksy) -> int:
-    """Liczba tokenów do pominięcia, gdy nazwa gminy jest w tekście rzeką albo klubem („na Wiśle”, „Wisła Kraków”).
+def _miasto_zaraz_po(tokeny: list[Token], nastepny: int, ind: _Indeksy) -> int:
+    """Długość (w tokenach) nazwy gminy stojącej tuż po poprzednim wyrazie, po zwykłym odstępie; 0, gdy jej nie ma."""
+    if nastepny < len(tokeny) and tokeny[nastepny].wielka and tokeny[nastepny].sep and _SEP_PROSTY.fullmatch(tokeny[nastepny].sep):
+        znaleziono = _szukaj(tokeny, nastepny, ind.gminy)
+        if znaleziono:
+            return znaleziono[0]
+    return 0
 
-    Rzeka: po „na/nad/rzeka”, z drugim członem „Kłodzka/Łużycka” albo w tekście o stanie wód (hydrologia).
-    Klub: nazwa rzeki lub klubu tuż przed nazwą innego miasta („Wisła Kraków”, „Raków Częstochowa”).
+
+def _blokada_klubu(tokeny: list[Token], i: int, ind: _Indeksy) -> int:
+    """Liczba tokenów do pominięcia, gdy od `i` stoi nazwa klubu i miasto: „Wisły Kraków”, „Legii Warszawa”.
+
+    Nazwa klubu (w każdym przypadku) blokuje także miasto po niej; miasto zdarzenia w tym samym zdaniu zostaje.
+    """
+    klub = _szukaj(tokeny, i, ind.kluby)
+    if not klub:
+        return 0
+    miasto = _miasto_zaraz_po(tokeny, i + klub[0], ind)
+    return klub[0] + miasto if miasto else 0
+
+
+def _blokada_rzeki(tokeny: list[Token], i: int, dlugosc: int, grupy: list[_Grupa], hydrologia: bool, ind: _Indeksy) -> int:
+    """Liczba tokenów do pominięcia, gdy nazwa gminy jest w tekście rzeką („na Wiśle”, „Nysa Kłodzka”, „Warta Poznań”).
+
+    Rzeka: po „na/nad/rzeka”, z drugim członem „Kłodzka/Łużycka”, w tekście o stanie wód (hydrologia)
+    albo tuż przed nazwą innego miasta („Bug Wyszków”; kluby załatwia `_blokada_klubu`).
     """
     nazwy = {g.wyrazy for g in grupy}
-    rzeka = bool(nazwy & _RZEKI)
-    if not rzeka and not (nazwy & _KLUBY):
+    if not nazwy & _RZEKI:
         return 0
     nastepny = i + dlugosc
-    if rzeka:
-        if nastepny < len(tokeny) and nazwy == {("nysa",)} and tokeny[nastepny].zlozony.startswith(_DRUGI_CZLON_RZEKI):
-            return dlugosc + 1
-        if i > 0 and tokeny[i - 1].zlozony in _PRZED_RZEKA:
-            return dlugosc
-        if hydrologia:
-            return dlugosc
-    if nastepny < len(tokeny) and tokeny[nastepny].wielka and tokeny[nastepny].sep and _SEP_PROSTY.fullmatch(tokeny[nastepny].sep):
-        if _szukaj(tokeny, nastepny, ind.gminy):
-            return dlugosc
-    return 0
+    if nastepny < len(tokeny) and nazwy == {("nysa",)} and tokeny[nastepny].zlozony.startswith(_DRUGI_CZLON_RZEKI):
+        return dlugosc + 1
+    if i > 0 and tokeny[i - 1].zlozony in _PRZED_RZEKA:
+        return dlugosc
+    if hydrologia:
+        return dlugosc
+    return dlugosc if _miasto_zaraz_po(tokeny, nastepny, ind) else 0
 
 
 def _szukaj_trafien(tokeny: list[Token], wielkie: bool, hydrologia: bool) -> list[_Trafienie]:
@@ -512,17 +646,31 @@ def _szukaj_trafien(tokeny: list[Token], wielkie: bool, hydrologia: bool) -> lis
                 while p < n and (tokeny[p].zlozony in _MODYFIKATORY_GMINY or (tokeny[p].zlozony == "st" and znacznik == "miasto")):
                     p += 1
             indeks = {"woj": ind.wojewodztwa, "pow": ind.powiaty, "gm": ind.gminy, "miasto": ind.gminy}[znacznik]
-            pozycje = _wczytaj_lancuch(tokeny, p, indeks)
+            pozycje = _wczytaj_lancuch(tokeny, p, indeks, nawiasy_woj=znacznik == "pow")
             if pozycje:
                 numer_lancucha += 1
                 zakres = zakres_przed(i) if znacznik == "pow" else set()
-                koniec_lancucha = pozycje[-1][1]
-                for start, koniec, kody in pozycje:
+                # województwo przed listą jest jej nagłówkiem („woj. X - powiaty: A, B”), a nie osobnym zasięgiem;
+                # „dla woj. X, powiat Y” (liczba pojedyncza po przecinku) to dwie wzmianki
+                naglowek = bool(zakres) and _naglowek_listy(tokeny, ostatnie_woj.koniec, i)
+                koniec_lancucha = pozycje[-1].koniec
+                lancuch = numer_lancucha
+                for poz in pozycje:
+                    zakres_pozycji, doprecyzowuje = (set(zakres), naglowek)
+                    if poz.woj:  # „A (woj. X)” w środku listy: województwo doprecyzowuje tę nazwę
+                        numer_lancucha += 1
+                        dodaj(_Trafienie(
+                            poz.woj[0] + 1, poz.woj[1], "woj", "znacznik", poz.woj[2], lancuch=numer_lancucha,
+                            lancuch_koniec=poz.woj[1], poczatek=poz.woj[0]))
+                        for k in range(poz.woj[0], poz.woj[1]):
+                            uzyte[k] = True
+                        zakres_pozycji, doprecyzowuje = {poz.woj[2][0][:2]}, True
                     dodaj(_Trafienie(
-                        start, koniec, {"woj": "woj", "pow": "pow"}.get(znacznik, "gmina"),
-                        "lista" if znacznik == "pow" else "znacznik", kody, znacznik="" if znacznik in ("woj", "pow") else znacznik, lancuch=numer_lancucha,
-                        lancuch_koniec=koniec_lancucha, zakres=set(zakres)))
-                    for k in range(start, koniec):
+                        poz.start, poz.koniec, {"woj": "woj", "pow": "pow"}.get(znacznik, "gmina"),
+                        "lista" if znacznik == "pow" else "znacznik", poz.kody, znacznik="" if znacznik in ("woj", "pow") else znacznik,
+                        lancuch=lancuch, lancuch_koniec=koniec_lancucha, zakres=zakres_pozycji,
+                        poczatek=i, zakres_doprecyzowuje=doprecyzowuje))
+                    for k in range(poz.start, poz.koniec):
                         uzyte[k] = True
                 for k in range(i, p):
                     uzyte[k] = True
@@ -537,7 +685,7 @@ def _szukaj_trafien(tokeny: list[Token], wielkie: bool, hydrologia: bool) -> lis
             j = i + dlugosc
             if j < n and _SEP_ZAKRESU.fullmatch(tokeny[j].sep) and _znacznik(tokeny, j) in ("pow", "gm"):
                 numer_lancucha += 1
-                dodaj(_Trafienie(i, j, "woj", "zakres", _kody(grupy), lancuch=numer_lancucha, lancuch_koniec=j))
+                dodaj(_Trafienie(i, j, "woj", "zakres", _kody(grupy), lancuch=numer_lancucha, lancuch_koniec=j, poczatek=i))
                 for k in range(i, j):
                     uzyte[k] = True
                 i = j
@@ -546,10 +694,16 @@ def _szukaj_trafien(tokeny: list[Token], wielkie: bool, hydrologia: bool) -> lis
         if znaleziono:
             dlugosc, grupy = znaleziono
             numer_lancucha += 1
-            dodaj(_Trafienie(i, i + dlugosc, "region", "region", _kody(grupy), lancuch=numer_lancucha, lancuch_koniec=i + dlugosc))
+            dodaj(_Trafienie(i, i + dlugosc, "region", "region", _kody(grupy), lancuch=numer_lancucha, lancuch_koniec=i + dlugosc, poczatek=i))
             for k in range(i, i + dlugosc):
                 uzyte[k] = True
             i += dlugosc
+            continue
+        klub = _blokada_klubu(tokeny, i, ind)
+        if klub:
+            for k in range(i, i + klub):
+                uzyte[k] = True
+            i += klub
             continue
         # samodzielna nazwa gminy lub miasta
         przyimek = _przyimek_przed(tokeny, i)
@@ -567,7 +721,12 @@ def _szukaj_trafien(tokeny: list[Token], wielkie: bool, hydrologia: bool) -> lis
                     uzyte[k] = True
                 i += dzielnica[0]
                 continue
-            pominiete = _blokada_rzeki_lub_klubu(tokeny, i, dlugosc, grupy, hydrologia, ind)
+            if dlugosc == 1 and _kraina_po(tokeny, i + 1, ind) and not all(sl.jednostka(k).rodzaj == "miejska" for k in _kody(grupy)):
+                for k in range(i, i + 2):  # „Kotlinie Kłodzkiej”: region geograficzny, nie gmina Kotlin
+                    uzyte[k] = True
+                i += 2
+                continue
+            pominiete = _blokada_rzeki(tokeny, i, dlugosc, grupy, hydrologia, ind)
             if pominiete:
                 for k in range(i, i + pominiete):
                     uzyte[k] = True
@@ -590,7 +749,8 @@ def _szukaj_trafien(tokeny: list[Token], wielkie: bool, hydrologia: bool) -> lis
             i += dlugosc
             continue
         # skrót bez gminy o takiej nazwie („w Mińsku” - Mińsk Mazowiecki): brak, ale z uwagą
-        if przyimek and tokeny[i].wielka and tokeny[i].zlozony not in _GENERYCZNE_PIERWSZE:
+        if (przyimek and tokeny[i].wielka and tokeny[i].zlozony not in _GENERYCZNE_PIERWSZE
+                and tokeny[i].zlozony not in _NIE_NAZWY_GMIN and not _kraina_po(tokeny, i + 1, ind)):
             konkurenci = [g for g in _skrocone(tokeny, i, ind.gminy, 1)
                           if g.wyrazy[0] not in _GENERYCZNE_PIERWSZE and _slowo_dozwolone(g.wyrazy[0], tokeny[i], wielkie)]
             if konkurenci and not (_nazwa_to_rzeka(konkurenci)):
@@ -620,6 +780,7 @@ def _przypisz_zakres_po(trafienia: list[_Trafienie]) -> None:
             idx = bisect_left(starty, h.lancuch_koniec)
             if idx < len(woje) and starty[idx] - h.lancuch_koniec <= 3:
                 h.zakres = set(lancuchy[woje[idx].lancuch])
+                h.zakres_doprecyzowuje = True  # „A, B (woj. X)”: województwo za listą jest dopiskiem do niej
 
 
 # --------------------------------------------------------------------------- rola jednostki organizacyjnej
@@ -646,7 +807,9 @@ def _jednostka_przed(tokeny: list[Token], start: int) -> str | None:
         if any(c in tokeny[k + 1].sep for c in _KONIEC_ZDANIA):  # granica zdania
             break
         z = tokeny[k].zlozony
-        if z.startswith(_JEDNOSTKA_PREFIKSY) or z in _JEDNOSTKA_WYRAZY or z in _JEDNOSTKA_SKROTY:
+        # „km” to też kilometry: jednostką jest tylko „KM PSP”
+        km_psp = z != "km" or (k + 1 < len(tokeny) and tokeny[k + 1].zlozony == "psp")
+        if z.startswith(_JEDNOSTKA_PREFIKSY) or z in _JEDNOSTKA_WYRAZY or (z in _JEDNOSTKA_SKROTY and km_psp):
             znaleziono = True
         if z.startswith("wojewodzk") or z == "kwp" or (z == "psp" and k > 0 and tokeny[k - 1].zlozony == "kw"):
             poziom = sl.WOJEWODZTWO
@@ -814,8 +977,16 @@ def _rozstrzygnij_gmine(h: _Trafienie, tokeny: list[Token], ctx_pow: set[str], c
     return wynik
 
 
-def _fraza(tekst: str, tokeny: list[Token], h: _Trafienie) -> tuple[str, int, int]:
-    start, koniec = tokeny[h.start].start, tokeny[h.koniec - 1].koniec
+def _na_oryginal(mapa: list[int] | None, start: int, koniec: int) -> tuple[int, int]:
+    """Pozycje [start, koniec) w czystym tekście jako pozycje w oryginale (bez znaków niewidocznych na brzegach)."""
+    if mapa is None:
+        return start, koniec
+    return mapa[start], mapa[koniec - 1] + 1
+
+
+def _fraza(tekst: str, tokeny: list[Token], h: _Trafienie, mapa: list[int] | None) -> tuple[str, int, int]:
+    """Fragment oryginalnego tekstu dla trafienia (`mapa`: pozycje po usunięciu znaków niewidocznych)."""
+    start, koniec = _na_oryginal(mapa, tokeny[h.start].start, tokeny[h.koniec - 1].koniec)
     return tekst[start:koniec], start, koniec
 
 
@@ -840,10 +1011,14 @@ def _bez_konca_zdania(tokeny: list[Token], od: int, do: int) -> bool:
 
 
 def _przylegle(tokeny: list[Token], szerszy: _Przyjety, wezszy: _Przyjety) -> bool:
-    """Czy węższe miejsce doprecyzowuje szersze w zapisie adresowym („woj. X, powiat Y, gmina Z”, „Z, woj. X”)."""
+    """Czy węższe miejsce doprecyzowuje szersze w zapisie adresowym („w woj. X, w powiecie Y, w gminie Z”, „Z, woj. X”).
+
+    Szersze przed węższym to doprecyzowanie tylko w opisie jednego miejsca, w którym każde węższe ma przyimek „w”
+    („w powiecie Y, w gminie Z”). „woj. X, miasto Y” (bez „w”) to wyliczenie zasięgu: oba kody zostają.
+    """
     s, w = szerszy.h, wezszy.h
-    if s.koniec <= w.start:  # szersze stoi przed węższym: węższe musi mieć znacznik (gmina/miasto/powiat)
-        if not (w.znacznik or w.typ == "pow"):
+    if s.koniec <= w.start:  # szersze stoi przed węższym: węższe musi mieć znacznik (gmina/miasto/powiat) i „w”
+        if not (w.znacznik or w.typ == "pow") or not _w_przed(tokeny, w.poczatek):
             return False
         luka = w.start - s.koniec
         return luka <= 4 and (luka > 0 and _bez_konca_zdania(tokeny, s.koniec, w.start) or luka == 0 and _bez_konca_zdania(tokeny, w.start, w.start + 1))
@@ -864,9 +1039,11 @@ def _wybierz_kody(tokeny: list[Token], przyjete: list[_Przyjety]) -> list[_Przyj
 
     Szerszy kod (województwo lub powiat wskazane wprost) zostaje, gdy węższe miejsce jest osobną wzmianką
     (zasięg alertu się nie zawęża), także gdy to województwo pomogło rozstrzygnąć homonim w innym zdaniu.
-    Znika, gdy jest doprecyzowany: lista powiatów pod województwem albo zapis adresowy stojący obok
-    („woj. X, powiat Y, gmina Z”, „Z, woj. X”). Szerszy kod z miejsca jednostki lub ze spadku homonimu
-    (nie wskazany wprost) znika zawsze, gdy w tekście jest węższe miejsce w nim zawarte.
+    Kod poprzedzony „dla” (albo stojący w wyliczeniu zasięgu: „woj. X, miasto Y”) nigdy nie znika.
+    Znika tylko przy czystej hierarchii jednego miejsca: lista powiatów pod województwem („woj. X - powiaty: A, B”,
+    „A (woj. X)”) albo zapis adresowy („w woj. X, w powiecie Y, w gminie Z”, „Z, woj. X”, „Z (pow. Y)”).
+    Szerszy kod z miejsca jednostki lub ze spadku homonimu (nie wskazany wprost) znika zawsze, gdy w tekście
+    jest węższe miejsce w nim zawarte.
     """
     wezsze: dict[str, list[_Przyjety]] = defaultdict(list)
     przypisane: set[str] = set()  # województwa, pod którymi stoi lista powiatów
@@ -874,7 +1051,7 @@ def _wybierz_kody(tokeny: list[Token], przyjete: list[_Przyjety]) -> list[_Przyj
         for d in (2, 4):
             if len(q.kod) > d:
                 wezsze[q.kod[:d]].append(q)
-        if q.h.typ == "pow":
+        if q.h.typ == "pow" and q.h.zakres_doprecyzowuje:
             przypisane.update(z for z in q.h.zakres if q.kod.startswith(z))
     zostaja: list[_Przyjety] = []
     for idx, p in enumerate(przyjete):
@@ -882,6 +1059,9 @@ def _wybierz_kody(tokeny: list[Token], przyjete: list[_Przyjety]) -> list[_Przyj
             zostaja.append(p)
             continue
         if not p.zasieg or p.kod in przypisane:
+            continue
+        if _po_dla(tokeny, p.h.poczatek):  # „dla woj. X”: zasięg alertu, węższe miejsca nigdy go nie zastępują
+            zostaja.append(p)
             continue
         doprecyzowane = False
         for sasiad in range(idx + 1, len(przyjete)):  # sąsiedzi po pozycji: okno kilku tokenów, nie cały tekst
@@ -904,15 +1084,45 @@ def _wybierz_kody(tokeny: list[Token], przyjete: list[_Przyjety]) -> list[_Przyj
     return zostaja
 
 
+def _miejsce_zdarzenia(tokeny: list[Token], q: _Przyjety) -> bool:
+    """Czy przyjęte miejsce to miejsce zdarzenia: gmina spoza jednostki i nie „z …” (skąd ktoś pochodzi)."""
+    if q.h.typ != "gmina" or "jednostka" in q.uwagi:
+        return False
+    idx = q.h.poczatek if q.h.poczatek >= 0 else q.h.start
+    return not (idx > 0 and tokeny[idx - 1].zlozony in ("z", "ze", "od"))
+
+
+def _bez_jednostek_obok_miejsca_zdarzenia(tokeny: list[Token], przyjete: list[_Przyjety]) -> list[_Przyjety]:
+    """Miejsce jednostki (KMP, prokuratura, sąd, PSP) nie trafia do wyniku, gdy obok stoi miejsce zdarzenia.
+
+    „Policjanci z KMP w Płocku zatrzymali w gminie Słupno” to Słupno: Płock to siedziba jednostki. Gdy jedynym miejscem
+    jest jednostka („Policjanci z KPP w Garwolinie zatrzymali kierowcę”), zostaje (z niższą pewnością i uwagą `jednostka`).
+    Pominięte miejsce zostaje w `dopasowania`.
+    """
+    if not any("jednostka" in q.uwagi for q in przyjete) or not any(_miejsce_zdarzenia(tokeny, q) for q in przyjete):
+        return przyjete
+    return [q for q in przyjete if "jednostka" not in q.uwagi]
+
+
+def _fraza_kraju_jest_zasiegiem(zlozony: str, poczatek: int) -> bool:
+    """Odrzuca „z całej Polski”, „z całego kraju” oraz „najwięcej … w całym kraju”, niezależnie od czasownika."""
+    przed = zlozony[:poczatek]
+    if _PRZYIMEK_POCHODZENIA.search(przed):
+        return False
+    zdanie = max(przed.rfind(znak) for znak in _KONIEC_ZDANIA)
+    return not _ILOSC_W_ZDANIU.search(przed[zdanie + 1:])
+
+
 def _znajdz_kraj(zlozony: str) -> tuple[int, int] | None:
     """Pozycje frazy zasięgu krajowego w tekście (pozycje z tekstu złożonego jeden do jednego z oryginałem)."""
     najlepsze: tuple[int, int] | None = None
     for wzorzec in _WZORCE_KRAJU:
-        dopasowanie = wzorzec.search(zlozony)
-        if dopasowanie:
+        for dopasowanie in wzorzec.finditer(zlozony):
             pozycje = dopasowanie.span(1)
-            if najlepsze is None or pozycje[0] < najlepsze[0]:
-                najlepsze = pozycje
+            if _fraza_kraju_jest_zasiegiem(zlozony, pozycje[0]):
+                if najlepsze is None or pozycje[0] < najlepsze[0]:
+                    najlepsze = pozycje
+                break
     return najlepsze
 
 
@@ -937,6 +1147,8 @@ def geokoduj(tekst: str | None) -> Wynik:
     uwagi_wyniku: tuple[str, ...] = ()
     if len(tekst) > MAKS_DLUGOSC:
         tekst, uwagi_wyniku = _utnij(tekst), ("obcieto-tekst",)
+    tekst_wejsciowy = tekst
+    tekst, mapa = usun_niewidoczne(tekst)  # „Wroc­ławiu”: pozycje wyników wracają do oryginału przez `mapa`
     zlozony = zloz_pozycyjnie(tekst)
     tokeny = tokenizuj(tekst)
     wielkie = wyglada_na_wielkie_litery(tekst)
@@ -954,32 +1166,37 @@ def geokoduj(tekst: str | None) -> Wynik:
     ctx_pow = {r.kody[0] for h, r in wyniki if r.kody and len(r.kody[0]) == 4}
     for h in trafienia:
         if h.typ == "gmina":
-            wyniki.append((h, _rozstrzygnij_gmine(h, tokeny, ctx_pow, ctx_woj)))
+            # powiat z tekstu wskazuje też województwo („POWIATU LESZCZYŃSKIEGO … W LESZNIE”: Leszno wielkopolskie)
+            wyniki.append((h, _rozstrzygnij_gmine(h, tokeny, ctx_pow, ctx_woj | {k[:2] for k in ctx_pow})))
     wyniki.sort(key=lambda para: para[0].start)
 
     dopasowania: list[Dopasowanie] = []
     przyjete: list[_Przyjety] = []
     odrzucone = 0
     for h, r in wyniki:
-        # nazwa bez przyimka: tylko miasto; wieś lub miasteczko („Kotła czarownic”) to nie miejsce zdarzenia
-        if h.bez_przyimka and r.kody and len(r.kody[0]) == 7 and sl.jednostka(r.kody[0]).rodzaj != "miejska":
-            continue
-        fraza, start, koniec = _fraza(tekst, tokeny, h)
-        dokladnosc = _dokladnosc(r.kody[0]) if r.kody else BRAK
+        fraza, start, koniec = _fraza(tekst_wejsciowy, tokeny, h, mapa)
+        # nazwa bez przyimka: tylko miasto; wieś lub miasteczko („Kotła czarownic”) to nie miejsce zdarzenia (ślad zostaje)
+        bez_miejsca = h.bez_przyimka and r.kody and len(r.kody[0]) == 7 and sl.jednostka(r.kody[0]).rodzaj != "miejska"
+        kody, uwagi = ((), r.uwagi + ("bez-przyimka",)) if bez_miejsca else (r.kody, r.uwagi)
         dopasowania.append(Dopasowanie(
-            fraza=fraza, start=start, koniec=koniec, rodzaj=_rodzaj(h.typ), tryb=h.tryb, teryt=r.kody,
-            dokladnosc=dokladnosc, pewnosc=round(r.pewnosc, 2),
-            kandydaci=tuple(h.kody) if len(h.kody) > 1 else (), uwagi=r.uwagi))
+            fraza=fraza, start=start, koniec=koniec, rodzaj=_rodzaj(h.typ), tryb=h.tryb, teryt=kody,
+            dokladnosc=_dokladnosc(kody[0]) if kody else BRAK, pewnosc=round(r.pewnosc if kody else 0.0, 2),
+            kandydaci=tuple(h.kody) if len(h.kody) > 1 else (), uwagi=uwagi))
+        if bez_miejsca:
+            continue
         if r.kody:
             przyjete.append(_Przyjety(r.kody[0], r.pewnosc, h, r.uwagi))
-        else:
+        elif h.tryb != "samodzielne":
+            # nierozstrzygnięta nazwa ze znacznikiem („gmina Czernichów”) obniża pewność całego wyniku;
+            # skrót lub homonim bez kontekstu („w Polsce”, „w Tomaszowie”) nie obniża pewności pozostałych miejsc
             odrzucone += 1
+    przyjete = _bez_jednostek_obok_miejsca_zdarzenia(tokeny, przyjete)
 
     zasieg_kraju = _znajdz_kraj(zlozony)
     if zasieg_kraju:
-        start, koniec = zasieg_kraju
+        start, koniec = _na_oryginal(mapa, *zasieg_kraju)
         dopasowania.append(Dopasowanie(
-            fraza=tekst[start:koniec], start=start, koniec=koniec, rodzaj=KRAJ, tryb=KRAJ,
+            fraza=tekst_wejsciowy[start:koniec], start=start, koniec=koniec, rodzaj=KRAJ, tryb=KRAJ,
             teryt=(), dokladnosc=KRAJ, pewnosc=PEWNOSC_KRAJ))
         dopasowania.sort(key=lambda d: d.start)
     dopasowania_krotka = tuple(dopasowania)
@@ -991,7 +1208,7 @@ def geokoduj(tekst: str | None) -> Wynik:
             return Wynik((), KRAJ, PEWNOSC_KRAJ, dopasowania_krotka, uwagi_wyniku)
         return Wynik((), BRAK, 0.0, dopasowania_krotka, uwagi_wyniku)
     pewnosc = min(p.pewnosc for p in zostaja)
-    if odrzucone:
+    if odrzucone:  # zob. wyżej: tylko nazwy ze znacznikiem
         pewnosc *= WSPOLCZYNNIK_ODRZUCONEJ_NAZWY
     if zasieg_kraju:  # zasięg krajowy jest najgrubszy, ale nie zeruje konkretnych miejsc
         return Wynik(kody, KRAJ, round(min(pewnosc, PEWNOSC_KRAJ), 2), dopasowania_krotka, uwagi_wyniku)

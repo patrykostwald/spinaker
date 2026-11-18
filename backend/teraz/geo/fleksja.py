@@ -61,6 +61,27 @@ def zloz_pozycyjnie(tekst: str) -> str:
     return "".join(znaki)
 
 
+_NIEWIDOCZNE = frozenset("­​‌‍﻿")  # miękki łącznik, spacja zerowej szerokości, łączniki zerowej szerokości, BOM
+
+
+def usun_niewidoczne(tekst: str) -> tuple[str, list[int] | None]:
+    """Usuwa znaki niewidoczne („Wroc\\u00adławiu” - miękki łącznik z kopiowanego tekstu) przed tokenizacją.
+
+    Zwraca (czysty tekst, mapa): `mapa[i]` to pozycja i-tego znaku czystego tekstu w oryginale, a ostatni element
+    to długość oryginału. Gdy nic nie usunięto, mapa to `None` (pozycje się zgadzają).
+    """
+    if _NIEWIDOCZNE.isdisjoint(tekst):
+        return tekst, None
+    znaki: list[str] = []
+    mapa: list[int] = []
+    for pozycja, znak in enumerate(tekst):
+        if znak not in _NIEWIDOCZNE:
+            znaki.append(znak)
+            mapa.append(pozycja)
+    mapa.append(len(tekst))
+    return "".join(znaki), mapa
+
+
 @dataclass(slots=True)
 class Token:
     tekst: str

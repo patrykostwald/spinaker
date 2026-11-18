@@ -64,12 +64,18 @@ class Slownik:
             self.atrybucja: str = surowe["atrybucja"]
             self.zrodlo: str = surowe["zrodlo"]
             self.jednostki: dict[str, Jednostka] = {}
+
+            def dodaj(jednostka: Jednostka) -> None:
+                if jednostka.kod in self.jednostki:  # powtórzony kod po cichu nadpisałby jednostkę
+                    raise ValueError(f"powtórzony kod {jednostka.kod!r}")
+                self.jednostki[jednostka.kod] = jednostka
+
             for kod, nazwa in surowe["wojewodztwa"]:
-                self.jednostki[kod] = Jednostka(kod, nazwa, WOJEWODZTWO, "")
+                dodaj(Jednostka(kod, nazwa, WOJEWODZTWO, ""))
             for kod, nazwa, rodzaj, szer, dl in surowe["powiaty"]:
-                self.jednostki[kod] = Jednostka(kod, nazwa, POWIAT, rodzaj, szer, dl)
+                dodaj(Jednostka(kod, nazwa, POWIAT, rodzaj, szer, dl))
             for kod, nazwa, rodzaj, szer, dl in surowe["gminy"]:
-                self.jednostki[kod] = Jednostka(kod, nazwa, GMINA, rodzaj, szer, dl)
+                dodaj(Jednostka(kod, nazwa, GMINA, rodzaj, szer, dl))
         except (KeyError, TypeError, ValueError) as blad:
             raise BladDanych(f"teryt.json: zły układ danych ({type(blad).__name__}: {blad})") from blad
         self.wojewodztwa = [j for j in self.jednostki.values() if j.poziom == WOJEWODZTWO]
@@ -100,6 +106,10 @@ def slownik() -> Slownik:
     return wczytaj_slownik(DANE)
 
 
+def _jest_liczba(wartosc: object) -> bool:
+    return isinstance(wartosc, (int, float)) and not isinstance(wartosc, bool) and wartosc == wartosc  # bez NaN
+
+
 def _sprawdz_slownik(s: Slownik) -> None:
     kody = set()
     for j in s.jednostki.values():
@@ -114,7 +124,9 @@ def _sprawdz_slownik(s: Slownik) -> None:
         if j.poziom == GMINA and j.rodzaj != _RODZAJE_GMINY.get(j.kod[-1]):
             raise BladDanych(f"teryt.json: gmina {j.kod} ma rodzaj {j.rodzaj!r}, niezgodny z ostatnią cyfrą kodu")
         if j.poziom != WOJEWODZTWO:
-            if j.szer is None or j.dl is None or not (48.5 <= j.szer <= 55.5 and 13.5 <= j.dl <= 24.5):
+            if not _jest_liczba(j.szer) or not _jest_liczba(j.dl):
+                raise BladDanych(f"teryt.json: jednostka {j.kod} ma współrzędne, które nie są liczbami ({j.szer!r}, {j.dl!r})")
+            if not (48.5 <= j.szer <= 55.5 and 13.5 <= j.dl <= 24.5):
                 raise BladDanych(f"teryt.json: jednostka {j.kod} ma współrzędne spoza Polski ({j.szer}, {j.dl})")
             if j.kod[:2] not in s.jednostki or (j.poziom == GMINA and j.kod[:4] not in s.jednostki):
                 raise BladDanych(f"teryt.json: jednostka {j.kod} nie ma nadrzędnej jednostki")

@@ -282,6 +282,36 @@ def test_sprawdz_dane_niespojny_slownik(kopia_danych, zmiana, komunikat):
         geo.sprawdz_dane(kopia_danych)
 
 
+@pytest.mark.parametrize("zmiana, komunikat", [
+    (lambda s: s["gminy"][0].__setitem__(3, "52"), r"współrzędne, które nie są liczbami"),
+    (lambda s: s["gminy"][0].__setitem__(4, "19.5"), r"współrzędne, które nie są liczbami"),
+    (lambda s: s["gminy"][0].__setitem__(3, None), r"współrzędne, które nie są liczbami"),
+    (lambda s: s["powiaty"][0].__setitem__(3, True), r"współrzędne, które nie są liczbami"),
+    (lambda s: s["gminy"].append(list(s["gminy"][0])), r"powtórzony kod '0201011'"),
+    (lambda s: s["powiaty"].append(list(s["powiaty"][0])), r"powtórzony kod '0201'"),
+    (lambda s: s["wojewodztwa"].append(list(s["wojewodztwa"][0])), r"powtórzony kod '02'"),
+])
+def test_sprawdz_dane_wspolrzedne_jako_tekst_i_powtorzony_kod(kopia_danych, zmiana, komunikat):
+    surowe = json.loads((kopia_danych / "teryt.json").read_text(encoding="utf-8"))
+    zmiana(surowe)
+    (kopia_danych / "teryt.json").write_text(json.dumps(surowe), encoding="utf-8")
+    with pytest.raises(geo.BladDanych, match=komunikat):
+        geo.sprawdz_dane(kopia_danych)
+
+
+@pytest.mark.parametrize("tresc", [None, "to nie jest json", '{"features": 5}', '{"features": [{"properties": {}}]}', "[]"])
+def test_warstwa_granic_czyta_plik_przez_wczytaj_json(kopia_danych, monkeypatch, tresc):
+    # ten sam czytelny błąd co w `sprawdz_dane`, a nie surowy FileNotFoundError / JSONDecodeError / KeyError
+    plik = kopia_danych / "granice_powiaty.geojson"
+    if tresc is None:
+        plik.unlink()
+    else:
+        plik.write_text(tresc, encoding="utf-8")
+    monkeypatch.setattr(granice, "DANE", kopia_danych)
+    with pytest.raises(geo.BladDanych, match=r"granice_powiaty\.geojson"):
+        granice._Warstwa("granice_powiaty.geojson")
+
+
 def test_sprawdz_dane_niespojne_granice(kopia_danych):
     plik = kopia_danych / "granice_powiaty.geojson"
     dane = json.loads(plik.read_text(encoding="utf-8"))

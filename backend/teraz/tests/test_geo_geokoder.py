@@ -200,8 +200,9 @@ POLICJA = [
      set(), "brak"),
     ("Kryminalni ze Słupska zatrzymali sprawcę wypadku, który w piątek w miejscowości Rumsko potrącił pieszego.",
      {"miasto Słupsk, woj. pomorskie"}, "gmina"),
+    # Gdańsk to siedziba jednostki (zostaje w `dopasowania` z uwagą `jednostka`), zdarzenie było w Krakowie
     ("Kryminalni z Komendy Miejskiej Policji w Gdańsku zatrzymali mężczyznę, który pisał w internecie o zdarzeniu z 7 listopada w Krakowie.",
-     {"miasto Gdańsk, woj. pomorskie", "miasto Kraków, woj. małopolskie"}, "gmina"),
+     {"miasto Kraków, woj. małopolskie"}, "gmina"),
     ("Dzięki czujności sąsiadów w Boguszowie-Gorcach uratowano życie starszego mężczyzny.",
      {"miasto Boguszów-Gorce, powiat wałbrzyski, woj. dolnośląskie"}, "gmina"),
     ("Poszukiwacze z Komendy Wojewódzkiej Policji w Lublinie zatrzymali w Chełmie poszukiwaną kobietę.",
@@ -526,17 +527,53 @@ def test_komunikat_hydrologiczny_zachowuje_inne_miasta():
 
 
 @pytest.mark.parametrize("tekst, oczekiwane", [
-    ("Mecz Wisły Kraków z Legią Warszawa.", {"Kraków", "Warszawa"}),
-    ("Wisła Kraków przegrała wczoraj.", {"Kraków"}),
-    ("Wisła Płock wygrała mecz.", {"Płock"}),
-    ("Odra Opole zagra w Opolu.", {"Opole"}),
-    ("Warta Poznań zremisowała z Lechem.", {"Poznań"}),
-    ("Raków Częstochowa pokonał rywala.", {"Częstochowa"}),
+    # nazwa klubu blokuje także miasto stojące po niej („Wisła Kraków” to drużyna, nie miejsce zdarzenia)
+    ("Mecz Wisły Kraków z Legią Warszawa.", set()),
+    ("Wisła Kraków przegrała wczoraj.", set()),
+    ("Wisła Płock wygrała mecz.", set()),
+    ("Odra Opole zagra w Opolu.", {"Opole"}),  # miasto zdarzenia w tym samym zdaniu zostaje
+    ("Warta Poznań zremisowała z Lechem.", set()),
+    ("Raków Częstochowa pokonał rywala.", set()),
+    ("Kibice Wisły Kraków zatrzymani w Płocku.", {"Płock"}),
+    ("Kibice Legii Warszawa zatrzymani w Płocku.", {"Płock"}),
+    ("Kibice Lecha Poznań i Śląska Wrocław starli się w Łodzi.", {"Łódź"}),
+    ("Mecz Odra Opole z Rakowem Częstochowa.", set()),
+    ("Zatrzymani kibice Pogoni Szczecin, Górnika Zabrze i Cracovii Kraków w Lublinie.", {"Lublin"}),
 ])
-def test_kluby_sportowe_nie_daja_gmin_o_nazwie_klubu(tekst, oczekiwane):
+def test_kluby_sportowe_blokuja_tez_miasto_po_nazwie_klubu(tekst, oczekiwane):
     w = geokoduj(tekst)
     assert {nazwa(k, krotka=True) for k in w.teryt} == oczekiwane
+    assert (w.dokladnosc == BRAK) == (not oczekiwane)
     assert not any(d.fraza.startswith(("Wisł", "Wart", "Rakow", "Raków")) for d in w.dopasowania)
+
+
+@pytest.mark.parametrize("klub", [
+    "Legia", "Lech", "Śląsk", "Pogoń", "Jagiellonia", "Górnik", "Korona", "Zagłębie", "Wisła", "Odra", "Raków", "Cracovia",
+    "Arka", "Lechia", "Widzew", "ŁKS", "Stal", "Motor", "Warta", "Piast", "Ruch", "Polonia", "Resovia", "GKS", "Puszcza",
+    "Stomil", "Znicz",
+])
+def test_kazdy_klub_z_listy_blokuje_miasto_po_nazwie(klub):
+    w = geokoduj(f"Zatrzymano kibiców. {klub} Lublin przegrał.")
+    assert not any(d.fraza == "Lublin" for d in w.dopasowania), (klub, w.dopasowania)
+    assert geokoduj(f"Kibice z Lublina i {klub} Gdańsk.").teryt == ("0663011",)
+
+
+@pytest.mark.parametrize("tekst", [
+    "Mecz Legii Warszawa.", "Mecz z Legią Warszawa.", "Mecz Legia Warszawa.", "Mecz Lecha Poznań.", "Mecz Lechem Poznań.",
+    "Mecz Śląska Wrocław.", "Mecz Pogoni Szczecin.", "Mecz Pogonią Szczecin.", "Mecz Jagiellonii Białystok.",
+    "Mecz Górnika Zabrze.", "Mecz Koronie Kielce.", "Mecz Zagłębia Lubin.", "Mecz Cracovii Kraków.", "Mecz Arce Gdynia.",
+    "Mecz Lechii Gdańsk.", "Mecz Widzewa Łódź.", "Mecz Stali Mielec.", "Mecz Motorem Lublin.", "Mecz Piastem Gliwice.",
+    "Mecz Ruchu Chorzów.", "Mecz Polonią Warszawa.", "Mecz Resovii Rzeszów.", "Mecz Puszczą Niepołomice.", "Mecz Zniczem Pruszków.",
+])
+def test_kluby_w_kazdym_przypadku(tekst):
+    assert geokoduj(tekst).dokladnosc == BRAK, tekst
+
+
+def test_slowo_klubu_przed_miastem_po_przecinku_albo_z_przyimkiem_nie_blokuje():
+    # blokada dotyczy nazwy klubu zaraz przed miastem; przecinek, przyimek i koniec zdania ją przerywają
+    assert geokoduj("Wypadek: Ruch, Lublin.").teryt == ("0663011",)
+    assert geokoduj("Zawody na Wiśle. Kraków.").teryt == ("1261011",)
+    assert geokoduj("Wypadek. Stal w Lublinie.").teryt == ("0663011",)
 
 
 # --------------------------------------------------------------------------- szum, adresy, kraj

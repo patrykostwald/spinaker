@@ -15,12 +15,11 @@ jak w GeoJSON.
 
 from __future__ import annotations
 
-import json
 import math
 from collections.abc import Iterable
 from functools import lru_cache
 
-from .slownik import DANE, jednostka
+from .slownik import DANE, BladDanych, _wczytaj_json, jednostka
 
 # Punkt tuż poza uproszczonym wielokątem (błąd uproszczenia do ok. 220 m, a nad Bałtykiem brzeg)
 # przypisujemy najbliższemu powiatowi, jeśli leży nie dalej niż tyle metrów od jego granicy.
@@ -34,10 +33,13 @@ class _Warstwa:
         from shapely import STRtree, prepare
         from shapely.geometry import shape
 
-        with (DANE / nazwa_pliku).open(encoding="utf-8") as plik:
-            cechy = json.load(plik)["features"]
-        self.kody: list[str] = [c["properties"]["kod"] for c in cechy]
-        self.geometrie = [shape(c["geometry"]) for c in cechy]
+        dane = _wczytaj_json(DANE / nazwa_pliku)  # brak lub uszkodzony plik: ten sam czytelny `BladDanych` co w `sprawdz_dane`
+        try:
+            cechy = dane["features"]
+            self.kody: list[str] = [c["properties"]["kod"] for c in cechy]
+            self.geometrie = [shape(c["geometry"]) for c in cechy]
+        except (KeyError, TypeError, ValueError, AttributeError) as blad:
+            raise BladDanych(f"{nazwa_pliku}: zły układ danych ({type(blad).__name__}: {blad})") from blad
         for g in self.geometrie:
             prepare(g)
         self.drzewo = STRtree(self.geometrie)
