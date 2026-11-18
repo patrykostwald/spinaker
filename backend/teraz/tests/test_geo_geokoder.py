@@ -9,8 +9,10 @@ wynik wg decyzji prowadzącego projekt: lepiej `brak` albo województwo niż zga
 """
 
 import dataclasses
+import gc
 import json
 import time
+from collections import Counter
 
 import pytest
 
@@ -852,17 +854,64 @@ def test_limit_dlugosci_nie_tnie_wyrazu_i_nie_dodaje_uwagi_dla_krotkiego_tekstu(
     assert not any(d.fraza.endswith("Lubl") for d in w.dopasowania)
 
 
-@pytest.mark.parametrize("wzor, powtorzen", [("powiat lubelski, ", 6000), ("w Lublinie ", 9000), ("woj. lubelskie, powiat chełmski. ", 3000)])
-def test_algorytm_jest_liniowy_takze_bez_limitu_dlugosci(monkeypatch, wzor, powtorzen):
-    # indeks województw i zakresów po pozycji zamiast skanowania wszystkich poprzednich trafień
+LINIOWOSC = [
+    ("powiat lubelski, ", 6000), ("w Lublinie ", 9000), ("woj. lubelskie, powiat chełmski. ", 3000),
+    ("Turyści z Lublina i Chełma w Krakowie. ", 3000),  # lista pochodzenia: `_role_pochodzenia`
+]
+FUNKCJE_LICZONE = ("_przylegle", "_szukaj", "_zgodna", "_kontynuuje_liste", "_pochodzenie")
+
+
+@pytest.mark.parametrize("wzor, powtorzen", LINIOWOSC)
+def test_algorytm_jest_liniowy_liczba_wywolan_wewnetrznych_funkcji(monkeypatch, wzor, powtorzen):
+    """Deterministycznie: potrojony tekst to najwyżej potrojona liczba wywołań (zależność kwadratowa dałaby 9x)."""
+    monkeypatch.setattr(geokoder, "MAKS_DLUGOSC", 10**9)
+    geokoduj("rozgrzewka")
+    liczniki: Counter = Counter()
+
+    def licz(nazwa_funkcji):
+        oryginal = getattr(geokoder, nazwa_funkcji)
+
+        def opakowana(*argumenty, **nazwane):
+            liczniki[nazwa_funkcji] += 1
+            return oryginal(*argumenty, **nazwane)
+
+        monkeypatch.setattr(geokoder, nazwa_funkcji, opakowana)
+
+    for nazwa_funkcji in FUNKCJE_LICZONE:
+        licz(nazwa_funkcji)
+    tekst = wzor * powtorzen
+    geokoduj(tekst)
+    jeden = dict(liczniki)
+    liczniki.clear()
+    geokoduj(tekst * 3)
+    trzy = dict(liczniki)
+    assert jeden["_szukaj"] >= powtorzen, jeden  # funkcje są rzeczywiście liczone
+    for nazwa_funkcji in FUNKCJE_LICZONE:
+        assert trzy.get(nazwa_funkcji, 0) <= 3 * jeden.get(nazwa_funkcji, 0) + 5, (nazwa_funkcji, jeden, trzy)
+
+
+def _najkrotszy_czas(tekst, powtorzen=3):
+    """Minimum z kilku pomiarów czasu procesora, bez odśmiecania pamięci w trakcie (mniej szumu zegara)."""
+    gc.collect()
+    gc.disable()
+    try:
+        czasy = []
+        for _ in range(powtorzen):
+            start = time.process_time()
+            geokoduj(tekst)
+            czasy.append(time.process_time() - start)
+        return min(czasy)
+    finally:
+        gc.enable()
+
+
+@pytest.mark.parametrize("wzor, powtorzen", LINIOWOSC)
+def test_czas_rosnie_liniowo_takze_bez_limitu_dlugosci(monkeypatch, wzor, powtorzen):
+    """Luźny test czasu (główny dowód liniowości to liczenie wywołań wyżej): zależność kwadratowa dałaby stosunek 9."""
     monkeypatch.setattr(geokoder, "MAKS_DLUGOSC", 10**9)
     geokoduj("rozgrzewka")
     tekst = wzor * powtorzen
-    start = time.perf_counter()
-    geokoduj(tekst)
-    pojedynczy = time.perf_counter() - start
-    start = time.perf_counter()
-    geokoduj(tekst * 3)
-    potrojony = time.perf_counter() - start
-    assert potrojony < max(pojedynczy * 6, 0.3), f"1x: {pojedynczy:.2f} s, 3x: {potrojony:.2f} s"
-    assert potrojony < 3.0
+    min1x = _najkrotszy_czas(tekst)
+    min3x = _najkrotszy_czas(tekst * 3)
+    assert min3x < 4.5 * min1x + 0.05, f"1x: {min1x:.3f} s, 3x: {min3x:.3f} s"
+    assert min3x < 3.0

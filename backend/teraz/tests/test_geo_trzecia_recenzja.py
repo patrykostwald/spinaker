@@ -56,7 +56,8 @@ def test_naglowek_alertu_nie_traci_szerszego_kodu(tekst, wymagane, nieobecne):
 def test_powiat_wykluczajacy_kandydatow_daje_sam_powiat(tekst, powiat, fraza):
     w = geokoduj(tekst)
     assert kody(w) == {powiat}, (tekst, w.teryt)
-    assert w.dokladnosc == "powiat" and w.pewnosc >= 0.8
+    # czwarta recenzja, P2-1: sprzeczny kontekst zostawia powiat (zasięg), ale pewność spada poniżej progu 0,8
+    assert w.dokladnosc == "powiat" and 0 < w.pewnosc < 0.8
     assert dopasowanie(w, fraza).teryt == ()  # gmina zostaje tylko jako ślad
 
 
@@ -66,8 +67,9 @@ def test_powiat_pasujacy_do_kandydata_nadal_rozstrzyga_homonim():
 
 
 def test_powiat_nie_przenosi_na_wojewodztwo_ani_na_miasto_spoza_powiatu():
+    # miasto o nazwie powiatu jest z nim zgodne (czwarta recenzja, P2-1): Leszno i powiat leszczyński
     w = geokoduj("UWAGA! POŻAR W LESZNIE. MIESZKAŃCY POWIATU LESZCZYŃSKIEGO PROSZENI O ZAMKNIĘCIE OKIEN.")
-    assert kody(w) == {"3013"}
+    assert kody(w) == {"3013", "3063011"}
     w = geokoduj("Pożar w Lesznie, powiat pruszkowski, woj. wielkopolskie.")
     assert "3063011" not in kody(w) and "1421" in kody(w)
 
@@ -227,7 +229,9 @@ def test_sad_w_chelmie_skazal_mieszkanca_lublina():
 
 @pytest.mark.parametrize("tekst, oczekiwane", [
     ("Kierowca z Lublina rozbił samochód w Chełmie.", {"0662011"}),
-    ("Mieszkańcy Lublina ucierpieli w wypadku w Chełmie.", {"0662011"}),
+    # „mieszkańcy” w mianowniku liczby mnogiej to dotknięci zdarzeniem, nie pochodzenie (czwarta recenzja, P1-A)
+    ("Mieszkańcy Lublina ucierpieli w wypadku w Chełmie.", {"0662011", "0663011"}),
+    ("Mieszkańca Lublina potrącono w Chełmie.", {"0662011"}),
     ("Mieszkanka Lublina zginęła w pożarze w Chełmie.", {"0662011"}),
     ("Pochodzący z Lublina mężczyzna został zatrzymany w Chełmie.", {"0662011"}),
     ("Policjanci z Koła zatrzymali mężczyznę w Chełmie.", {"0662011"}),

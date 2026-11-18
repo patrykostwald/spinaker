@@ -3,6 +3,9 @@
 „Andrzej Kalisz”, „Tomasz Opole”, „Maciej Brzeg”: nazwa gminy bez przyimka, tuż po imieniu, to nazwisko, a nie
 miejsce. Lista jest ręczna i krótka (kilkaset imion); formy odmienione powstają regułami (dopełniacz, celownik,
 narzędnik, miejscownik, wołacz), bez słownika morfologicznego. Imiona są w mianowniku, z polskimi znakami.
+
+Imion, których odmieniona forma jest zwykłym czasownikiem lub rzeczownikiem, nie ma na liście: „Wit” (czasownik „wita”,
+„Wita Kraków: turyści wrócili” to nie imię i nazwisko).
 """
 
 from __future__ import annotations
@@ -24,7 +27,7 @@ _MESKIE = (
     "Ludwik Maksymilian Miłosz Natan Nikodem Oliwier Rudolf Samuel Seweryn Tobiasz Walenty Wincenty Wojtek Marcin "
     "Bernard Błażej Dionizy Ernest Erwin Eustachy Gracjan Hilary Ireneusz Jaromir Kajetan Karol Lesław Longin "
     "Lubomir Ludomir Mikołaj Modest Narcyz Olgierd Pankracy Przemek Radomir Ratomir Rościsław Sambor Sergiusz "
-    "Sobiesław Świętosław Tytus Walerian Wawrzyniec Wit Wolfgang Zefiryn Zbyszek Zenobiusz Kuba Bartek Darek "
+    "Sobiesław Świętosław Tytus Walerian Wawrzyniec Wolfgang Zefiryn Zbyszek Zenobiusz Kuba Bartek Darek "
     "Mirek Rysiek Staszek Heniek Kazek Leszek Dominik Konstanty Kosma Lew Maurycy Nestor Oktawian Patrycjusz "
     "Rajmund Rochus Rodryg Sylwiusz Teofil Tristan Urban Wiesław Xawery Zachariasz"
 ).split()

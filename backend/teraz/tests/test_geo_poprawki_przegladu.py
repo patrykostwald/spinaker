@@ -156,11 +156,10 @@ def test_leszno_z_obcym_powiatem_zostawia_slad_a_kontekst_powiatu_rozstrzyga_hom
     w = geokoduj("Leszno (pow. warszawski zachodni): pożar.")
     assert any(d.fraza == "Leszno" for d in w.dopasowania)
     assert "1432" in kody(w)
-    # powiat z tekstu wyklucza wszystkich kandydatów (miasto Leszno leży poza powiatem leszczyńskim, gmina Leszno w
-    # innym województwie): wynik to sam powiat, bez gminy (trzecia recenzja, P1-2)
+    # miasto na prawach powiatu i powiat o jego nazwie są zgodne (czwarta recenzja, P2-1): miasto i powiat
     w = geokoduj("UWAGA! POŻAR W LESZNIE. MIESZKAŃCY POWIATU LESZCZYŃSKIEGO PROSZENI O ZAMKNIĘCIE OKIEN.")
-    assert kody(w) == {"3013"}
-    assert dopasowanie(w, "LESZNIE").teryt == ()
+    assert kody(w) == {"3013", "3063011"}
+    assert dopasowanie(w, "LESZNIE").teryt == ("3063011",)
 
 
 @pytest.mark.parametrize("tekst, oczekiwane, dokladnosc", [

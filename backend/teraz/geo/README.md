@@ -37,14 +37,30 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   i 0,6, uwaga `homonim`), a przy kandydatach z różnych województw wynik `brak` (lista kandydatów w
   `dopasowania[].kandydaci`).
 - Sprzeczny kontekst. Gdy powiat wymieniony w tekście wyklucza wszystkich kandydatów nazwy („Pożar w Lesznie,
-  powiat pruszkowski”, „Pożar w Chełmie, powiat bocheński”), wynik to sam powiat (jego kod), a gmina zostaje tylko
-  w `dopasowania` (uwaga `powiat-wyklucza`). Nie przechodzimy na województwo tego powiatu i nie wybieramy miasta
-  spoza niego (także miasta o tej samej nazwie co powiat, np. Leszno przy „powiecie leszczyńskim”).
+  powiat pruszkowski”, „Pożar w Chełmie, powiat bocheński”, „Pożar w Krakowie, powiat pruszkowski”, „Wypadek w Nowym
+  Targu, powiat tatrzański”), wynik to sam powiat (jego kod), a gmina zostaje tylko w `dopasowania` (uwaga
+  `powiat-wyklucza`, `teryt` pusty). Nie przechodzimy na województwo tego powiatu i nie wybieramy miasta spoza niego.
+  Gdy sprzeczny powiat jest dopiskiem tuż za nazwą (`, powiat X`, `(pow. X)`, `, w powiecie X`, bez „i”, dwukropka,
+  średnika, myślnika ani końca zdania), pewność wyniku spada do 0,6, poniżej progu publikacji automatycznej (0,8).
+  Dopisek sprawdzamy także dla nazw jednoznacznych; powiat z innego zdania albo po „i” to osobna wzmianka, więc
+  nazwy jednoznacznej nie wyklucza.
+- Zgodność miasta z powiatem o jego nazwie. Miasto na prawach powiatu i powiat ziemski noszący jego nazwę są w tekście
+  zgodne, choć kod miasta nie leży w kodzie powiatu: „Pożar w Lesznie (powiat leszczyński)” daje miasto i powiat
+  (pewność 0,9), tak jak „Pożar w Kaliszu (powiat kaliski)”. Pary (45, np. Kalisz - kaliski, Leszno - leszczyński,
+  Tarnów - tarnowski) są w tabeli `_POWIAT_O_NAZWIE_MIASTA`; test `test_pary_miast_i_powiatow_sa_w_danych` sprawdza, że
+  każda istnieje w `teryt.json`. Szczecin, Warszawa i miasta śląskie bez powiatu o swojej nazwie nie mają pary.
 - Wyjątek: miasto wygrywa z wiejskim homonimem (pewność 0,65, uwagi `homonim`, `preferowane-miasto`),
   gdy jest jedynym takim kandydatem **w tym samym województwie**: miasto na prawach powiatu (Chełm) albo
   gmina miejska obok wiejskiej w tym samym powiecie (Mielec). Miasto z wiejskim homonimem w innym
   województwie („Leszno”, „Olsztyn”) bez kontekstu daje `brak`; zasada dotyczy też pierwszego słowa bez
   przyimka („Leszno: pożar”). Wyłącza to stała `PREFERUJ_MIASTO` w `geokoder.py`.
+- Gmina wiejska o nazwie miasta. Dwanaście gmin wiejskich ma siedzibę w mieście o tej samej nazwie i leży w powiecie
+  ziemskim noszącym tę nazwę: Grudziądz, Włocławek, Biała Podlaska, Chełm, Zamość, Skierniewice, Tarnów, Siedlce,
+  Przemyśl, Łomża, Suwałki, Elbląg (lista wyznaczona na danych w teście, nie z pamięci; PRG nie zawiera miejscowości,
+  więc „bez własnej miejscowości” to przybliżenie: gmina wiejska o nazwie miasta w „jego” powiecie). „Pożar w
+  Tarnowie” i „Pożar w Tarnowie (powiat tarnowski)” to miasto (z powiatem, jeśli podany); gminę wiejską daje tylko
+  jawne „gmina Tarnów” albo „w gminie Tarnów”. Leszno ma wiejskiego homonima w innym województwie (nie w swoim
+  powiecie), więc go to nie dotyczy: „Leszno, woj. mazowieckie” nadal daje gminę wiejską.
 - Skrócone nazwy („w Grodzisku”, „w Ostrowie”, „w Bielsku”, „w Jastrzębiu”, „Mińsk”, „Tomaszów”, „Środa”,
   „Kędzierzyn”, „Starogard”): nazwa jest początkiem dłuższych nazw gmin, a sama nie jest miastem, więc wynik
   to `brak` z uwagą `skrot`. Kontekst (województwo lub powiat w tekście), który wskazuje jedną jednostkę,
@@ -59,13 +75,19 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   trener, drużyna, stadion, derby, liga, puchar, kolejka: „Kibice Wisły zatrzymani w Płocku” daje tylko Płock);
   bez takiego słowa zostaje gminą („Pożar w Wiśle”, gmina Wisła istnieje). Miasto zdarzenia w tym samym zdaniu
   zostaje. Przecinek, przyimek i koniec zdania przerywają blokadę miasta. Lista: `_RZEKI`, `_KLUBY`, `_SPORT_*`
-  w `geokoder.py`.
+  w `geokoder.py`. Nazwa rzeki (cała lista `_RZEKI`: Wisła, Odra, Warta, Bug, San, Nysa...) nie daje też gminy po
+  słowie hydrologicznym w zasięgu dwóch wyrazów w tym samym zdaniu (`_HYDRO_PRZED_RZEKA`: poziom, stan, wody, rzeka,
+  rzece, nad, na, brzeg, wylew, fala, przekroczenie, wezbranie, przybór, kulminacja, koryto...): „Poziom Wisły w
+  Warszawie rośnie”, „Stan wód Wisły”, „Wylew Warty w Poznaniu” dają samo miasto zdarzenia.
 - Nazwy gmin w liczbie mnogiej („Zawady”, „Kozy”, „Mrozy”, „Marki”, „Brody”...: jednowyrazowe na „-y/-i”)
   dopasowują się tylko do form liczby mnogiej („w Zawadach”, „Kozach”, „z Zawad”). Miejscownik liczby pojedynczej
   („Utonięcie w Zawadzie”, „w Kozie”, „w Mrozie”) nie daje tych gmin.
 - Imię i nazwisko. Nazwa gminy bez przyimka, tuż po imieniu („Andrzej Kalisz”, „Tomasz Opole”, „Maciej Brzeg”), nie
   jest miejscem; podobnie nazwa będąca imieniem, po której stoi nazwisko („Jarosław Kaczyński”). Imiona: ręczna lista
   kilkuset najpopularniejszych imion z odmianą regułową (`imiona.py`). Z przyimkiem („w Kaliszu”) nic się nie zmienia.
+  Reguła „imię + nazwa” nie działa, gdy poprzedni wyraz sam jest nazwą gminy („Wypadek na trasie Jarosław Przemyśl”
+  daje oba miasta; tak samo Bolesław, Hanna) albo stoi po „św.”, „ul.”, „al.”, „im.” („Kościół św. Anny Lubartów” daje
+  Lubartów). „Wit” nie jest na liście imion (czasownik „wita”): „Wita Kraków: turyści wrócili” daje Kraków.
 - Formy przymiotnikowe nazw na „-o”: „Główna/Główny/Główne/Główną/Głównej/Głównych” (np. „Komenda Główna Policji”) nie
   są miastem Głowno („ó” w tekście i „o” w nazwie rozróżnia regułę; „y” i „e” nie są rzeczownikowymi formami nazw
   na „-o”). Nie rozstrzygamy par, w których forma jest identyczna także z „ł”, np. „Piłą” (narzędnik miasta Piła i
@@ -97,13 +119,21 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   w tekście jest też inne miejsce zdarzenia, miejsce jednostki zostaje w `dopasowania` z uwagami `jednostka` i
   `poza-wynikiem`, ale nie trafia do `teryt` („Policjanci z KMP w Płocku zatrzymali w gminie Słupno” daje tylko
   Słupno). Gdy jednostka jest jedynym miejscem w tekście, daje wynik jak wyżej.
-- Miejsce pochodzenia: dopełniacz po „mieszkaniec/mieszkańca/mieszkańców/mieszkanka/mieszkanki”, „kierowca”,
-  „obywatel”, „rodak”, „pochodzący z” oraz po „z/ze/od” („mieszkańca Lublina”, „mężczyzny z Rzeszowa”) wskazuje,
-  skąd ktoś pochodzi. Gdy w tym samym zdaniu jest miejsce jednostki lub zdarzenia, miejsce pochodzenia zostaje w
-  `dopasowania` z uwagami `pochodzenie` i `poza-wynikiem`, a nie w `teryt` („Sąd Rejonowy w Chełmie skazał
-  mieszkańca Lublina” daje Chełm; jednostka zostaje jako miejsce, gdy jest jedyna). Pochodzenie zostaje, gdy jest
-  jedynym miejscem, po „dla” („Komunikat dla mieszkańców Lublina”) i w trasie „z A do B”; narzędnik („z Tuchowem”,
-  „z Warszawą”) pochodzenia nie wskazuje.
+- Miejsce pochodzenia. Wskazują je tylko dwie konstrukcje: (1) „z/ze” + dopełniacz w zasięgu 1-2 wyrazów od
+  rzeczownika osobowego w tym samym zdaniu (mieszkaniec, mieszkanka, kierowca, turysta, strażacy, policjanci,
+  pogotowie, obywatel, rodak, pochodzący, a także mężczyzna i kobieta: „Kierowca z Lublina”, „Strażacy z Lublina”,
+  „Kierowca ciężarówki z Lublina”, „mężczyzny z Rzeszowa”); (2) „mieszkaniec/mieszkanka/kierowca/obywatel/rodak” i
+  zaraz po nim dopełniacz („mieszkańca Lublina”, „kierowca Lublina”). Nie są pochodzeniem: „z/ze” bez osoby w pobliżu
+  („Wiatr z Opola i Wrocławia”, „Ewakuowano 200 osób z Nysy”), „od” („10 km od Lubina”), trasa i kierunek („z A do
+  B”, „od A po B”, „z A przez B do C”), narzędnik („z Tuchowem”, „z Warszawą”), mianownik liczby mnogiej „mieszkańcy”
+  (dotknięci zdarzeniem: „Mieszkańcy Lublina i Chełma bez prądu” daje oba miasta) ani adresat po „dla” („Komunikat dla
+  mieszkańców Lublina”). Element listy po przecinku, „i”, „oraz”, „lub”, „albo” dziedziczy rolę pierwszego elementu
+  („Turyści z Zakopanego i Krakowa utknęli w Bukowinie Tatrzańskiej” daje tylko Bukowinę); nierozpoznana nazwa w
+  środku listy jej nie przerywa; inny przyimek przed nazwą („i w Krakowie”) kończy listę. Gdy w tym samym zdaniu jest
+  miejsce jednostki lub zdarzenia, pochodzenie zostaje w `dopasowania` z uwagami `pochodzenie` i `poza-wynikiem`, a
+  nie w `teryt` („Sąd Rejonowy w Chełmie skazał mieszkańca Lublina” daje Chełm; jednostka zostaje jako miejsce, gdy jest
+  jedyna). Pochodzenie zostaje, gdy jest jedynym miejscem, i gdy za jego listą (do 2 wyrazów, to samo zdanie) stoi
+  „do”, „po” albo „przez” („Kierowca z Lublina do Chełma”), także gdy cel nie został rozpoznany.
 - Zasięg krajowy (`kraj`) tylko przy słowach o zasięgu: „obowiązuje w całym kraju”, „na terenie całego kraju”,
   „dla całej Polski”. „Z całej Polski”, „najwięcej w całym kraju” i „na terenie Polski” nim nie są. `kraj` nie
   zeruje innych trafień: konkretne miejsca zostają w `teryt`, a `dokladnosc` to `kraj`.
@@ -125,6 +155,10 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   Kod z miejsca jednostki lub ze spadku homonimu znika, gdy w tekście jest węższe miejsce w nim zawarte.
 - Lista powiatów może być rozdzielona przecinkiem, „i/oraz” albo średnikiem („powiaty: tatrzański; nowotarski”):
   każdy daje kod powiatu (4 cyfry), nie całe województwo.
+- Pominięte miejsce nie podnosi pewności. Gdy z wyniku wycięto miejsce jednostki lub pochodzenia, pewność wyniku to
+  najniższa z pewności przyjętych i wyciętych miejsc, nie wyżej niż 0,8 (`PEWNOSC_PO_POMINIECIU_MAX`): „Kierowca z
+  Lublina rozbił samochód w Warszawie” ma 0,8, a „Wypadek w Warszawie” (nic nie wycięto) 0,9. Powiat sprzeczny z
+  nazwą (zob. „Sprzeczny kontekst”) obniża pewność do 0,6 (`PEWNOSC_SPRZECZNY_KONTEKST`).
 - Pewność wyniku to najniższa z pewności przyjętych miejsc. Mnożnik 0,9 dostaje tylko wynik, w którym była
   nierozstrzygnięta nazwa ze znacznikiem („gmina Czernichów” bez kontekstu). Nazwa samodzielna odrzucona bez
   kontekstu („w Tomaszowie”, skrót lub homonim) pewności pozostałych miejsc nie obniża. Do publikacji automatycznej
@@ -178,9 +212,16 @@ Wersje narzędzi do budowy (`pyshp==3.1.9`, `pyproj==3.7.2`) są przypięte w na
 - W komunikacie hydrologicznym nazwa rzeki będąca też miastem („powódź w Nysie”) daje `brak` zamiast miasta
   (lepiej brak niż zgadnięta gmina).
 - Gmina miejsko-wiejska bez przyimka tuż przed nazwą nie jest miejscem, więc w liście po jednym „w”
-  („w Ostrowie, Pleszewie i Kaliszu”) Pleszew znika (wynik `brak`, nie błędna gmina). Imię na początku zdania bez
-  nazwiska („Jarosław potwierdził”) nadal może być miastem Jarosław.
-- Miejsce pochodzenia po „z/ze/od” w dopełniaczu nie trafia do wyniku, gdy w zdaniu jest miejsce zdarzenia lub
-  jednostki; trasa „z A do B” zostaje w całości, a „Policjanci z Koła zatrzymali w Chełmie” daje tylko Chełm.
+  („w Ostrowie, Pleszewie i Kaliszu”) Pleszew znika (wynik `brak`, nie błędna gmina).
+- Znane ograniczenie: imię na początku zdania bez nazwiska („Jarosław potwierdził pożar w Rzeszowie”) daje miasto
+  Jarosław (pewność 0,65, poniżej progu publikacji automatycznej 0,8, więc wymaga sprawdzenia). Dotyczy tylko miast
+  o nazwie imienia (Jarosław); Hanna i Bolesław to gminy wiejskie, a te bez przyimka nie są miejscem.
+- Miejsce pochodzenia (zob. wyżej) nie trafia do wyniku, gdy w zdaniu jest miejsce zdarzenia lub jednostki; trasa
+  „z A do B” zostaje w całości, a „Policjanci z Koła zatrzymali w Chełmie” daje tylko Chełm. Rzeczowniki osobowe
+  poza listą (np. „pasażer”, „kibic”, „sprawca”) nie czynią „z X” pochodzeniem: wtedy X zostaje w wyniku (zasięg
+  szerszy, nie węższy).
+- „Pożar w Tarnowie (powiat tarnowski)” daje miasto z pewnością 0,65 (homonim miasto - gmina wiejska, jak bez powiatu):
+  powiat o nazwie miasta nie rozstrzyga między miastem a gminą wiejską w swoim powiecie, wskazuje tylko jawne
+  „gmina Tarnów”.
 - Wczytanie granic (shapely) trwa przy pierwszym użyciu ok. 0,5 s na proces, potem wyszukiwanie punktu
   to ułamek milisekundy; `geokoduj` nie ładuje shapely.
