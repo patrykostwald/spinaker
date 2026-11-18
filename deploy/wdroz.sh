@@ -1,7 +1,7 @@
 #!/bin/sh
 # Wdrożenie produkcyjne (spin.clinic + przeszłość.today) na VPS: jedna komenda, zatrzymuje się przy pierwszym błędzie (6.11.2026).
 # Uruchamiać z katalogu repozytorium PO pobraniu kodu:  cd /srv/spin-clinic && git pull --ff-only && sh deploy/wdroz.sh
-# Kroki: sprawdzenie stanu, kopia bazy (lokalna + zaszyfrowana poza serwer), budowa i start frontend/backend/worker/beat
+# Kroki: sprawdzenie stanu, kopia bazy (lokalna + zaszyfrowana poza serwer), budowa i start frontend/backend/worker/worker-teraz/beat
 # (migracje robi start backendu), czekanie na backend, kontrola migracji, przeliczenie Odstępstw, lista usług.
 # Używa WYŁĄCZNIE bezpiecznej komendy compose z flagami (zasada właściciela 5.11.2026): nigdy samo `docker compose up`.
 set -eu

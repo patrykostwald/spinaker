@@ -51,15 +51,16 @@ www.przeszlosc.today {
 
 # Panel administratora Django dla modułu „Teraz” (moderacja źródeł i wpisów), 18.11.2026.
 # Dwie warstwy ochrony: hasło Caddy (basic_auth) i logowanie Django. Wymaga w .env.production:
-# PANEL_UZYTKOWNIK oraz PANEL_HASLO_HASH (wynik `caddy hash-password`, każdy znak $ zapisany jako $$),
-# a w DJANGO_ALLOWED_HOSTS i CSRF_TRUSTED_ORIGINS adresu panel.przeszlosc.today. Bez tych zmiennych nie przeładowywać Caddy.
+# PANEL_UZYTKOWNIK oraz PANEL_HASLO_HASH (wynik `caddy hash-password` w apostrofach: PANEL_HASLO_HASH='$2a$...'),
+# a w DJANGO_ALLOWED_HOSTS i CSRF_TRUSTED_ORIGINS adresu panel.przeszlosc.today. Zmienne ustawić PRZED git pull:
+# każdy restart Caddy bez nich kładzie wszystkie strony z tego pliku.
 panel.przeszlosc.today {
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
-		Referrer-Policy "no-referrer"
+		Referrer-Policy "same-origin"
 		X-Robots-Tag "noindex, nofollow"
 		-Server
 		-X-Powered-By
