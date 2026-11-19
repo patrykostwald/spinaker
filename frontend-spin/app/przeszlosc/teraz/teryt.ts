@@ -201,14 +201,9 @@ export const jednostkiZMiejsca = (miejsce: string | undefined): string[] => {
 /** Dopisek do opisu miejsca: jednostki wyłączone w komunikacie, wyłączenie bez wskazanej jednostki, niepełna lista (R38d, P1-1). */
 function opisZnacznikow(miejsce: string | undefined): string {
   const { wylaczone, ogolne, nieustalone, nieustaloneWoj } = znacznikiMiejsca(miejsce);
-  const nazwaWoj = (kod: string | null) => WOJEWODZTWA.find(w => w.kod === kod)?.nazwa;
-  const nazwy = [...new Set(wylaczone.map(j => {
-    const tekst = j.typ === 'powiat' ? j.nazwa : `${j.typ === 'gmina' ? 'gmina' : 'miasto'} ${j.nazwa}`;
-    return j.woj ? `${tekst} (${nazwaWoj(j.woj)})` : tekst;
-  }))];
+  // Z6P8 (R38g): nie wymieniamy wyłączonych jednostek z nazwy (parser mógł je źle przypisać), tylko odsyłamy do treści komunikatu
   return [
-    nazwy.length ? `; wyłączone w komunikacie: ${nazwy.join(', ')}` : '',
-    ogolne ? '; komunikat zawiera wyłączenia: sprawdź jego treść' : '',
+    ogolne || wylaczone.length ? '; komunikat zawiera wyłączenia: sprawdź jego treść' : '',
     nieustalone || nieustaloneWoj.size ? '; lista jednostek może być niepełna' : '',
   ].join('');
 }
