@@ -248,7 +248,7 @@ test('R38b P1-1: jednostka liczy się tylko w województwie, pod które źródł
   assert.equal(zakresWpisu(alert, KOD.swidnickiLubelski), 'wymieniony');
   assert.equal(zakresWpisu(alert, KOD.walbrzyski), 'wymieniony');
   assert.notEqual(zakresWpisu(alert, KOD.swidnickiDolnoslaski), 'wymieniony', 'dolnośląski świdnicki nie jest na liście źródła');
-  assert.equal(zakresWpisu(alert, KOD.swidnickiDolnoslaski), 'pozaLista');
+  assert.equal(zakresWpisu(alert, KOD.swidnickiDolnoslaski), 'mozliwy');
   // starszy zapis bez województw przy dwóch województwach: niejednoznaczne, nigdy „wymieniony” (oba powiaty o tej nazwie)
   const starszy = { teryt: ['02', '06'], zasieg: 'przyblizony', miejsce: 'świdnicki\nwałbrzyski' };
   assert.equal(zakresWpisu(starszy, KOD.swidnickiLubelski), 'mozliwy');
@@ -265,7 +265,7 @@ test('R38b P1-1: „w powiatach chełmskim i włodawskim” bez dwukropka to lis
   const alert = { teryt: ['06'], zasieg: 'przyblizony', miejsce: 'lubelskiego\nlubelskie: chełmskim\nlubelskie: włodawskim' };
   assert.equal(zakresWpisu(alert, KOD.chelmski), 'wymieniony');
   assert.equal(zakresWpisu(alert, KOD.wlodawski), 'wymieniony');
-  assert.equal(zakresWpisu(alert, KOD.lublin), 'pozaLista');
+  assert.equal(zakresWpisu(alert, KOD.lublin), 'mozliwy');
   assert.equal(zakresWpisu(alert, KOD.chelm), 'mozliwy', 'miasto Chełm nie jest powiatem chełmskim');
   assert.notEqual(zakresWpisu(alert, KOD.lublin), 'wojewodztwo');
 });

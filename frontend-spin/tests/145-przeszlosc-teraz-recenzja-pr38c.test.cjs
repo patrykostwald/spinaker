@@ -70,20 +70,20 @@ test('R38c P1: trzy zdania recenzenta w „Moim powiecie” (miejsce w formie z 
   // 1) „w powiecie włodawskim w woj. lubelskim oraz w powiecie świdnickim w woj. dolnośląskim”
   const dwaPowiaty = { teryt: ['02', '06'], zasieg: 'przyblizony', miejsce: 'lubelskie\ndolnośląskie\nlubelskie: włodawskim\ndolnośląskie: świdnickim' };
   assert.equal(zakresWpisu(dwaPowiaty, KOD.swidnickiDolnoslaski), 'wymieniony', 'dolnośląski świdnicki jest na liście');
-  assert.equal(zakresWpisu(dwaPowiaty, KOD.swidnickiLubelski), 'pozaLista', 'lubelski świdnicki nie dostaje „Twój powiat jest wymieniony”');
+  assert.equal(zakresWpisu(dwaPowiaty, KOD.swidnickiLubelski), 'mozliwy', 'lubelski świdnicki nie dostaje „Twój powiat jest wymieniony”');
   assert.equal(zakresWpisu(dwaPowiaty, KOD.wlodawski), 'wymieniony');
   // 2) „… w powiecie włodawskim w woj. lubelskim. Omijaj miasto Chełm.”: Chełm nie wchodzi do zasięgu
   const zalecenie = { teryt: ['06'], zasieg: 'przyblizony', miejsce: 'lubelskie\nlubelskie: włodawskim' };
   assert.equal(zakresWpisu(zalecenie, KOD.wlodawski), 'wymieniony');
-  assert.equal(zakresWpisu(zalecenie, KOD.chelm), 'pozaLista');
-  assert.equal(zakresWpisu(zalecenie, KOD.chelmski), 'pozaLista');
+  assert.equal(zakresWpisu(zalecenie, KOD.chelm), 'mozliwy');
+  assert.equal(zakresWpisu(zalecenie, KOD.chelmski), 'mozliwy');
   // 3) całe lubelskie i jeden powiat dolnośląski: oba zasięgi osobno, Lublin zostaje
   const caleIPowiat = { teryt: ['02', '06'], zasieg: 'przyblizony', miejsce: 'lubelskiego\ndolnośląskie\ndolnośląskie: świdnickim' };
   assert.equal(zakresWpisu(caleIPowiat, KOD.lublin), 'wojewodztwo', 'Lublin w całym województwie');
   assert.equal(zakresWpisu(caleIPowiat, KOD.chelm), 'wojewodztwo');
   assert.equal(zakresWpisu(caleIPowiat, KOD.swidnickiLubelski), 'wojewodztwo', 'lubelski świdnicki należy do całego lubelskiego');
   assert.equal(zakresWpisu(caleIPowiat, KOD.swidnickiDolnoslaski), 'wymieniony');
-  assert.equal(zakresWpisu(caleIPowiat, KOD.walbrzyski), 'pozaLista', 'dolnośląski powiat spoza listy');
+  assert.equal(zakresWpisu(caleIPowiat, KOD.walbrzyski), 'mozliwy', 'dolnośląski powiat spoza listy');
 });
 
 test('R38c P1: całe województwo tylko przy dowodzie w miejsce; reszta zostaje przybliżona (Chełm tak, Lublin nie)', () => {
@@ -91,7 +91,7 @@ test('R38c P1: całe województwo tylko przy dowodzie w miejsce; reszta zostaje 
   // próbka RCB z 10.11: lista powiatów lubelskich, bez Lublina
   const listopad10 = { teryt: ['06'], zasieg: 'przyblizony', miejsce: 'lubelskiego\nlubelskie: włodawski\nlubelskie: Chełm\nlubelskie: chełmski' };
   assert.equal(zakresWpisu(listopad10, KOD.chelm), 'wymieniony');
-  assert.equal(zakresWpisu(listopad10, KOD.lublin), 'pozaLista');
+  assert.equal(zakresWpisu(listopad10, KOD.lublin), 'mozliwy');
   // brak jednostek, jednostka bez województwa, „część województwa” i brak nazwy województwa nie dowodzą całości
   assert.equal(t.calyRegionZMiejsca('lubelskiego', '06'), false);
   assert.equal(t.calyRegionZMiejsca('lubelskiego\nChełm', '06'), false);

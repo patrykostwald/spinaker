@@ -72,6 +72,20 @@ PRZYPADKI = {
     "czesc-w-tym-powiat": ("Alert RCB obejmuje część woj. lubelskiego, w tym powiat chełmski.",),
     "wybrane-rejony-z-lista": (ODBIORCY + "wybranych rejonów woj. lubelskiego: powiat chełmski.",),
     "odsylacz-nr": ("Alert RCB dotyczy powiatów chełmskiego i włodawskiego (odsyłacz nr 1) w woj. lubelskim.",),
+    # Z6P8: zdania z recenzji R38e i R38f (zbiór „żaden tekst nie daje etykiety zaprzeczającej”)
+    "r38f-drugie-lubelskiego": ("Alert RCB dotyczy mieszkańców woj. lubelskiego: powiatów chełmskiego i lubelskiego.",),
+    "r38f-rumia-bez-czasownika": ("Alert RCB obowiązuje w woj. pomorskim w powiecie puckim.", "Ponadto w mieście Rumia."),
+    "r38f-godz": ("Alert RCB obejmuje w woj. lubelskim powiat chełmski.", "Alert obejmuje od godz. 14:00 również powiat włodawski w woj. lubelskim."),
+    "r38f-prosimy": ("Alert RCB obejmuje powiat chełmski w woj. lubelskim, prosimy też o ostrożność w objętym alertem powiecie włodawskim.",),
+    "r38f-rozszerzenie-w-aktualizacji": (
+        "Alert RCB obowiązuje w woj. pomorskim w powiecie puckim.",
+        "Aktualizacja 10:30", "Alert RCB obejmuje także miasto Rumia w woj. pomorskim.",
+        "Aktualizacja 11:00", "Nowe informacje o utrudnieniach.",
+    ),
+    "r38f-gmina-zarow-i-powiat": ("Komunikat obejmuje powiat wałbrzyski oraz gminę Żarów w woj. dolnośląskim.",),
+    "r38e-oprocz": ("Oprócz powiatu kartuskiego alert obejmuje również powiat kościerski w woj. pomorskim.",),
+    "r38e-wysokie-mazowieckie": ("Alert RCB obowiązuje w mieście Wysokie Mazowieckie w woj. podlaskim.",),
+    "r38e-sluzby-radom": ("Alert RCB obowiązuje w całym woj. lubelskim.", "Dodatkowych strażaków wysłano do miasta Radom w woj. mazowieckim."),
 }
 
 

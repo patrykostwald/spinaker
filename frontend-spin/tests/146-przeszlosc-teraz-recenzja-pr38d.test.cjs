@@ -50,7 +50,7 @@ const NIE_POWIEDZIEC = ['wymieniony', 'pozaLista', 'bezListy', 'wojewodztwo'];
 test('R38d P1-1: „z wyłączeniem powiatu białostockiego”: wyłączony nie jest „wymieniony”, reszta najwyżej „możliwe”', () => {
   // „…na terenie województwa podlaskiego z wyłączeniem powiatu białostockiego.”
   const w = wpis(['20'], 'podlaskiego\nwyłączone: podlaskie: białostockiego');
-  assert.equal(zakres(w, kod('20', 'białostocki')), 'wylaczony');
+  assert.equal(zakres(w, kod('20', 'białostocki')), 'mozliwy');
   assert.equal(zakres(w, kod('20', 'Białystok')), 'mozliwy', 'miasto o tej samej nazwie co powiat: nie wiadomo, czy wyłączone');
   for (const k of wszystkieKodyWoj('20')) {
     if (k === kod('20', 'białostocki')) continue;
@@ -60,12 +60,12 @@ test('R38d P1-1: „z wyłączeniem powiatu białostockiego”: wyłączony nie 
 
 test('R38d P1-1: „z wyjątkiem miasta Lublin” i „z wyłączeniem powiatów: chełmskiego i włodawskiego”', () => {
   const lublin = wpis(['06'], 'lubelskiego\nwyłączone: lubelskie: miasto Lublin');
-  assert.equal(zakres(lublin, kod('06', 'Lublin')), 'wylaczony');
+  assert.equal(zakres(lublin, kod('06', 'Lublin')), 'mozliwy');
   assert.equal(zakres(lublin, kod('06', 'Chełm')), 'mozliwy');
   assert.equal(zakres(lublin, kod('06', 'lubelski')), 'mozliwy', 'powiat lubelski to nie miasto Lublin, ale „możliwe”, nie „wyłączony”');
   const dwa = wpis(['06'], 'lubelskiego\nwyłączone: lubelskie: chełmskiego\nwyłączone: lubelskie: włodawskiego');
-  assert.equal(zakres(dwa, kod('06', 'chełmski')), 'wylaczony');
-  assert.equal(zakres(dwa, kod('06', 'włodawski')), 'wylaczony');
+  assert.equal(zakres(dwa, kod('06', 'chełmski')), 'mozliwy');
+  assert.equal(zakres(dwa, kod('06', 'włodawski')), 'mozliwy');
   assert.equal(zakres(dwa, kod('06', 'Chełm')), 'mozliwy');
   assert.equal(zakres(dwa, kod('06', 'świdnicki')), 'mozliwy');
   for (const w of [lublin, dwa]) {
@@ -90,11 +90,11 @@ test('R38d P1-1: wyłączenie ogólne i niepełna lista cofają „nie ma na li�
   // wyłączenie z innego województwa nie zastrzega tego
   const inne = wpis(['06'], 'lubelskiego\nlubelskie: chełmski\nwyłączone: dolnośląskie: miasto Świdnica');
   assert.equal(zakres(inne, kod('06', 'chełmski')), 'wymieniony');
-  assert.equal(zakres(inne, kod('06', 'Lublin')), 'pozaLista');
+  assert.equal(zakres(inne, kod('06', 'Lublin')), 'mozliwy');
   // bez znaczników nic się nie zmienia (R38c)
   const czysta = wpis(['06'], 'lubelskiego\nlubelskie: chełmski');
   assert.equal(zakres(czysta, kod('06', 'chełmski')), 'wymieniony');
-  assert.equal(zakres(czysta, kod('06', 'Lublin')), 'pozaLista');
+  assert.equal(zakres(czysta, kod('06', 'Lublin')), 'mozliwy');
 });
 
 test('R38d P1-1: wyłączenie cofa „całe województwo” (także przy zasięgu „obszar” i przy powiecie z innego województwa)', () => {
@@ -102,7 +102,7 @@ test('R38d P1-1: wyłączenie cofa „całe województwo” (także przy zasięg
   const miejsce = 'lubelskiego\ndolnośląskie\ndolnośląskie: świdnickim\nwyłączone: lubelskie: miasto Lublin';
   assert.equal(t.calyRegionZMiejsca(miejsce, '06'), false);
   assert.equal(t.calyRegionZMiejsca('lubelskiego\ndolnośląskie\ndolnośląskie: świdnickim', '06'), true, 'kontrola: bez wyłączenia całe');
-  assert.equal(zakres(wpis(['02', '06'], miejsce), kod('06', 'Lublin')), 'wylaczony');
+  assert.equal(zakres(wpis(['02', '06'], miejsce), kod('06', 'Lublin')), 'mozliwy');
   assert.equal(zakres(wpis(['02', '06'], miejsce), kod('06', 'Chełm')), 'mozliwy');
   assert.equal(zakres(wpis(['06'], 'lubelskiego\nwyłączone: lubelskie: miasto Lublin', 'obszar'), kod('06', 'Chełm')), 'mozliwy');
   assert.equal(zakres(wpis(['06'], 'lubelskiego', 'obszar'), kod('06', 'Chełm')), 'wojewodztwo', 'kontrola: obszar bez znaczników');
@@ -127,11 +127,12 @@ test('R38d P1-1: znaczniki nie są jednostkami objętymi alertem (rozbierzMiejsc
 
 test('R38d: etykieta „wyłączony” i miejsce na liście powiatu', () => {
   const p = powiatyMod();
-  assert.match(p.zakresTekstem('wylaczony', '0661'), /wyłącza Twój powiat: sprawdź jego treść/);
-  assert.ok(p.ZAKRESY_POWIATU.has('wylaczony'), 'wyłączony stoi na liście powiatu (z etykietą), nie ginie w „z Twojego województwa”');
+  // Z6P8: nie ma etykiety „komunikat wyłącza Twój powiat”: nigdy nie twierdzimy, że powiat nie jest objęty
+  assert.ok(!p.ZAKRESY_POWIATU.has('wylaczony'));
+  assert.doesNotMatch(p.zakresTekstem('mozliwy', '0661'), /wyłącza|nie ma na liście|nie dotyczy/);
   // „wylaczony” przegrywa z „możliwe”, gdy ten sam wpis ma kilka kodów
   const wielokod = wpis(['06', '0663'], 'lubelskiego\nwyłączone: lubelskie: miasto Lublin');
-  assert.equal(zakres(wielokod, '0663'), 'wylaczony', 'kod powiatu przy zasięgu przybliżonym też rozstrzyga lista');
+  assert.equal(zakres(wielokod, '0663'), 'mozliwy', 'kod powiatu przy zasięgu przybliżonym też rozstrzyga lista');
 });
 
 test('R38d P1-2: drugie województwo w miejscowniku: oba całe', () => {
@@ -143,7 +144,7 @@ test('R38d P1-2: drugie województwo w miejscowniku: oba całe', () => {
   // „w woj. pomorskim i zachodniopomorskim oraz w powiecie świdnickim w woj. lubelskim”
   const mieszane = wpis(['06', '22', '32'], 'pomorskie\nzachodniopomorskie\nlubelskie\nlubelskie: świdnickim');
   assert.equal(zakres(mieszane, kod('06', 'świdnicki')), 'wymieniony');
-  assert.equal(zakres(mieszane, kod('06', 'Chełm')), 'pozaLista');
+  assert.equal(zakres(mieszane, kod('06', 'Chełm')), 'mozliwy');
 });
 
 test('R38d P1-3: zalecenie nie zawęża i nie dopisuje: całe lubelskie, Chełm „całe województwo”', () => {
@@ -162,7 +163,7 @@ test('R38d P2: województwo w nawiasie po liście i „woj. X (powiat Y)”', ()
   assert.equal(zakres(slask, kod('24', 'żywiecki')), 'wymieniony');
   assert.equal(zakres(slask, kod('24', 'bielski')), 'wymieniony');
   assert.equal(zakres(slask, kod('24', 'cieszyński')), 'wymieniony');
-  assert.equal(zakres(slask, kod('24', 'pszczyński')), 'pozaLista');
+  assert.equal(zakres(slask, kod('24', 'pszczyński')), 'mozliwy');
   // „woj. lubelskim (powiat świdnicki) oraz woj. lubelskim (powiat włodawski)”
   const lubelskie = wpis(['06'], 'lubelskie\nlubelskie: świdnicki\nlubelskie: włodawski');
   assert.equal(zakres(lubelskie, kod('06', 'świdnicki')), 'wymieniony');
@@ -172,12 +173,12 @@ test('R38d P2: województwo w nawiasie po liście i „woj. X (powiat Y)”', ()
 test('R38d P3: „w mieście Kraków” rozpoznane, nazwy bez „LUBELSKie”', () => {
   const krakow = wpis(['12'], 'małopolskie\nmałopolskie: miasto Kraków');
   assert.equal(zakres(krakow, kod('12', 'Kraków')), 'wymieniony');
-  assert.equal(zakres(krakow, kod('12', 'Tarnów')), 'pozaLista');
+  assert.equal(zakres(krakow, kod('12', 'Tarnów')), 'mozliwy');
   // zdanie wielkimi literami: backend zapisuje „lubelskiego”, „lubelskie: Chełm”, „lubelskie: włodawski”
   const wielkie = wpis(['06'], 'lubelskiego\nlubelskie: Chełm\nlubelskie: włodawski');
   assert.equal(zakres(wielkie, kod('06', 'Chełm')), 'wymieniony');
   assert.equal(zakres(wielkie, kod('06', 'włodawski')), 'wymieniony');
-  assert.equal(zakres(wielkie, kod('06', 'Lublin')), 'pozaLista');
+  assert.equal(zakres(wielkie, kod('06', 'Lublin')), 'mozliwy');
   assert.ok(!/[A-ZŁŚŻŹĆŃÓĘĄ]{3}/.test(teryt().jednostkiZMiejsca('lubelskiego\nlubelskie: Chełm').join(' ')));
 });
 
