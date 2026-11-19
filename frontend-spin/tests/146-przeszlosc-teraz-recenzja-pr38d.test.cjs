@@ -118,7 +118,8 @@ test('R38d P1-1: znaczniki nie są jednostkami objętymi alertem (rozbierzMiejsc
   assert.equal(z.ogolne, true);
   assert.equal(z.nieustalone, true);
   const opis = t.opisMiejsca({ teryt: ['20'], dokladnosc: 'wojewodztwo', szerokosc: null, dlugosc: null, bbox: null, zasieg: 'przyblizony', miejsce });
-  assert.match(opis, /^w obrębie: województwo podlaskie; dokładnego zasięgu źródło nie podaje; wyłączone w komunikacie: białostockiego \(podlaskie\)/);
+  assert.match(opis, /^w obrębie: województwo podlaskie; dokładnego zasięgu źródło nie podaje; komunikat zawiera wyłączenia: sprawdź jego treść/);
+  assert.doesNotMatch(opis, /białostockiego/, 'Z6P8: wyłączonych jednostek nie wymieniamy z nazwy');
   assert.match(opis, /komunikat zawiera wyłączenia: sprawdź jego treść; lista jednostek może być niepełna$/);
   // bez znaczników opis jak dotąd
   assert.equal(t.opisMiejsca({ teryt: ['20'], dokladnosc: 'wojewodztwo', szerokosc: null, dlugosc: null, bbox: null, zasieg: 'przyblizony', miejsce: 'podlaskiego\npodlaskie: Białystok' }),
