@@ -65,6 +65,15 @@ class PrzerwijCykl(Exception):
     """Zachowaj wykonane pobrania i wróć podczas następnego cyklu."""
 
 
+# Kody HTTP, po których ta sama prośba może się udać przy ponowieniu (Z6P7a pkt 9): limit, przeterminowanie, zbyt wczesne
+# żądanie i każdy błąd serwera (w tym 502 i 504). Element kolejki z takim błędem wraca do ponowienia, nie jest pomijany.
+PRZEJSCIOWE_HTTP = frozenset({408, 425, 429})
+
+
+def blad_przejsciowy(status):
+    return status in PRZEJSCIOWE_HTTP or (status is not None and status >= 500)
+
+
 def hash_tresci(tresc, kodowanie=None):
     try:
         tekst = tresc.decode(kodowanie or "utf-8")
@@ -207,14 +216,19 @@ class Cykl:
             raise PrzerwijCykl
         return self.ostatnie
 
-    def wykonaj_element_kolejki(self, adres, *, przesun, **opcje):
+    def wykonaj_element_kolejki(self, adres, *, przesun, odloz=None, **opcje):
+        """Jeden element kolejki. Błąd trwały (np. 404) pomija element (`przesun`). Błąd przejściowy (408, 425, 429, 5xx), gdy kolejka
+        podaje `odloz`, nie pomija go po cichu: element wraca do ponowienia (R38d, Z6P6 pkt 7)."""
         try:
             return self.wykonaj(adres, po_odczycie=przesun, **opcje)
         except BladPobrania as exc:
             status = exc.status_http
             if self.blokada or status is None or not 400 <= status < 600 or status == 403:
                 raise
-            przesun()
+            if odloz is not None and blad_przejsciowy(status):
+                odloz()
+            else:
+                przesun()
             self.stan["bledy_kolejki"] = self.stan.get("bledy_kolejki", 0) + 1
             self.blad_kolejki = True
             self.ostatnie = self.adapter._zapisz_blad(self, exc, blad_elementu=True)

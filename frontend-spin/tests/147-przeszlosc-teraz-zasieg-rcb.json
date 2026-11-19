@@ -1,0 +1,404 @@
+{
+  "przypadki": {
+    "miasto-puck": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w mieście Puck w woj. pomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: miasto Puck\nzakres: pomorskie: lista_otwarta",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "czesc-lubelskiego": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w części woj. lubelskiego."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskiego\nzakres: lubelskie: czesc",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "powiat-swidnicki-dolnoslaskie": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiecie świdnickim w woj. dolnośląskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\ndolnośląskie: świdnickim\nzakres: dolnośląskie: lista",
+          "teryt": [
+            "02"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "trzy-zasiegi": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w całym woj. lubelskim, w części woj. podkarpackiego i w powiecie świdnickim w woj. dolnośląskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\npodkarpackiego\ndolnośląskie\ndolnośląskie: świdnickim\nzakres: lubelskie: cale\nzakres: podkarpackie: czesc\nzakres: dolnośląskie: lista_otwarta",
+          "teryt": [
+            "02",
+            "06",
+            "18"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "poludnie-mazowieckie": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców wyłącznie na południu woj. mazowieckiego."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "mazowieckiego\nzakres: mazowieckie: czesc",
+          "teryt": [
+            "14"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "cale-i-punkt-pomocy": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w całym woj. lubelskim.",
+        "Punkty pomocy otwarto w mieście Chełm w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nzakres: lubelskie: cale",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "obszar"
+        }
+      ]
+    },
+    "wylaczenie-w-osobnym-zdaniu": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w woj. pomorskim.",
+        "Komunikat nie obowiązuje w powiecie puckim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\nzakres: pomorskie: cale\nwyłączone: puckim",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "wylaczenie-i-drugie-wojewodztwo": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w woj. pomorskim z wyjątkiem powiatu puckiego, a także w woj. zachodniopomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\nzachodniopomorskie\nzakres: pomorskie: cale\nwyłączone: pomorskie: puckiego\nzakres: zachodniopomorskie: cale",
+          "teryt": [
+            "22",
+            "32"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "odsylacz-w-nawiasie": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiatach chełmskim i włodawskim (1) w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmskim\nlubelskie: włodawskim\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "element-nieczytelny": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiatach chełmskim i włodawskim 7 w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmskim\nzakres: lubelskie: lista_otwarta\nnieustalone: lubelskie",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "zmiana-zasiegu-w-aktualizacji": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiecie świdnickim w woj. dolnośląskim oraz w powiecie chełmskim w woj. lubelskim.",
+        "Aktualizacja 11:00",
+        "Od 11:00 alert obejmuje wyłącznie powiat chełmski w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\nlubelskie\ndolnośląskie: świdnickim\nlubelskie: chełmskim\nzakres: dolnośląskie: lista\nzakres: lubelskie: lista",
+          "teryt": [
+            "02",
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "lista-zamknieta": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiatach chełmskim i włodawskim w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmskim\nlubelskie: włodawskim\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "miasto-rumia": {
+      "akapity": [
+        "Alert RCB obowiązuje na terenie miasta Rumia w woj. pomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: miasto Rumia\nzakres: pomorskie: lista_otwarta",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "gmina-zarow": {
+      "akapity": [
+        "Alert RCB obejmuje gminę Żarów w woj. dolnośląskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\ndolnośląskie: gmina Żarów\nzakres: dolnośląskie: lista_otwarta",
+          "teryt": [
+            "02"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "czesc-w-tym-powiat": {
+      "akapity": [
+        "Alert RCB obejmuje część woj. lubelskiego, w tym powiat chełmski."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskiego\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "wybrane-rejony-z-lista": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców wybranych rejonów woj. lubelskiego: powiat chełmski."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskiego\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "odsylacz-nr": {
+      "akapity": [
+        "Alert RCB dotyczy powiatów chełmskiego i włodawskiego (odsyłacz nr 1) w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmskiego\nlubelskie: włodawskiego\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38f-drugie-lubelskiego": {
+      "akapity": [
+        "Alert RCB dotyczy mieszkańców woj. lubelskiego: powiatów chełmskiego i lubelskiego."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskiego\nlubelskie: chełmskiego\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38f-rumia-bez-czasownika": {
+      "akapity": [
+        "Alert RCB obowiązuje w woj. pomorskim w powiecie puckim.",
+        "Ponadto w mieście Rumia."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\nzakres: pomorskie: lista",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38f-godz": {
+      "akapity": [
+        "Alert RCB obejmuje w woj. lubelskim powiat chełmski.",
+        "Alert obejmuje od godz. 14:00 również powiat włodawski w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38f-prosimy": {
+      "akapity": [
+        "Alert RCB obejmuje powiat chełmski w woj. lubelskim, prosimy też o ostrożność w objętym alertem powiecie włodawskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38f-rozszerzenie-w-aktualizacji": {
+      "akapity": [
+        "Alert RCB obowiązuje w woj. pomorskim w powiecie puckim.",
+        "Aktualizacja 10:30",
+        "Alert RCB obejmuje także miasto Rumia w woj. pomorskim.",
+        "Aktualizacja 11:00",
+        "Nowe informacje o utrudnieniach."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\nzakres: pomorskie: lista",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\nzakres: pomorskie: lista_otwarta\npomorskie: miasto Rumia",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\nzakres: pomorskie: lista",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38f-gmina-zarow-i-powiat": {
+      "akapity": [
+        "Komunikat obejmuje powiat wałbrzyski oraz gminę Żarów w woj. dolnośląskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\nwałbrzyski\ndolnośląskie: gmina Żarów\nzakres: dolnośląskie: lista_otwarta",
+          "teryt": [
+            "02"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38e-oprocz": {
+      "akapity": [
+        "Oprócz powiatu kartuskiego alert obejmuje również powiat kościerski w woj. pomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "wyłączone: pomorskie: kościerski\nwyłączone: nieokreślone",
+          "teryt": [],
+          "zasieg": "brak"
+        }
+      ]
+    },
+    "r38e-wysokie-mazowieckie": {
+      "akapity": [
+        "Alert RCB obowiązuje w mieście Wysokie Mazowieckie w woj. podlaskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "mazowieckie\npodlaskie\nmiasto Wysokie\nzakres: mazowieckie: czesc\nzakres: podlaskie: czesc",
+          "teryt": [
+            "14",
+            "20"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "r38e-sluzby-radom": {
+      "akapity": [
+        "Alert RCB obowiązuje w całym woj. lubelskim.",
+        "Dodatkowych strażaków wysłano do miasta Radom w woj. mazowieckim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nmazowieckie\nzakres: lubelskie: cale\nmazowieckie: miasto Radom\nzakres: mazowieckie: lista_otwarta",
+          "teryt": [
+            "06",
+            "14"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    }
+  }
+}

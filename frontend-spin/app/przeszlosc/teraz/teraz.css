@@ -1,0 +1,313 @@
+/* =====================================================================
+   „Teraz” (Z6a): mapa komunikatów. Wszystko pod zakresem .tz (wrapper w TerazPage.tsx); tokeny --sc-* z v3.css.
+   Telefon 390 px pierwszy: mapa na pełnym ekranie, panel warstw i karta jako dolne arkusze, linia stanu zawsze widoczna.
+   Od 900 px: panel warstw z lewej, karta wpisu z prawej (nakładka, bez przesuwania mapy), stałe strefy ekranu.
+   Kolor nie jest jedynym nośnikiem znaczenia: warstwa = ikona + nazwa, status = kształt + słowo, luka = ikona + zdanie.
+   ===================================================================== */
+
+.tz {
+  --tz-ostrz: #ffb454; --tz-ostrz-tlo: rgba(255, 180, 84, .12);
+  --tz-panel-w: 380px; --tz-karta-w: 390px; --tz-r: 12px; --tz-tap: 44px;
+  position: fixed; inset: 0; z-index: 50; display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0;
+  background: var(--sc-bg); color: var(--sc-text); font: 400 15px/1.5 var(--sc-font-sans); overflow: hidden;
+}
+html[data-theme="light"] .tz { --tz-ostrz: #8a4b00; --tz-ostrz-tlo: rgba(138, 75, 0, .1); }
+.tz :is(h1, h2, h3, p, ul, ol, dl, dd, fieldset) { margin: 0; padding: 0; }
+.tz :is(ul, ol) { list-style: none; }
+.tz .tz-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.tz :is(a, button, input, select, summary):focus-visible { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+
+/* ---------- Pasek górny ---------- */
+.tz-gora { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); }
+.tz-marka { display: inline-flex; align-items: center; gap: 6px; min-width: var(--tz-tap); min-height: var(--tz-tap); color: var(--sc-text-2); font: 600 13px/1 var(--sc-font-sans); letter-spacing: .04em; text-decoration: none; }
+.tz-marka:hover { color: var(--sc-text); }
+.tz-marka__ik { font-size: 20px; line-height: 1; }
+.tz-tytul { font: 600 17px/1 var(--sc-font-display); letter-spacing: -.01em; }
+.tz-widok { display: inline-flex; margin-left: auto; padding: 3px; border-radius: 10px; background: var(--sc-surface-3); }
+.tz-widok button { min-height: var(--tz-tap); min-width: 56px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--sc-text-2); font: 600 14px/1 var(--sc-font-sans); cursor: pointer; }
+.tz-widok button[aria-pressed="true"] { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 55%, transparent); }
+.tz-widok button:disabled { opacity: .45; cursor: not-allowed; }
+/* „Mój powiat” w pełnej formie od 560 px; na telefonie czytelny skrót „Powiat” (nazwa dostępna dla czytników: aria-label „Mój powiat”) */
+.tz-widok__pelna { display: none; }
+@media (min-width: 560px) { .tz-widok__skrot { display: none; } .tz-widok__pelna { display: inline; } }
+
+/* ---------- Linia stanu (zawsze widoczna) ---------- */
+/* Stałe zdanie i ostrzeżenie o luce są zawsze widoczne; oznaczenie „Dane przykładowe” i stan źródeł to jedna linia z rozwinięciem
+   (nakładka pod linią, żeby mapa się nie przesuwała). */
+.tz-stan { position: relative; z-index: 40; padding: 6px 12px 0; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); font-size: 13px; line-height: 1.45; }
+.tz-stan__stale { font-weight: 600; color: var(--sc-text); }
+.tz-stan__alarm:empty { display: none; }
+.tz-stan__ostrz { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 0; padding: 5px 8px; border-radius: 8px; background: var(--tz-ostrz-tlo); color: var(--sc-text); box-shadow: inset 3px 0 0 var(--tz-ostrz); }
+.tz-stan__ostrz strong { font-weight: 600; }
+.tz-stan__ik { flex: none; display: inline-flex; margin-top: 2px; color: var(--tz-ostrz); }
+.tz .tz-stan__przelacznik { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: var(--tz-tap); padding: 0; border: 0; background: transparent; color: var(--sc-text-2); font: inherit; text-align: left; cursor: pointer; }
+.tz-stan__jedna { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tz-stan__probne-etykieta { color: var(--sc-accent); font-weight: 650; }
+.tz-stan__rozwin { flex: none; color: var(--sc-text-2); text-decoration: underline; text-underline-offset: 3px; }
+.tz-stan__przelacznik[aria-expanded="true"] .tz-stan__rozwin { color: var(--sc-text); }
+.tz-stan__szczegoly { position: absolute; left: 0; right: 0; top: 100%; display: grid; gap: 8px; max-height: min(60dvh, 520px); overflow: auto; padding: 10px 12px 12px; background: var(--sc-surface); border-bottom: 1px solid var(--sc-line-strong); box-shadow: 0 14px 28px rgba(0, 0, 0, .4); }
+.tz-stan__szczegoly[hidden] { display: none; }
+.tz-stan__probne { padding: 4px 8px; border-radius: 8px; background: var(--sc-accent-soft); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 50%, transparent); }
+.tz-stan__info, .tz-stan__czasy { color: var(--sc-text-2); }
+.tz-stan__szczegoly ul { display: grid; gap: 6px; }
+.tz-stan__szczegoly li { display: grid; gap: 1px; }
+.tz-stan__szczegoly li[data-aktywna] strong { font-weight: 600; }
+.tz-stan__szczegoly li:not([data-aktywna]) { color: var(--sc-text-2); }
+.tz-stan__szczegoly li span { color: var(--sc-text-2); }
+.tz-stan__szczegoly li em { font-style: normal; color: var(--tz-ostrz); }
+.tz-stan__zamknij { justify-self: start; }
+
+/* ---------- Główny obszar ---------- */
+.tz-glowna { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.tz-scena { position: relative; min-height: 0; overflow: hidden; background: var(--sc-surface-2); }
+.tz .tz-mapa { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tz .maplibregl-ctrl-group button, .tz .maplibregl-ctrl-attrib-button { width: var(--tz-tap); height: var(--tz-tap); }
+/* odnośniki w atrybucji mapy: podkreślone, żeby nie różniły się od tekstu samym kolorem (WCAG 1.4.1) */
+.tz .maplibregl-ctrl-attrib a { text-decoration: underline; text-underline-offset: 2px; }
+.tz .tz-mapa canvas:focus-visible, .tz .tz-mapa:focus-visible { outline: 3px solid var(--sc-focus, var(--sc-accent)); outline-offset: -3px; }
+.tz-mapa-ladowanie { position: absolute; inset: 0; display: grid; place-items: center; color: var(--sc-text-3); }
+.tz-pomin { position: absolute; left: 8px; top: 8px; z-index: 6; padding: 10px 14px; border-radius: 10px; background: var(--sc-bg); color: var(--sc-text); transform: translateY(-200%); }
+.tz-pomin:focus { transform: none; }
+
+/* ---------- Nakładki na mapie ---------- */
+.tz-nakladka { position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; }
+.tz-nakladka--gora { top: 10px; left: 10px; right: 56px; pointer-events: none; align-items: flex-start; }
+.tz-nakladka--dol { left: 10px; bottom: 74px; align-items: flex-start; max-width: min(420px, calc(100% - 20px)); }
+.tz-plakietka { display: inline-block; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--sc-bg) 88%, transparent); color: var(--sc-text-2); font: 600 12px/1.3 var(--sc-font-sans); letter-spacing: .02em; box-shadow: inset 0 0 0 1px var(--sc-line-strong); }
+.tz-plakietka--probne { color: var(--sc-accent); letter-spacing: .07em; text-transform: uppercase; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 60%, transparent); }
+.tz-komunikat { max-width: 520px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--sc-bg) 94%, transparent); color: var(--sc-text); font-size: 14px; line-height: 1.45; box-shadow: inset 0 0 0 1px var(--sc-line-strong); pointer-events: auto; }
+.tz-komunikat--blad { box-shadow: inset 3px 0 0 var(--tz-ostrz), inset 0 0 0 1px var(--sc-line-strong); }
+.tz-komunikat--mala { font-size: 13px; color: var(--sc-text-2); }
+.tz-bez-granic { width: min(420px, calc(100vw - 20px)); max-height: 46dvh; overflow: auto; padding: 12px; border-radius: var(--tz-r); background: var(--sc-surface); box-shadow: 0 8px 28px rgba(0, 0, 0, .35), inset 0 0 0 1px var(--sc-line-strong); }
+.tz-bez-granic > p { margin-bottom: 8px; color: var(--sc-text-2); font-size: 13px; }
+
+/* ---------- Przyciski i pola ---------- */
+.tz .tz-przycisk { display: inline-flex; align-items: center; justify-content: center; min-height: var(--tz-tap); padding: 0 14px; border: 0; border-radius: 10px; background: var(--sc-surface-3); color: var(--sc-text); font: 600 14px/1.2 var(--sc-font-sans); text-decoration: none; cursor: pointer; }
+.tz .tz-przycisk:hover { background: var(--sc-line-strong); }
+.tz .tz-przycisk--glowny { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1px var(--sc-accent); }
+.tz .tz-fab { position: fixed; left: 12px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 20; box-shadow: 0 6px 20px rgba(0, 0, 0, .4), inset 0 0 0 1px var(--sc-line-strong); background: var(--sc-surface); }
+
+/* ---------- Panel warstw ---------- */
+.tz-panel { background: var(--sc-surface); color: var(--sc-text); }
+.tz-panel__tresc { display: grid; gap: 16px; align-content: start; padding: 14px 14px 24px; }
+.tz-panel__gora { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tz-panel__tytul { font: 600 17px/1.3 var(--sc-font-display); }
+.tz-filtr { border: 0; display: grid; gap: 6px; min-width: 0; }
+.tz-filtr__etykieta, .tz-filtr label { padding: 0; font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); }
+.tz-filtr__uwaga { font-size: 13px; line-height: 1.4; color: var(--sc-text-2); }
+.tz-segmenty { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 3px; border-radius: 10px; background: var(--sc-surface-3); }
+/* wybór okresu: natywne pola radiowe; cały napis jest celem dotyku, zaznaczenie widać po ramce i kolorze, a w DOM po :checked */
+.tz-okresy__opcja { position: relative; display: block; cursor: pointer; }
+.tz-okresy__opcja input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.tz-okresy__opcja span { display: grid; place-items: center; min-height: var(--tz-tap); border-radius: 8px; color: var(--sc-text-2); font: 600 14px/1 var(--sc-font-sans); }
+.tz-okresy__opcja input:checked + span { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 55%, transparent); }
+.tz-okresy__opcja input:focus-visible + span { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+.tz-filtr select { min-height: var(--tz-tap); padding: 0 12px; border: 0; border-radius: 10px; background: var(--sc-surface-3); color: var(--sc-text); font: 400 15px/1 var(--sc-font-sans); }
+.tz-panel__naglowek { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tz-panel__naglowek h3 { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); }
+.tz-panel__akcje { display: inline-flex; gap: 4px; }
+.tz-panel__akcje button { min-height: var(--tz-tap); padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--sc-accent); font: 600 13px/1 var(--sc-font-sans); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.tz-panel__komunikat { color: var(--sc-text-3); font-size: 14px; }
+
+.tz-warstwy { display: grid; gap: 8px; }
+.tz-warstwa { display: grid; gap: 2px; padding: 8px 10px; border-radius: var(--tz-r); background: var(--sc-surface-2); }
+.tz-warstwa:not([data-wl]) { opacity: .72; }
+.tz-warstwa__glowna { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: var(--tz-tap); cursor: pointer; }
+.tz-warstwa__glowna input { position: absolute; opacity: 0; width: 44px; height: 44px; margin: 0; left: -6px; cursor: pointer; }
+.tz-przelacznik__tor { position: relative; width: 38px; height: 22px; border-radius: 999px; background: var(--sc-surface-3); box-shadow: inset 0 0 0 1.5px var(--sc-line-strong); transition: background .15s; }
+.tz-przelacznik__tor span { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--sc-text-3); transition: transform .15s, background .15s; }
+.tz-warstwa__glowna input:checked + .tz-przelacznik__tor { background: var(--sc-accent-soft); box-shadow: inset 0 0 0 1.5px var(--sc-accent); }
+.tz-warstwa__glowna input:checked + .tz-przelacznik__tor span { transform: translateX(16px); background: var(--sc-accent); }
+.tz-warstwa__glowna input:focus-visible + .tz-przelacznik__tor { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; }
+/* tytuł zawsze w jednej linii (mniejsza czcionka, w ostateczności wielokropek; pełna nazwa w title i dla czytników) */
+.tz-warstwa__nazwa { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 14px/1.3 var(--sc-font-sans); }
+.tz-warstwa__licznik { min-width: 28px; padding: 2px 8px; border-radius: 999px; background: var(--sc-surface-3); color: var(--sc-text-2); font: 600 13px/1.4 var(--sc-font-sans); text-align: center; }
+.tz-warstwa__opis, .tz-warstwa__stan { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 1.4; color: var(--sc-text-3); }
+.tz-warstwa__stan { color: var(--sc-text-2); }
+.tz-warstwa__ostrz { display: flex; gap: 6px; align-items: flex-start; margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: var(--tz-ostrz-tlo); box-shadow: inset 3px 0 0 var(--tz-ostrz); font-size: 13px; line-height: 1.4; color: var(--sc-text); }
+.tz-warstwa__ostrz svg { flex: none; margin-top: 2px; color: var(--tz-ostrz); }
+.tz-ikona { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--tz-kolor); background: color-mix(in srgb, var(--tz-kolor) 14%, transparent); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tz-kolor) 60%, transparent); flex: none; }
+html[data-theme="light"] .tz-ikona { color: color-mix(in srgb, var(--tz-kolor) 70%, #000); }
+
+.tz-przygotowanie, .tz-legenda { padding: 10px 12px; border-radius: var(--tz-r); background: var(--sc-surface-2); font-size: 13px; color: var(--sc-text-2); }
+.tz-przygotowanie summary, .tz-legenda summary { display: flex; align-items: center; min-height: var(--tz-tap); font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); cursor: pointer; }
+.tz-przygotowanie p, .tz-legenda__lead { margin: 4px 0 8px; line-height: 1.5; }
+.tz-przygotowanie ul { display: grid; gap: 6px; }
+.tz-przygotowanie li { display: flex; align-items: center; gap: 8px; color: var(--sc-text-3); }
+.tz-legenda ul { display: grid; gap: 8px; margin-bottom: 8px; }
+.tz-legenda li { display: grid; gap: 2px; }
+
+.tz-status { display: inline-flex; align-items: center; gap: 6px; font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .05em; text-transform: uppercase; color: var(--sc-text); }
+.tz-ksztalt { flex: none; }
+
+/* ---------- Karta wpisu ---------- */
+.tz-karta { background: var(--sc-surface); color: var(--sc-text); overflow: auto; }
+.tz-karta__tresc { display: grid; gap: 10px; align-content: start; padding: 14px 16px 24px; }
+.tz-karta__gora { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tz-karta__warstwa { display: inline-flex; align-items: center; gap: 8px; font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-karta__tytul { font: 600 20px/1.3 var(--sc-font-display); letter-spacing: -.01em; }
+.tz .tz-karta__tytul:focus, .tz .tz-karta__tytul:focus-visible, .tz .tz-panel__tytul:focus { outline: none; }
+.tz-karta__znaczki { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.tz-znaczek { padding: 2px 8px; border-radius: 6px; background: var(--sc-surface-3); color: var(--sc-text-2); font-size: 12px; font-weight: 600; }
+.tz-karta__opis-statusu { font-size: 13px; color: var(--sc-text-3); }
+.tz-karta__tresc-wpisu { font-size: 15px; line-height: 1.6; color: var(--sc-text-2); }
+.tz-karta__dane { display: grid; gap: 10px; padding: 12px; border-radius: var(--tz-r); background: var(--sc-surface-2); }
+.tz-karta__dane dt { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); }
+.tz-karta__dane dd { font-size: 15px; line-height: 1.45; }
+.tz-karta__dane small { display: block; margin-top: 2px; font-size: 13px; color: var(--sc-text-3); }
+.tz-karta__oryginal .tz-przycisk { width: 100%; text-align: center; }
+.tz-karta__kopiuj { display: grid; gap: 6px; }
+.tz-karta__kopiuj button { width: 100%; }
+.tz-karta__kopiuj span { min-height: 20px; font-size: 13px; color: var(--sc-text-2); }
+.tz-karta__zdarzenie { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--sc-line); }
+.tz-karta__zdarzenie h3 { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-3); }
+.tz-karta__podtytul { font-size: 13px; color: var(--sc-text-3); }
+.tz-karta__weryfikacja { font-size: 14px; color: var(--sc-text-2); }
+.tz-karta__zdarzenie ul { display: grid; gap: 6px; font-size: 14px; }
+.tz-karta__zdarzenie li span { color: var(--sc-text-3); }
+
+/* ---------- Lista ---------- */
+.tz-lista-ramka { position: absolute; inset: 0; overflow: auto; padding: 12px 12px calc(84px + env(safe-area-inset-bottom, 0px)); }
+.tz-lista__uwaga { margin-bottom: 8px; color: var(--sc-text-2); font-size: 14px; }
+.tz-lista__pusta { padding: 12px; color: var(--sc-text-2); font-size: 15px; }
+.tz-lista { display: grid; gap: 8px; max-width: 760px; }
+.tz-pozycja { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; width: 100%; min-height: 128px; padding: 10px 12px; border: 0; border-radius: var(--tz-r); background: var(--sc-surface); color: var(--sc-text); text-align: left; font: inherit; cursor: pointer; }
+.tz-pozycja:hover { background: var(--sc-surface-3); }
+.tz-pozycja[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--sc-accent); }
+.tz-pozycja .tz-status { grid-column: 2; }
+.tz-pozycja__glowna { display: grid; gap: 2px; min-width: 0; }
+/* te same elementy w każdym boksie na tej samej wysokości: tytuł zawsze 2 linie, każda linia opisu 1 linia (pełny tekst w title i na karcie) */
+.tz-pozycja__tytul { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: calc(2 * 1.35em); font: 600 15px/1.35 var(--sc-font-sans); }
+.tz-pozycja__meta { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 1.4; color: var(--sc-text-3); }
+
+/* ---------- Tabela i „Mój powiat” (bez mapy: przewijana ramka na całą scenę) ---------- */
+.tz-ramka { position: absolute; inset: 0; overflow: auto; padding: 12px 12px calc(84px + env(safe-area-inset-bottom, 0px)); }
+.tz-komunikaty-inline { display: grid; gap: 8px; max-width: 760px; }
+.tz-komunikaty-inline:empty { display: none; }
+.tz-komunikaty-inline .tz-komunikat { margin-bottom: 8px; }
+.tz-tabela { display: grid; gap: 10px; }
+.tz-tabela__tytul { font: 600 20px/1.3 var(--sc-font-display); }
+.tz .tz-tabela__tytul:focus, .tz .tz-tabela__tytul:focus-visible, .tz .tz-mp-tytul:focus, .tz .tz-mp-tytul:focus-visible { outline: none; }
+.tz-tabela__opis, .tz-tabela__licznik { color: var(--sc-text-2); font-size: 14px; }
+.tz-tabela__narzedzia { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.tz-tabela__filtr { display: grid; gap: 4px; flex: 1 1 240px; max-width: 420px; }
+.tz-tabela__filtr label, .tz-mp-etykieta { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-tabela__filtr input { min-height: var(--tz-tap); padding: 0 12px; border: 0; border-radius: 10px; background: var(--sc-surface-3); color: var(--sc-text); font: 400 15px/1 var(--sc-font-sans); box-shadow: inset 0 0 0 1px var(--sc-line-strong); }
+.tz .tz-przycisk:disabled { opacity: .5; cursor: not-allowed; }
+.tz-tabela__przewijanie { overflow: auto; max-width: 100%; border-radius: var(--tz-r); background: var(--sc-surface); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-tabela__tabela { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 14px; line-height: 1.4; }
+.tz-tabela__tabela th, .tz-tabela__tabela td { padding: 8px 10px; border-bottom: 1px solid var(--sc-line); text-align: left; vertical-align: top; }
+.tz-tabela__tabela thead th { position: sticky; top: 0; z-index: 1; padding: 0; background: var(--sc-surface-3); white-space: nowrap; }
+.tz-tabela__tabela tbody th { font-weight: 600; min-width: 240px; }
+.tz-tabela__tabela th:nth-child(1), .tz-tabela__tabela td:nth-child(1) { min-width: 130px; }
+.tz-tabela__tabela th:nth-child(3), .tz-tabela__tabela td:nth-child(3) { min-width: 130px; }
+.tz-tabela__tabela th:nth-child(4), .tz-tabela__tabela td:nth-child(4) { min-width: 200px; }
+.tz-tabela__tabela th:nth-child(5), .tz-tabela__tabela td:nth-child(5), .tz-tabela__tabela th:nth-child(6), .tz-tabela__tabela td:nth-child(6) { min-width: 150px; }
+.tz-tabela__tabela th:nth-child(7), .tz-tabela__tabela td:nth-child(7) { min-width: 200px; }
+.tz-tabela__tabela tbody tr[data-wybrany] { background: var(--sc-accent-soft); }
+.tz-tabela__sortuj { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: var(--tz-tap); padding: 0 10px; border: 0; background: transparent; color: var(--sc-text); font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .05em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.tz-tabela__strzalka { color: var(--sc-text-2); font-size: 11px; }
+.tz-tabela__tytul-przycisk { min-height: var(--tz-tap); padding: 6px 0; border: 0; background: transparent; color: var(--sc-text); font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.tz-tabela__tytul-przycisk[aria-pressed="true"] { color: var(--sc-accent); }
+.tz-tabela__link { display: flex; align-items: center; min-height: var(--tz-tap); margin-top: 0; color: var(--sc-accent); font-size: 13px; }
+
+.tz-ramka--powiat { padding: 16px 16px 40px; }
+.tz-mp { display: grid; gap: 18px; max-width: 860px; margin: 0 auto; font-size: 18px; line-height: 1.55; }
+.tz-mp-tytul { font: 600 28px/1.2 var(--sc-font-display); letter-spacing: -.01em; }
+.tz-mp-lead { color: var(--sc-text-2); font-size: 18px; }
+.tz-mp-okres { display: grid; gap: 6px; }
+.tz-brak-linku { color: var(--sc-text-2); font-size: 14px; }
+.tz-mp-segmenty { display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: var(--sc-surface-3); max-width: 420px; }
+.tz-mp-segmenty .tz-okresy__opcja span { min-height: 52px; border-radius: 9px; font: 600 18px/1 var(--sc-font-sans); }
+.tz-mp-segmenty .tz-okresy__opcja input:checked + span { box-shadow: inset 0 0 0 1.5px var(--sc-accent); }
+.tz-mp-wybor { display: grid; gap: 6px; }
+.tz-mp-kontrolka { position: relative; display: grid; }
+.tz-mp-pole { min-height: 56px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--sc-surface-3); color: var(--sc-text); font: 400 20px/1 var(--sc-font-sans); box-shadow: inset 0 0 0 1.5px var(--sc-line-strong); }
+.tz-mp-pole:disabled { opacity: .55; cursor: not-allowed; }
+.tz-mp-pomoc { color: var(--sc-text-2); font-size: 15px; line-height: 1.45; }
+.tz-mp-podpowiedzi { position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 4px); max-height: 320px; overflow: auto; padding: 6px; border-radius: 12px; background: var(--sc-surface); box-shadow: 0 12px 30px rgba(0, 0, 0, .45), inset 0 0 0 1px var(--sc-line-strong); }
+.tz-mp-podpowiedzi[hidden] { display: none; }
+.tz-mp-podpowiedzi li { padding: 12px 14px; min-height: 48px; border-radius: 9px; font-size: 18px; line-height: 1.35; cursor: pointer; }
+.tz-mp-podpowiedzi li[data-aktywna], .tz-mp-podpowiedzi li:hover { background: var(--sc-accent-soft); box-shadow: inset 0 0 0 1.5px var(--sc-accent); }
+.tz-mp-wybrane { display: flex; flex-wrap: wrap; gap: 8px; }
+.tz-mp-wybrane li span { min-width: 0; }
+.tz-mp-wybrane li { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 4px 4px 14px; border-radius: 999px; background: var(--sc-surface-3); font-size: 17px; box-shadow: inset 0 0 0 1px var(--sc-line-strong); }
+.tz-mp-wybrane button { flex: none; white-space: nowrap; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--sc-surface); color: var(--sc-text); font: 600 15px/1 var(--sc-font-sans); cursor: pointer; }
+.tz-mp-udostepnij { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.tz-mp-udostepnij span { color: var(--sc-text-2); font-size: 15px; }
+.tz-mp-adres { flex: 1 1 100%; min-width: 0; min-height: 48px; font-size: 15px; text-overflow: ellipsis; }
+.tz-mp-pusto { padding: 16px; border-radius: var(--tz-r); background: var(--sc-surface); color: var(--sc-text-2); }
+.tz-mp-sekcja { display: grid; gap: 12px; padding: 16px; border-radius: 14px; background: var(--sc-surface); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-mp-sekcja__tytul { font: 600 24px/1.25 var(--sc-font-display); letter-spacing: -.01em; }
+.tz-mp-liczba { color: var(--sc-text-2); font-size: 16px; }
+.tz-mp-stan { padding: 12px 14px; border-radius: 10px; background: var(--sc-surface-2); color: var(--sc-text); }
+.tz-mp-stan--brak, .tz-mp-stan--uwaga { box-shadow: inset 4px 0 0 var(--tz-ostrz); background: var(--tz-ostrz-tlo); }
+.tz-mp-wpisy { display: grid; gap: 12px; }
+/* komunikaty z województwa, które powiatu nie wymieniają: osobna, cichsza grupa (Common Region, Von Restorff tylko dla listy powiatu) */
+.tz-mp-inne { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--sc-line); }
+.tz-mp-inne__tytul { font: 600 18px/1.3 var(--sc-font-display); color: var(--sc-text-2); }
+.tz-mp-inne .tz-znaczek--zakres { background: var(--sc-surface); color: var(--sc-text-2); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-karta__atrybucja { font-size: 14px; color: var(--sc-text-2); }
+.tz-mp-wpis { display: grid; gap: 8px; padding: 14px; border-radius: 12px; background: var(--sc-surface-2); box-shadow: inset 0 0 0 1px var(--sc-line); }
+.tz-mp-wpis__meta { display: inline-flex; align-items: center; gap: 8px; font: 650 13px/1.3 var(--sc-font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-mp-wpis__tytul { font: 600 21px/1.3 var(--sc-font-display); }
+.tz-mp-wpis__znaczki { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.tz-znaczek--zakres { background: var(--sc-accent-soft); color: var(--sc-accent); }
+.tz-mp-wpis__status { font-size: 15px; color: var(--sc-text-2); }
+.tz-mp-wpis__tresc { font-size: 17px; color: var(--sc-text); }
+.tz-mp-wpis__dane { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--sc-surface); }
+.tz-mp-wpis__dane dt { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-mp-wpis__dane dd { font-size: 17px; }
+.tz-mp-wpis__dane small { display: block; margin-top: 2px; font-size: 14px; color: var(--sc-text-2); }
+.tz-mp-wpis .tz-przycisk { min-height: 48px; font-size: 16px; }
+
+/* ---------- Komputer: panel z lewej, karta z prawej ---------- */
+@media (min-width: 900px) {
+  .tz-glowna { grid-template-columns: var(--tz-panel-w) minmax(0, 1fr); }
+  .tz[data-widok="powiat"] .tz-glowna { grid-template-columns: minmax(0, 1fr); }
+  .tz-panel { overflow: auto; border-right: 1px solid var(--sc-line); min-height: 0; }
+  .tz .tz-panel__zamknij, .tz .tz-fab { display: none; }
+  .tz-karta { position: absolute; z-index: 5; top: 12px; right: 12px; bottom: 36px; width: var(--tz-karta-w); border-radius: 14px; box-shadow: 0 10px 34px rgba(0, 0, 0, .42), inset 0 0 0 1px var(--sc-line-strong); }
+  .tz-nakladka--dol { bottom: 28px; }
+  .tz-karta__zamknij { min-width: 90px; }
+  .tz[data-karta] .tz-nakladka--gora { right: calc(var(--tz-karta-w) + 24px); }
+}
+
+/* ---------- Telefon: arkusze ---------- */
+@media (max-width: 899.98px) {
+  /* arkusze leżą w obszarze głównym, pod paskiem i linią stanu: stałe zdanie o stronie nieurzędowej nigdy nie jest przykryte */
+  .tz-panel, .tz-karta { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; max-height: min(74dvh, 100%); overflow: auto; border-radius: 16px 16px 0 0; box-shadow: 0 -10px 34px rgba(0, 0, 0, .5), inset 0 1px 0 var(--sc-line-strong); }
+  .tz-panel { transform: translateY(104%); visibility: hidden; transition: transform .25s ease, visibility 0s linear .25s; }
+  .tz[data-panel] .tz-panel { transform: none; visibility: visible; transition: transform .25s ease; }
+  .tz-karta { z-index: 31; max-height: min(62dvh, 100%); }
+  .tz[data-karta] .tz-fab, .tz[data-panel] .tz-fab { display: none; }
+  .tz[data-karta] .tz-nakladka--dol, .tz[data-panel] .tz-nakladka--dol { display: none; }
+  /* atrybucja nie wchodzi pod przycisk „Warstwy” */
+  .tz .maplibregl-ctrl-bottom-right { max-width: calc(100% - 136px); }
+  .tz .tz-fab { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+/* nazwa serwisu i „Mój” tylko na szerszym ekranie; dla czytników ekranu zostają w nazwie przycisku i odnośnika */
+@media (max-width: 559.98px) {
+  .tz .tz-marka__tekst { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+}
+@media (max-width: 420px) {
+  .tz-gora { gap: 8px; padding: 0 8px; }
+  .tz-widok button { padding: 0 10px; }
+  .tz-karta__tytul { font-size: 18px; }
+  .tz-stan { padding: 4px 8px 0; }
+}
+@media (max-width: 380px) {
+  .tz-gora { gap: 6px; }
+  .tz-widok button { min-width: 46px; padding: 0 7px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tz *, .tz *::before, .tz *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
+@media (prefers-contrast: more) {
+  .tz { --tz-ostrz: #ffd08a; }
+  .tz-warstwa__opis, .tz-warstwa__stan, .tz-pozycja__meta { color: var(--sc-text-2); }
+}
+@media (forced-colors: active) {
+  .tz-widok button[aria-pressed="true"], .tz-okresy__opcja input:checked + span { outline: 2px solid Highlight; }
+  .tz-przelacznik__tor { border: 1px solid ButtonText; }
+}

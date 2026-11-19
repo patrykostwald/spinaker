@@ -100,12 +100,12 @@ def test_hydro_stan_wody():
         adapter.parsuj_stany(odpowiedz("zmieniony_format.txt"))
 
 
-@pytest.mark.parametrize("dzien,pierwsza,aktualizacja,kody", [
-    ("03", None, (6, 49), ["06", "18"]),
-    ("09", None, (22, 41), ["06", "20"]),
-    ("10", (10, 20), (10, 55), ["06"]),
+@pytest.mark.parametrize("dzien,pierwsza,aktualizacja,kody,pewnosc", [
+    ("03", None, (6, 49), ["06", "18"], 1),
+    ("09", None, (22, 41), ["06", "20"], 0.5),
+    ("10", (10, 20), (10, 55), ["06"], 0.5),
 ])
-def test_rcb_karty(dzien, pierwsza, aktualizacja, kody):
+def test_rcb_karty(dzien, pierwsza, aktualizacja, kody, pewnosc):
     adapter = rcb.AdapterRCB(zrodlo_parsera(link_rcb(dzien)))
     alert, odwolanie = adapter.parsuj(odpowiedz(karta_rcb(dzien)))
     assert alert["tytul"] == f"Alert RCB - zagrożenie z powietrza ({dzien}.11)"
@@ -117,6 +117,8 @@ def test_rcb_karty(dzien, pierwsza, aktualizacja, kody):
     assert odwolanie["status_zdarzenia"] == Zdarzenie.Status.ODWOLANE
     assert alert["zdarzenie_id"] == odwolanie["zdarzenie_id"]
     assert alert["teryt"] == odwolanie["teryt"] == kody
+    # całe województwa (03.11) to potwierdzony zasięg; wybrane powiaty (09.11, 10.11) dają kod województwa tylko jako przybliżenie
+    assert alert["pewnosc_lokalizacji"] == odwolanie["pewnosc_lokalizacji"] == pewnosc
     assert "lubelskiego" in alert["miejsce"]
     if dzien != "03":
         assert "włodawski" in alert["miejsce"]
@@ -149,8 +151,10 @@ def test_rcb_miejsce_zawiera_tylko_nazwy_jednostek():
             <p>Alert RCB pozostaje w mocy.</p>
         </div></article>""".encode()
     alert, = rcb.parsuj_karte(OdpowiedzHTTP(200, {}, dane, "utf-8"), link_rcb("10"))
+    # jednostka dostaje województwo tylko z własnej linii (gminy z linii bez województwa zostają bez niego), typ gminy i miasta w nazwie
     assert set(alert["miejsce"].splitlines()) == {
-        "lubelskie", "włodawski", "Chełm", "Pruszków", "Nowa Wieś", "Warszawa",
+        "lubelskie", "lubelskie: włodawski", "lubelskie: Chełm",
+        "gmina Pruszków", "gmina Nowa Wieś", "miasto Warszawa", "zakres: lubelskie: lista_otwarta",
     }
     assert "ul. Leśna 12" in alert["tresc"] and alert["teryt"] == ["06"]
 
@@ -207,7 +211,7 @@ def test_rcb_blad_karty_przesuwa_kolejke(monkeypatch):
 def test_rcb_usunieta_aktualizacja_nie_wraca_po_przesunieciu(monkeypatch):
     zrodlo = Zrodlo.objects.get(slug="rcb")
     adres = link_rcb("10")
-    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 2, "karty": [adres]}}
+    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 2, "karty": [adres], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo.save(update_fields=["stan_adaptera"])
     pierwsza = b"<h3>Aktualizacja 10:55</h3><p>Komunikat testowy pierwszej aktualizacji.</p>"
     druga = b"<h3>Aktualizacja 10:55</h3><p>Komunikat testowy drugiej aktualizacji.</p>"
@@ -297,7 +301,7 @@ def test_rcb_postep_archiwum(monkeypatch):
 def test_archiwum_rcb_pomija_niedostepna_karte(monkeypatch):
     zrodlo = Zrodlo.objects.get(slug="rcb")
     pierwsza, druga = link_rcb("03"), link_rcb("09")
-    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga]}}
+    zrodlo.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo.save(update_fields=["stan_adaptera"])
     pobierz = Mock(side_effect=[(odpowiedz(None, 404), SCOPE), (odpowiedz(karta_rcb("09")), SCOPE)])
     monkeypatch.setattr(Adapter, "pobierz", pobierz)

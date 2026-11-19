@@ -375,3 +375,49 @@ Artefakty dla użytkownika: outputs/archive-research-20260909/Raport-archiwum.md
 Normalny scheduler poprzednio57954 zatrzymany, teraz sesja8375 USE_SQLITE=true ARCHIVE_WORKERS=32 (networkapproved). Backend/frontend odświeżone Start-Portal.ps1 po sprawdzeniu starych PID13504/21472, teraz nowePIDsprawdzać netstat. Katalogaktualny, credentials.local/admin-login.txt nigdy nie ujawniać. OpłaconeAI klucze/model nadal nieskonfigurowane; brak nowych płatnychcalli.
 
 Następne prace:1)WPmetadataAPIbatch dla potwierdzonych6;2)ELIroczniki w trwałych małych partiach, potem poprzedniekadencje;3)zliczenie pełnych drzewmap i klasyfikacja Polityka/Infor, nie udawać ichkompletności;4)kontrola cachewyszukiwarki (SQLite LocMem=5min i brakpollinguReact, wykryte lecz nienaprawione), później pulpit z licznikiem nowychwyników;5)retencja/iniezależnośćbackupów. Nie restartować schedulera bez potrzeby. Użytkownik oczekuje ciągłości prac, nie przykładowych fikcyjnych nitek.
+
+## Teraz, PR #38: poprawki po trzeciej recenzji Codexa (R38c, zlecenie Z6P4)
+
+Zrobione i sprawdzone (testy lokalne, bez wdrożenia):
+- Parser RCB (`backend/teraz/zrodla/rcb.py`): jednostka dostaje województwo tylko z tego samego wyrażenia („w powiecie A w woj. X”, „woj. X: powiaty…”); zdania zaleceń („Omijaj miasto Chełm”) nie wchodzą do zasięgu; całe województwo obok powiatu z innego zostaje osobnym zasięgiem.
+- Front (`teryt.ts`, `powiaty.ts`): `calyRegionZMiejsca` rozpoznaje całe województwo w zasięgu przybliżonym (Lublin zostaje przy „całe lubelskie + powiat dolnośląski”); karta pisze „całe: …”.
+- Wersja parsera RCB 4. Archiwum RCB (`ArchiwumRCB`, polecenie `teraz_rcb_archiwum`) zapisane starszą wersją jest czytane od nowa od strony 1; wpisy są aktualizowane, nie dublowane.
+- Licznik ukrytych komunikatów liczy unikalne identyfikatory z wykazu i ze zdarzeń.
+
+Zrobione, niesprawdzone: zgodność odbiorców spoza repozytorium z nowym zapisem `miejsce` (bez zmian formatu od R38b); zachowanie na danych produkcyjnych (po wdrożeniu pierwsze przejście archiwum odświeży stare karty, ok. jedna odpowiedź na kartę co 5 s).
+Zaplanowane: wdrożenie po zgodzie właściciela (kopia bazy przed wdrożeniem, polecenie z sekcji 7 zasad projektu).
+
+## Teraz, PR #38: poprawki po czwartej recenzji (Z6R5, zlecenie Z6P5)
+
+Zasada: parser RCB jest zachowawczy. Wyłączenie, zalecenie albo niejasni odbiorcy nie dopisują jednostek, zasięg jest `przyblizony`, a front daje najwyżej „możliwe”.
+
+Zrobione i sprawdzone (testy lokalne, przebieg w Chromium headless, bez wdrożenia):
+- P1 wyłączenia („z wyłączeniem/z wyjątkiem/poza/oprócz/bez”, „nie dotyczy”): jednostki po słowie wyłączenia nie są objęte; w `miejsce` trafiają jako linie `wyłączone: <województwo>: <jednostka>` (albo `wyłączone: nieokreślone`). Front: wyłączony powiat dostaje etykietę „Komunikat wyłącza Twój powiat: sprawdź jego treść” (`wylaczony`), reszta województwa i powiaty wymienione obok wyłączenia najwyżej „możliwe”, „całe województwo” cofnięte.
+- P1 miejscownik: „w woj. lubelskim i podkarpackim” = oba; końcówki -im/-ym/-ej, listy po „i”, „oraz”, przecinku; test z 16 województwami w trzech przypadkach i listami po 2-3.
+- P1 zalecenia: czasownik zalecenia w dowolnym miejscu zdania wyłącza je ze zdań o odbiorcach (zdanie nagłówkowe „Alert RCB…” czytane do zalecenia). Twardy limit nazw: powiat tylko ze słownika, miasto i gmina ze słownika albo 1-3 wyrazy z wielkiej litery; element listy, który nie jest nazwą, daje znacznik `nieustalone: nazwy jednostek` (front nie mówi wtedy „nie ma na liście”).
+- P2: „(woj. śląskie)” po liście wiąże wszystkie jednostki; „woj. X (powiat Y)” rozpoznane; `zasieg_czesciowy` sprawdza zdanie odbiorców.
+- P3: „w mieście Kraków”; zapis wielkimi literami normalizowany (`lubelskie`, `Chełm`, nie `LUBELSKie`).
+- Wersja parsera 5 (karty zapisane wersją 4 są czytane od nowa; wpisy wrażliwe wrócą do przeglądu, istniejąca reguła).
+- Nowy plik `backend/teraz/zrodla/jednostki_powiaty.json`: kopia kodów i nazw z `frontend-spin/public/teraz/teryt-powiaty.json` (backend nie czyta katalogu frontu); zgodność pilnuje test.
+
+Zrobione, niesprawdzone: zachowanie na danych produkcyjnych; nazwy gmin spoza słownika powiatów nie są weryfikowane (brak rejestru gmin w repozytorium, obowiązuje tylko kształt nazwy).
+Odnotowane: „w mieście Kraków” bez nazwy województwa w zdaniu daje jednostkę w `miejsce`, ale bez kodu TERYT (jak „w powiecie krakowskim” bez województwa); wyłączenie w osobnym zdaniu nie jest wiązane z województwem.
+
+## Teraz, PR #38: runda zamykająca (zamykająca recenzja R38d, zlecenie Z6P6)
+
+Zasady strukturalne: (1) zasięg zapisany osobno dla każdego województwa, front dopasowuje powiat do zakresu swojego województwa; (2) fail-closed w etykietach; (3) zdaniem odbiorców jest nagłówek alertu albo zdanie z czasownikiem wysłania, obowiązywania lub obejmowania.
+
+Zrobione i sprawdzone (testy lokalne, Chromium headless na harnessie SSR, bez wdrożenia):
+- Format `miejsce` (parser v6): linie `zakres: <województwo>: cale|czesc|lista` na każde województwo, `nieustalone: <województwo>` (albo `nieustalone: nazwy jednostek`, gdy nie wiadomo którego), jak dotąd `wyłączone: …`. Zakresy z kilku zdań, które się różnią, scalają się do `czesc`. `czesc` to „w części woj.”, „na południu woj.”, punkty listy po „części województwa:” albo jednostki bez znanego województwa; `lista` gdy źródło wymienia jednostki tego województwa.
+- Front (`teryt.ts`: `zakresyWojewodztw`; `powiaty.ts`: `zakresWojewodztwa`): `cale` daje „całe województwo” tylko bez wyłączeń i bez `nieustalone` w tym województwie; `czesc` nigdy „całe” ani „nie ma na liście”; „nie ma na liście” tylko dla `lista` z jednostką tego województwa i bez znaczników. Wpisy starsze (bez linii `zakres:`) zachowują dawną heurystykę.
+- Pkt 1: jednostka typu miasto nie daje „wymieniony” powiatowi ziemskiemu o tym rdzeniu nazwy (miasto Puck: powiat pucki „możliwe”).
+- Pkt 3: zdanie odbiorców = nagłówek „Alert RCB…” albo czasownik (wysłan-, obowiązuj-, obejmuj-, dotyczy, ogranicza się); punkt listy tylko po nagłówku z dwukropkiem; „Punkty pomocy otwarto w mieście Chełm” nie zmienia zasięgu. `zasieg_czesciowy` czyta te same zdania.
+- Pkt 4: „nie obowiązuje (już)” to wyłączenie; wyłączenie kończy się przed nowym członem po spójniku z nazwą województwa („…, a także w woj. zachodniopomorskim”) albo po średniku z nowym orzeczeniem, więc kod 32 zostaje.
+- Pkt 5: odsyłacze `(1)`, `[2]`, `*`, `¹` zdejmowane przed czytaniem; element z samą cyfrą daje `nieustalone`; rozpoznany adres („ul. …”) nadal nie jest jednostką.
+- Pkt 6: aktualizacja z „wyłącznie” albo „ogranicza się do” (i nowym zasięgiem) zastępuje wcześniejszą listę także dla kolejnych aktualizacji; „nie obowiązuje już w powiecie X” oznacza powiat jako wyłączony.
+- Pkt 7: archiwum: błąd przejściowy (429, 5xx) odkłada kartę do `niepobrane`, archiwum nie jest zakończone; kolejne uruchomienie ponawia tylko te karty (bez listy). Timeout zostawia kartę w kolejce jak dotąd. 404 pomija kartę jak dotąd. Polecenie drukuje „Archiwum RCB niedokończone…” przy 5xx, przy 429 kończy błędem jak dotąd.
+- Wersja parsera 6 (karty zapisane wersją 4 i 5 są czytane od nowa). Dane próbne (`dane-probne`) w formacie v6.
+
+Zrobione, niesprawdzone: zachowanie na danych produkcyjnych; build z włączoną flagą (zmiana nie dotyka flagi, build z flagą wyłączoną zaliczony); prawdziwa strona w przeglądarce (zrzuty z harnessu SSR bez pełnych stylów aplikacji).
+Odnotowane (ryzyka): front nie ma mapy gmina/miasto → powiat, więc przy `lista` z miastem lub gminą spoza słownika powiatów inny powiat tego województwa dostaje „nie ma na liście”, choć miasto może leżeć w jego granicach (np. miasto Rumia i powiat wejherowski); „nie obowiązuje już” bez nazwy województwa w zdaniu daje wyłączenie bez województwa (front: „możliwe”); wyłączenie w osobnym zdaniu nadal nie jest wiązane z województwem.
+

@@ -24,7 +24,9 @@ class Command(BaseCommand):
             zrodlo = Zrodlo.objects.select_related("zrodlo_dostepu").filter(slug="rcb").first()
             if zrodlo is None or zrodlo.tryb == Zrodlo.Tryb.WYLACZONY or zrodlo.blokada_dostepu:
                 raise CommandError("RCB jest wyłączone, wstrzymane lub brakuje źródła.")
-            if zrodlo.stan_adaptera.get("archiwum", {}).get("zakonczone"):
+            archiwum = zrodlo.stan_adaptera.get("archiwum", {})
+            # archiwum zakończone starszą wersją parsera nie jest „pobrane”: ArchiwumRCB zaczyna je od nowa (R38c, P2)
+            if archiwum.get("zakonczone") and archiwum.get("wersja_parsera") == ArchiwumRCB.wersja_parsera:
                 self.stdout.write("Archiwum RCB pobrane.")
                 return
             cache = caches["teraz"]
@@ -45,6 +47,14 @@ class Command(BaseCommand):
             finally:
                 if cache.get(klucz) == znacznik:
                     cache.delete(klucz)
+            archiwum = zrodlo.stan_adaptera.get("archiwum", {})
+            if archiwum.get("niepobrane") and not archiwum.get("karty") and archiwum.get("strona", 1) > archiwum.get("stron", 0):
+                # cała lista przeczytana, ale karty z błędem przejściowym (408, 425, 429, 5xx) czekają na ponowienie: nie jest to „pobrane”
+                self.stdout.write(
+                    f"Archiwum RCB niedokończone: {len(archiwum['niepobrane'])} kart do ponowienia po błędzie przejściowym. "
+                    "Uruchom polecenie ponownie, pobierze tylko te karty.",
+                )
+                return
             if limit is None or licznik < limit:
                 sleep(5)
         self.stdout.write(f"Zapisano postęp archiwum RCB. Odpowiedzi w tym uruchomieniu: {licznik}.")

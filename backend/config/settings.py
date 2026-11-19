@@ -106,6 +106,7 @@ PREVIEW_KEY = env("PREVIEW_KEY", default="")
 
 MIDDLEWARE = [
     "news.preview.PreviewMiddleware",
+    "teraz.middleware.PrywatneOdpowiedziPrzedStartem",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -273,6 +274,9 @@ CACHES["teraz"] = {
 TERAZ_ZRZUTY_ROOT = BASE_DIR / "media" / "private" / "teraz"
 TERAZ_RETENCJA_ZRZUTOW_DNI = env.int("TERAZ_RETENCJA_ZRZUTOW_DNI", default=90)
 TERAZ_RETENCJA_OSOBOWE_DNI = env.int("TERAZ_RETENCJA_OSOBOWE_DNI", default=30)
+# Jedna flaga dla strony i API „Teraz”: ta sama zmienna co we frontendzie (lib/features.ts, porównanie z 'true').
+# Wyłączona: /api/teraz/* tylko dla ważnego podglądu (sc_preview_sig) albo personelu, reszta dostaje 404.
+TERAZ_PUBLICZNE = env("NEXT_PUBLIC_TERAZ_ENABLED", default="") == "true"
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = ["rest_framework.throttling.AnonRateThrottle", "rest_framework.throttling.UserRateThrottle"]
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {"anon": "100/min", "user": "100/min"}
 REST_FRAMEWORK["NUM_PROXIES"] = env.int("TRUSTED_PROXY_COUNT", default=0)

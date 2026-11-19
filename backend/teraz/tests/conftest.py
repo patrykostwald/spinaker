@@ -20,6 +20,8 @@ def offline(settings, tmp_path, monkeypatch):
         for alias in settings.CACHES
     }
     settings.TERAZ_ZRZUTY_ROOT = tmp_path / "zrzuty"
+    # testy kontraktu API zakładają publiczny start; bramkę przed startem sprawdza test_bramka_flagi.py
+    settings.TERAZ_PUBLICZNE = True
     yield
     caches["teraz"].clear()
     caches["default"].clear()
