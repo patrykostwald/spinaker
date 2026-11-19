@@ -99,7 +99,7 @@ test('Z6P6 pkt 2: całe + część + powiat z innego województwa w jednym zdani
   assert.equal(zakres(w, kod('18', 'Rzeszów')), 'mozliwy', 'Rzeszów: część województwa, nie „nie ma na liście”');
   for (const k of kodyWoj('18')) assert.equal(zakres(w, k), 'mozliwy', `podkarpackie ${k}`);
   assert.equal(zakres(w, kod('02', 'świdnicki')), 'wymieniony');
-  assert.equal(zakres(w, kod('02', 'Wrocław')), 'pozaLista');
+  assert.equal(zakres(w, kod('02', 'Wrocław')), 'mozliwy');
 });
 
 test('Z6P6 pkt 2: „wyłącznie na południu woj. mazowieckiego” to część, nie całe', () => {
@@ -152,7 +152,7 @@ test('Z6P6 pkt 6: aktualizacja ze zmianą zasięgu nie dziedziczy wypadłego pow
   assert.equal(zakres(pierwotny, kod('02', 'świdnicki')), 'wymieniony');
   assert.equal(zakres(aktualizacja, kod('02', 'świdnicki')), null, 'karta aktualizacji nie dotyczy już tego powiatu');
   assert.equal(zakres(aktualizacja, kod('06', 'chełmski')), 'wymieniony');
-  assert.equal(zakres(aktualizacja, kod('06', 'Lublin')), 'pozaLista');
+  assert.equal(zakres(aktualizacja, kod('06', 'Lublin')), 'mozliwy');
 });
 
 test('zakresyWojewodztw: kilka różnych linii dla jednego województwa daje „część”, brak linii daje pustą mapę', () => {
@@ -203,25 +203,20 @@ test('wpisy starsze niż parser v6 (bez linii zakresu) zachowują dawną heuryst
 });
 
 // Z6P7a: „nie ma na liście” tylko dla zamkniętej listy powiatów ziemskich (R38e, bloker 1 i 2).
-const bezPojedynczego = (miejsce, rodzaj, woj = '06') => ({ teryt: [woj], zasieg: 'przyblizony', miejsce: `${miejsce}
-zakres: lubelskie: ${rodzaj}` });
+const bezPojedynczego = (miejsce, rodzaj, woj = '06') => ({ teryt: [woj], zasieg: 'przyblizony', miejsce: `${miejsce}\nzakres: lubelskie: ${rodzaj}` });
 test('Z6P7a: lista powiatów ziemskich zostaje zamknięta: „nie ma na liście” dla powiatu spoza listy', () => {
-  const w = bezPojedynczego('lubelskie
-lubelskie: chełmski
-lubelskie: włodawski', 'lista');
+  const w = bezPojedynczego('lubelskie\nlubelskie: chełmski\nlubelskie: włodawski', 'lista');
   assert.equal(zakres(w, kod('06', 'bialski')), 'pozaLista');
   assert.equal(zakres(w, kod('06', 'chełmski')), 'wymieniony');
 });
 test('Z6P7a: lista z miastem albo gminą jest otwarta: „możliwe” zamiast „nie ma na liście”', () => {
   for (const jednostka of ['miasto Rumia', 'gmina Żarów']) {
-    const w = bezPojedynczego(`lubelskie
-lubelskie: ${jednostka}`, 'lista');
+    const w = bezPojedynczego(`lubelskie\nlubelskie: ${jednostka}`, 'lista');
     assert.equal(zakres(w, kod('06', 'bialski')), 'mozliwy', jednostka);
   }
 });
 test('Z6P7a: lista_otwarta z parsera nigdy nie daje „nie ma na liście” ani „całe województwo”', () => {
-  const w = bezPojedynczego('lubelskie
-lubelskie: chełmski', 'lista_otwarta');
+  const w = bezPojedynczego('lubelskie\nlubelskie: chełmski', 'lista_otwarta');
   assert.equal(zakres(w, kod('06', 'bialski')), 'mozliwy');
   assert.equal(zakres(w, kod('06', 'chełmski')), 'wymieniony');
 });
