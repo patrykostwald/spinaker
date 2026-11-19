@@ -262,17 +262,20 @@ export function MojPowiat(p: MojPowiatProps) {
               {wpisy.map(({ v, zakres }) => <li key={v.wpis.id}><Wpis widok={v} warstwy={p.warstwy} zakres={zakres} kodPowiatu={kod} /></li>)}
             </ul>
           </>}
-          {wpisy.length === 0 && !niepelne && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
+          {wpisy.length === 0 && inne.length > 0 && <p className="tz-mp-stan tz-mp-stan--uwaga" role="status">
+            Komunikaty z Twojego województwa nie podają powiatów: sprawdź ich treść poniżej oraz Alert RCB i 112. To nie znaczy, że Twój powiat nie jest objęty.
+          </p>}
+          {wpisy.length === 0 && inne.length === 0 && !niepelne && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
             Brak w naszych danych {dla} {poczatek}. Sprawdź Alert RCB i 112.
             {p.lukaWDanych && ' Część źródeł ma lukę w danych (ostrzeżenie u góry strony).'}
           </p>}
-          {wpisy.length === 0 && niepelne && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
+          {wpisy.length === 0 && inne.length === 0 && niepelne && <p className="tz-mp-stan tz-mp-stan--brak" role="status">
             Wśród pobranych komunikatów {poczatek} żaden nie dotyczy tego powiatu. Dane są niepełne, więc to nie znaczy, że ich nie było.
             {p.lukaWDanych && ' Część źródeł ma lukę w danych (ostrzeżenie u góry strony).'}
           </p>}
           {inne.length > 0 && <div className="tz-mp-inne">
             <h4 className="tz-mp-inne__tytul">Inne komunikaty z województwa: {inne.length}</h4>
-            <p className="tz-mp-pomoc">Źródło nie wymienia w nich tego powiatu albo nie podaje powiatów. Pokazujemy je osobno, żeby nie poszerzać zasięgu komunikatu.</p>
+            <p className="tz-mp-pomoc">Źródło nie podaje w nich powiatów, więc nie wiemy, czy dotyczą Twojego. Pokazujemy je osobno, żeby nie poszerzać zasięgu komunikatu.</p>
             <ul className="tz-mp-wpisy">
               {inne.map(({ v, zakres }) => <li key={v.wpis.id}><Wpis widok={v} warstwy={p.warstwy} zakres={zakres} kodPowiatu={kod} /></li>)}
             </ul>
