@@ -64,7 +64,7 @@ test('Z6P6 pkt 1: „…odbiorców w mieście Puck w woj. pomorskim” nie daje 
   const puck = teryt().rozbierzMiejsce(w.miejsce).find(j => j.nazwa === 'Puck');
   assert.deepEqual({ typ: puck.typ, woj: puck.woj }, { typ: 'miasto', woj: '22' }, 'miasto Puck w danych jako miasto');
   assert.equal(zakres(w, kod('22', 'pucki')), 'mozliwy');
-  assert.equal(zakres(w, kod('22', 'wejherowski')), 'pozaLista', 'lista tego województwa jest kompletna');
+  assert.equal(zakres(w, kod('22', 'wejherowski')), 'mozliwy', 'miasto na liście: lista otwarta, nie wolno powiedzieć „nie ma na liście” (Z6P7a)');
   assert.match(powiatyMod().zakresTekstem('mozliwy', kod('22', 'pucki')), /możliwe, że dotyczy Twojego powiatu: sprawdź treść komunikatu/);
 });
 
@@ -200,4 +200,28 @@ test('wpisy starsze niż parser v6 (bez linii zakresu) zachowują dawną heuryst
   assert.equal(zakres(stary, kod('06', 'Lublin')), 'wojewodztwo', 'R38c: województwo bez jednostek obok jednostek z innego');
   assert.equal(zakres(stary, kod('02', 'świdnicki')), 'wymieniony');
   assert.equal(zakres(stary, kod('02', 'Wrocław')), 'pozaLista');
+});
+
+// Z6P7a: „nie ma na liście” tylko dla zamkniętej listy powiatów ziemskich (R38e, bloker 1 i 2).
+const bezPojedynczego = (miejsce, rodzaj, woj = '06') => ({ teryt: [woj], zasieg: 'przyblizony', miejsce: `${miejsce}
+zakres: lubelskie: ${rodzaj}` });
+test('Z6P7a: lista powiatów ziemskich zostaje zamknięta: „nie ma na liście” dla powiatu spoza listy', () => {
+  const w = bezPojedynczego('lubelskie
+lubelskie: chełmski
+lubelskie: włodawski', 'lista');
+  assert.equal(zakres(w, kod('06', 'bialski')), 'pozaLista');
+  assert.equal(zakres(w, kod('06', 'chełmski')), 'wymieniony');
+});
+test('Z6P7a: lista z miastem albo gminą jest otwarta: „możliwe” zamiast „nie ma na liście”', () => {
+  for (const jednostka of ['miasto Rumia', 'gmina Żarów']) {
+    const w = bezPojedynczego(`lubelskie
+lubelskie: ${jednostka}`, 'lista');
+    assert.equal(zakres(w, kod('06', 'bialski')), 'mozliwy', jednostka);
+  }
+});
+test('Z6P7a: lista_otwarta z parsera nigdy nie daje „nie ma na liście” ani „całe województwo”', () => {
+  const w = bezPojedynczego('lubelskie
+lubelskie: chełmski', 'lista_otwarta');
+  assert.equal(zakres(w, kod('06', 'bialski')), 'mozliwy');
+  assert.equal(zakres(w, kod('06', 'chełmski')), 'wymieniony');
 });

@@ -56,8 +56,9 @@ KONCOWKA_SEGMENTU = re.compile(
     r"[\s,;:\-\u2013\u2014]*(?:\b(?:oraz|i|a|także|w|we|woj|województwie|województwa|województwo)\b\.?[\s,;:\-\u2013\u2014]*)*$", re.I,
 )
 PODZIAL_ELEMENTOW = re.compile(r"[,;]|\s+(?:i|oraz)\s+", re.I)
-ADRES_SLOWO = re.compile(r"\b(?:ul(?:ica|icy|icę)?|al(?:eja|ei|eję)?|plac|os(?:iedle)?|nr)\b", re.I)
-ADRES = re.compile(r"\d|" + ADRES_SLOWO.pattern, re.I)
+# „nr” samo (bez „ul.”, „al.”) nie jest rozpoznanym adresem: element z „nr” to element nieczytelny (Z6P7a pkt 5), nie ciche pominięcie.
+ADRES_SLOWO = re.compile(r"\b(?:ul(?:ica|icy|icę)?|al(?:eja|ei|eję)?|plac|os(?:iedle)?)\b", re.I)
+ADRES = re.compile(r"\d|\bnr\b|" + ADRES_SLOWO.pattern, re.I)
 # Nazwa jednostki: najwyżej 3 wyrazy (Nowy Dwór Mazowiecki); powiat musi być też w słowniku, miasto i gmina: z wielkiej litery.
 NAZWA_JEDNOSTKI = re.compile(r"[^\W\d_]+(?:[ -][^\W\d_]+){0,2}")
 ODSTEP_KARTY = timedelta(minutes=10)
@@ -90,8 +91,11 @@ PREFIKSY_ZNACZNIKOW = (PREFIKS_WYLACZONE, PREFIKS_NIEUSTALONE, PREFIKS_ZAKRES)
 # Zakres per województwo (R38d, zlecenie Z6P6): „zakres: lubelskie: cale|czesc|lista”. `lista`: źródło wymienia jednostki tego
 # województwa (linie „lubelskie: chełmski”), `czesc`: część województwa bez wskazania jednostek („w części woj.”, „na południu woj.”),
 # `cale`: całe województwo. Zakresy z kilku zdań tego samego województwa, które się różnią, scalamy do `czesc`.
-ZAKRES_LINIA = re.compile(r"zakres: ([^:]+): (cale|czesc|lista)")
-RODZAJ_ZAKRESU = {"cale": 0, "czesc": 1, "lista": 2}
+# `lista` to lista ZAMKNIĘTA (Z6P7a): tylko gdy zdanie ma ściśle rozpoznany kształt (patrz `_zdanie_scisle`) i wszystkie jednostki tego
+# województwa to powiaty ziemskie ze słownika. Każda inna lista jednostek („część woj., w tym powiat X”, „wybranych rejonów”,
+# gmina, miasto, nazwa spoza słownika, zdanie z nieznanymi słowami) to `lista_otwarta`: front nie może wtedy powiedzieć „nie ma na liście”.
+ZAKRES_LINIA = re.compile(r"zakres: ([^:]+): (cale|czesc|lista|lista_otwarta)")
+RODZAJ_ZAKRESU = {"cale": 0, "czesc": 1, "lista": 2, "lista_otwarta": 3}
 NAWIAS_WOJEWODZTWA = re.compile(r"\s*\(\s*(?:w\s+)?(?:woj\.|województwie|województwo)\s+([^()]+?)\s*\)", re.I)
 NAWIAS_JEDNOSTKI = re.compile(r"\(\s*((?:powiat|powiec|gmin|miast|mieśc)[^()]*)\)", re.I)
 # Zdanie o odbiorcach (R38d, Z6P6): nagłówek alertu („Alert RCB …”) albo czasownik wysłania, obowiązywania lub obejmowania
@@ -109,7 +113,11 @@ STRUKTURA_LISTY = re.compile(
 )
 CZESC_BEZ_NAZWY = re.compile(r"\bczęś(?:ć|ci)\s+(?:woj\.|województw\w*)\s*:\s*$", re.I)
 # Odsyłacze przy nazwach: „włodawskim (1)”, „włodawskim [2]”, „włodawskim*”, „włodawskim¹”.
-ODSYLACZ = re.compile(r"\s*(?:\(\s*\d{1,2}\s*\)|\[\s*\d{1,2}\s*\]|\*+|[¹²³⁰⁴-⁹]+)")
+# Także „(odsyłacz nr 1)”, „(zob. nr 2)”, „nr 1” (Z6P7a pkt 5).
+_NUMER_ODSYLACZA = r"(?:(?:odsyłacz|zob\.?|zobacz|przypis)\s*)*(?:nr\s*)?\d{1,2}"
+ODSYLACZ = re.compile(
+    r"\s*(?:\(\s*" + _NUMER_ODSYLACZA + r"\s*\)|\[\s*" + _NUMER_ODSYLACZA + r"\s*\]|\bnr\s*\d{1,2}\b|\*+|[¹²³⁰⁴-⁹]+)", re.I,
+)
 # Koniec wyłączenia w zdaniu: nowa grupa po spójniku („…z wyjątkiem powiatu puckiego, a także w woj. zachodniopomorskim”)
 # albo nowe zdanie orzekające po średniku („…nie obowiązuje już w woj. X; obowiązuje w woj. Y”).
 KONIEC_WYLACZENIA = re.compile(
@@ -163,18 +171,28 @@ def _slownik_jednostek():
     """Nazwy powiatów i miast na prawach powiatu (kopia frontend-spin/public/teraz/teryt-powiaty.json): nazwa znormalizowana
     na wyrazy i nazwa w formie ze słownika."""
     dane = json.loads(Path(__file__).with_name("jednostki_powiaty.json").read_text(encoding="utf-8"))
-    return tuple((_normalizuj(nazwa).split(), nazwa) for _, nazwa in dane["powiaty"])
+    # powiaty ziemskie mają kod 01 do 60, miasta na prawach powiatu 61 i dalej (zgodność z frontem pilnuje test)
+    return tuple((_normalizuj(nazwa).split(), nazwa, int(kod[2:]) <= 60) for kod, nazwa in dane["powiaty"])
 
 
 def _nazwa_ze_slownika(nazwa, dokladnie=False):
     """Forma nazwy ze słownika, gdy `nazwa` (także odmieniona) jest nazwą powiatu albo miasta na prawach powiatu."""
     slowa = _normalizuj(nazwa).split()
-    for wzorzec, forma in _slownik_jednostek():
+    for wzorzec, forma, _ in _slownik_jednostek():
         if len(wzorzec) == len(slowa) and all(
             (q == w) if dokladnie else _odmiana_slowa(q, w) for q, w in zip(slowa, wzorzec)
         ):
             return forma
     return None
+
+
+def _powiat_ziemski(nazwa):
+    """Nazwa (także odmieniona) jest nazwą powiatu ziemskiego ze słownika, nie miasta na prawach powiatu."""
+    slowa = _normalizuj(nazwa).split()
+    return any(
+        ziemski and len(wzorzec) == len(slowa) and all(_odmiana_slowa(q, w) for q, w in zip(slowa, wzorzec))
+        for wzorzec, _, ziemski in _slownik_jednostek()
+    )
 
 
 def _nazwa_dozwolona(nazwa, typ):
@@ -195,6 +213,33 @@ def _forma_nazwy(nazwa, typ):
         wielkie = " ".join("-".join(czesc.capitalize() for czesc in slowo.split("-")) for slowo in nazwa.split())
         return _nazwa_ze_slownika(nazwa, dokladnie=True) or (wielkie if typ else nazwa.lower())
     return nazwa
+
+
+# Słownictwo ściśle rozpoznanego zdania o odbiorcach (Z6P7a). Zdanie jest „ścisłe” tylko wtedy, gdy KAŻDE jego słowo jest
+# nazwą województwa, słowem nagłówka jednostek („powiat…”), nazwą jednostki z listy albo stoi poniżej. To biała lista, nie nowa
+# reguła rozpoznawania: każde inne słowo („wybranych”, „rejonów”, „część”, „tym”, „godz.”, „północnej”) i każda cyfra zdejmuje
+# pewność, więc zakres zostaje otwarty.
+SLOWNICTWO_SCISLE = frozenset({
+    "alert", "rcb", "ostrzeżenie", "komunikat", "został", "została", "zostało", "wysłany", "wysłana", "wysłano", "skierowano",
+    "obowiązuje", "obowiązują", "obejmuje", "dotyczy", "dotyczą", "do", "odbiorców", "mieszkańców", "na", "terenie",
+    "w", "we", "woj", "województwie", "województwach", "oraz", "i", "wyłącznie",
+})
+SLOWO = re.compile(r"[^\W\d_]+")
+
+
+def _zdanie_scisle(zdanie, listy):
+    """Zdanie o odbiorcach ma ściśle rozpoznany kształt: bez cyfr i bez żadnego słowa spoza białej listy."""
+    if re.search(r"\d", zdanie):
+        return False
+    dozwolone = set(SLOWNICTWO_SCISLE)
+    for _, nazwy, _, _ in listy:
+        for nazwa in nazwy:
+            dozwolone.update(slowo.casefold() for slowo in SLOWO.findall(nazwa))
+    reszta = NAZWA_MIEJSCOWNIK.sub(" ", NAZWA_WOJ.sub(" ", zdanie))
+    return all(
+        slowo.casefold() in dozwolone or slowo.casefold().startswith(("powiat", "powiec"))
+        for slowo in SLOWO.findall(reszta)
+    )
 
 
 def _bez_znacznikow(miejsce):
@@ -352,7 +397,7 @@ def _wojewodztwa_zdania(zdanie, poczatek):
     return wynik
 
 
-def _jednostki_zdania(zdanie, wojewodztwa, jednostki, czesc_domyslna=False):
+def _jednostki_zdania(zdanie, wojewodztwa, jednostki, czesc_domyslna=False, z_wylaczeniem=False):
     """Dopisuje do `wojewodztwa` i `jednostki` zasięg z jednego zdania o odbiorcach. Jednostka dostaje województwo tylko
     z tego samego wyrażenia: z nazwy tuż po niej („powiecie włodawskim w woj. lubelskim”) albo z nazwy tuż przed jej
     nagłówkiem („woj. lubelskie: powiaty …”, „woj. lubelskim w powiatach …”; to samo województwo obejmuje kolejne nagłówki
@@ -362,7 +407,9 @@ def _jednostki_zdania(zdanie, wojewodztwa, jednostki, czesc_domyslna=False):
     Zwraca (zakresy, nieustalone): rodzaj zakresu każdego wspomnianego województwa (R38d, Z6P6, zasada 1) i kody województw
     (None: nie wiadomo którego), których lista jednostek jest niepełna. `lista`: województwo ma jednostki; `czesc`: część
     województwa („w części woj.”, „na południu woj.”, punkt listy po „części województwa:”) albo jednostki, których nie umiemy
-    do niego przypisać; `cale`: województwo bez żadnego zawężenia."""
+    do niego przypisać; `cale`: województwo bez żadnego zawężenia; `lista_otwarta`: jednostki są, ale lista nie jest ściśle zamknięta
+    (Z6P7a): zdanie z nieznanymi słowami lub cyframi, „część”, wyłączenie w zdaniu, jednostka inna niż powiat ziemski ze słownika,
+    jednostka bez znanego województwa albo pominięty element."""
     naglowki = list(NAGLOWEK_JEDNOSTEK.finditer(zdanie))
     poczatek = naglowki[0].start() if naglowki else len(zdanie)
     zdarzenia = sorted([(poz, "woj", (kod, tekst, koniec, czesc)) for poz, kod, tekst, koniec, czesc in _wojewodztwa_zdania(zdanie, poczatek)]
@@ -414,10 +461,18 @@ def _jednostki_zdania(zdanie, wojewodztwa, jednostki, czesc_domyslna=False):
             nieprzypisane = True  # jednostki bez znanego województwa: żadne z wymienionych nie jest „całe”
         for nazwa in nazwy:
             jednostki.append(f"{WOJ_NOMINATYW[kod]}: {typ}{nazwa}" if kod else f"{typ}{nazwa}")
+    scisle = not (z_wylaczeniem or czesc_domyslna or nieprzypisane) and _zdanie_scisle(zdanie, listy)
+
+    def zamknieta(kod, czesc):
+        wlasne = [lista for lista in listy if lista[2] == kod]
+        return scisle and not czesc and kod not in nieustalone and all(
+            not typ and not pominieto and all(_powiat_ziemski(nazwa) for nazwa in nazwy) for typ, nazwy, _, pominieto in wlasne
+        )
+
     zakresy = {}
     for kod, czesc in wspomniane:
         if kod in z_nazwami:
-            rodzaj = "lista"
+            rodzaj = "lista" if zamknieta(kod, czesc) else "lista_otwarta"
         elif czesc or czesc_domyslna or kod in z_naglowkiem or nieprzypisane:
             rodzaj = "czesc"
         else:
@@ -434,6 +489,13 @@ def _dopisz_zakresy(jednostki, zakresy, nieustalone):
         jednostki.append(LINIA_NIEUSTALONE if kod is None else f"{PREFIKS_NIEUSTALONE} {WOJ_NOMINATYW[kod]}")
 
 
+def _rodzaj_scalony(rodzaje):
+    """Jeden rodzaj z kilku: te same zostają, `lista` z `lista_otwarta` to `lista_otwarta` (suma list, otwarta wygrywa), reszta `czesc`."""
+    if len(rodzaje) == 1:
+        return next(iter(rodzaje))
+    return "lista_otwarta" if rodzaje == {"lista", "lista_otwarta"} else "czesc"
+
+
 def _scal_zakresy(linie):
     """Linie `miejsce` z jedną linią zakresu na województwo: gdy kilka zdań daje różne rodzaje, wynik to `czesc` (nie twierdzimy
     ani „całe”, ani „nie ma na liście”)."""
@@ -448,7 +510,7 @@ def _scal_zakresy(linie):
             wynik.append((nazwa,))  # miejsce zakresu: zastąpimy je linią po zebraniu rodzajów
         rodzaje.setdefault(nazwa, set()).add(zakres.group(2))
     return [
-        f"{PREFIKS_ZAKRES} {linia[0]}: {next(iter(rodzaje[linia[0]])) if len(rodzaje[linia[0]]) == 1 else 'czesc'}"
+        f"{PREFIKS_ZAKRES} {linia[0]}: {_rodzaj_scalony(rodzaje[linia[0]])}"
         if isinstance(linia, tuple) else linia
         for linia in wynik
     ]
@@ -484,7 +546,8 @@ def _zdanie_do_zasiegu(zdanie, wojewodztwa, jednostki, czesc_domyslna=False):
     zdejmujemy przed czytaniem (Z6P6 pkt 5)."""
     zdanie = _rozwin_nawiasy(ODSYLACZ.sub("", zdanie))
     wyl = WYLACZENIE.search(zdanie)
-    zakresy, nieustalone = _jednostki_zdania(zdanie[:wyl.start()] if wyl else zdanie, wojewodztwa, jednostki, czesc_domyslna)
+    zakresy, nieustalone = _jednostki_zdania(
+        zdanie[:wyl.start()] if wyl else zdanie, wojewodztwa, jednostki, czesc_domyslna, z_wylaczeniem=bool(wyl))
     _dopisz_zakresy(jednostki, zakresy, nieustalone)
     if not wyl:
         return
@@ -608,7 +671,7 @@ def parsuj_karte(odpowiedz, adres):
 
 class AdapterRCB(Adapter):
     limit_zadan = 2
-    wersja_parsera = "6"
+    wersja_parsera = "7"
 
     def parsuj(self, odpowiedz):
         return parsuj_karte(odpowiedz, getattr(self, "adres_aktualnej_karty", self.zrodlo.adres))
