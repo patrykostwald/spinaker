@@ -207,14 +207,19 @@ class Cykl:
             raise PrzerwijCykl
         return self.ostatnie
 
-    def wykonaj_element_kolejki(self, adres, *, przesun, **opcje):
+    def wykonaj_element_kolejki(self, adres, *, przesun, odloz=None, **opcje):
+        """Jeden element kolejki. Błąd trwały (np. 404) pomija element (`przesun`). Błąd przejściowy (429, 5xx), gdy kolejka
+        podaje `odloz`, nie pomija go po cichu: element wraca do ponowienia (R38d, Z6P6 pkt 7)."""
         try:
             return self.wykonaj(adres, po_odczycie=przesun, **opcje)
         except BladPobrania as exc:
             status = exc.status_http
             if self.blokada or status is None or not 400 <= status < 600 or status == 403:
                 raise
-            przesun()
+            if odloz is not None and (status == 429 or status >= 500):
+                odloz()
+            else:
+                przesun()
             self.stan["bledy_kolejki"] = self.stan.get("bledy_kolejki", 0) + 1
             self.blad_kolejki = True
             self.ostatnie = self.adapter._zapisz_blad(self, exc, blad_elementu=True)

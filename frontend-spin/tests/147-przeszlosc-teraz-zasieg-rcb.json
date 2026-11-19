@@ -1,0 +1,173 @@
+{
+  "przypadki": {
+    "miasto-puck": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w mieście Puck w woj. pomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: miasto Puck\nzakres: pomorskie: lista",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "czesc-lubelskiego": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w części woj. lubelskiego."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskiego\nzakres: lubelskie: czesc",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "powiat-swidnicki-dolnoslaskie": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiecie świdnickim w woj. dolnośląskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\ndolnośląskie: świdnickim\nzakres: dolnośląskie: lista",
+          "teryt": [
+            "02"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "trzy-zasiegi": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w całym woj. lubelskim, w części woj. podkarpackiego i w powiecie świdnickim w woj. dolnośląskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\npodkarpackiego\ndolnośląskie\ndolnośląskie: świdnickim\nzakres: lubelskie: cale\nzakres: podkarpackie: czesc\nzakres: dolnośląskie: lista",
+          "teryt": [
+            "02",
+            "06",
+            "18"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "poludnie-mazowieckie": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców wyłącznie na południu woj. mazowieckiego."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "mazowieckiego\nzakres: mazowieckie: czesc",
+          "teryt": [
+            "14"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "cale-i-punkt-pomocy": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w całym woj. lubelskim.",
+        "Punkty pomocy otwarto w mieście Chełm w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nzakres: lubelskie: cale",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "obszar"
+        }
+      ]
+    },
+    "wylaczenie-w-osobnym-zdaniu": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w woj. pomorskim.",
+        "Komunikat nie obowiązuje w powiecie puckim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\nzakres: pomorskie: cale\nwyłączone: puckim",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "wylaczenie-i-drugie-wojewodztwo": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w woj. pomorskim z wyjątkiem powiatu puckiego, a także w woj. zachodniopomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\nzachodniopomorskie\nzakres: pomorskie: cale\nwyłączone: pomorskie: puckiego\nzakres: zachodniopomorskie: cale",
+          "teryt": [
+            "22",
+            "32"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "odsylacz-w-nawiasie": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiatach chełmskim i włodawskim (1) w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmskim\nlubelskie: włodawskim\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "element-nieczytelny": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiatach chełmskim i włodawskim 7 w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmskim\nzakres: lubelskie: lista\nnieustalone: lubelskie",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "zmiana-zasiegu-w-aktualizacji": {
+      "akapity": [
+        "Alert RCB został wysłany do odbiorców w powiecie świdnickim w woj. dolnośląskim oraz w powiecie chełmskim w woj. lubelskim.",
+        "Aktualizacja 11:00",
+        "Od 11:00 alert obejmuje wyłącznie powiat chełmski w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\nlubelskie\ndolnośląskie: świdnickim\nlubelskie: chełmskim\nzakres: dolnośląskie: lista\nzakres: lubelskie: lista",
+          "teryt": [
+            "02",
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    }
+  }
+}

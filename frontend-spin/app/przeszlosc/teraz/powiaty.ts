@@ -1,6 +1,6 @@
 import type { Okres, Wpis } from './typy';
 import { POWIATY, dopelniaczWojewodztwa, powiatOKodzie, type PowiatTeryt } from './slownik';
-import { calyRegionZMiejsca, maZastrzezenia, maWylaczenia, rozbierzMiejsce, wojewodztwoOKodzie, znacznikiMiejsca, type JednostkaZMiejsca } from './teryt';
+import { calyRegionZMiejsca, maZastrzezenia, maWylaczenia, rozbierzMiejsce, wojewodztwoOKodzie, zakresyWojewodztw, znacznikiMiejsca, type JednostkaZMiejsca } from './teryt';
 
 /**
  * „Mój powiat”: logika bez Reacta. Wyszukiwanie powiatu i miasta na prawach powiatu (także w odmienionej formie:
@@ -139,8 +139,13 @@ function trafienia(jednostki: JednostkaZMiejsca[], powiat: PowiatTeryt, kandydac
       if (odmienione.length === 1) trafione.push(odmienione[0].p);
       else if (odmienione.some(k => k.p === powiat)) mozliwy = true;
     }
-    if (pewna) trafione.forEach(p => wymienione.add(p));
-    else if (trafione.some(p => p === powiat || paraMiastoPowiat(p, powiat))) mozliwy = true;
+    // typ jednostki: miasto nie jest powiatem ziemskim (miasto Puck to nie powiat pucki, R38d Z6P6 pkt 1); powiat ziemski o tej
+    // samej nazwie to najwyżej „możliwe”
+    const zgodne = jednostka.typ === 'miasto' ? trafione.filter(p => p.miasto) : trafione;
+    const innego = jednostka.typ === 'miasto' ? trafione.filter(p => !p.miasto) : [];
+    if (pewna) zgodne.forEach(p => wymienione.add(p));
+    else if (zgodne.some(p => p === powiat || paraMiastoPowiat(p, powiat))) mozliwy = true;
+    if (innego.some(p => p === powiat || paraMiastoPowiat(p, powiat))) mozliwy = true;
   }
   return { wymienione, mozliwy };
 }
@@ -158,7 +163,7 @@ export function dopasujDoListy(miejsce: string, kodPowiatu: string, liczbaWojewo
   if (!powiat) return 'bezListy';
   const jednostki = rozbierzMiejsce(miejsce);
   const znaczniki = znacznikiMiejsca(miejsce);
-  if (!jednostki.length && !znaczniki.wylaczone.length && !znaczniki.ogolne && !znaczniki.nieustalone) return 'bezListy';
+  if (!jednostki.length && !znaczniki.wylaczone.length && !znaczniki.ogolne && !znaczniki.nieustalone && !znaczniki.nieustaloneWoj.size) return 'bezListy';
   const kandydaci = POWIATY.filter(p => p.woj === powiat.woj).map(p => ({ p, nazwa: normalizuj(p.nazwa) }));
   const wylaczone = trafienia(znaczniki.wylaczone, powiat, kandydaci, liczbaWojewodztw);
   if (wylaczone.wymienione.has(powiat)) return 'wylaczony';
@@ -171,8 +176,10 @@ export function dopasujDoListy(miejsce: string, kodPowiatu: string, liczbaWojewo
   // wyłączenie w tym województwie (także niepewne dopasowanie wyłączonej jednostki): najwyżej „możliwe”, nigdy „wymieniony”
   const wylaczenie = maWylaczenia(znaczniki, powiat.woj) || wylaczone.mozliwy || [...wylaczone.wymienione].some(p => paraMiastoPowiat(p, powiat));
   if (wylaczenie && wynik === 'wymieniony') wynik = 'mozliwy';
-  // wyłączenie albo lista z nierozpoznanym elementem: nie mamy prawa powiedzieć „nie ma na liście”
-  if ((wylaczenie || znaczniki.nieustalone) && (wynik === 'pozaLista' || wynik === 'bezListy')) wynik = 'mozliwy';
+  // wyłączenie albo lista z nierozpoznanym elementem (w tym województwie albo bez znanego województwa): nie mamy prawa
+  // powiedzieć „nie ma na liście”
+  const nieustalone = znaczniki.nieustalone || znaczniki.nieustaloneWoj.has(powiat.woj);
+  if ((wylaczenie || nieustalone) && (wynik === 'pozaLista' || wynik === 'bezListy')) wynik = 'mozliwy';
   return wynik;
 }
 
@@ -181,6 +188,32 @@ const potwierdzonyPowiat = (wpis: Partial<Pick<Wpis, 'miejsce'>>, kodPowiatu: st
   const d = dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
   return d === 'wymieniony' || d === 'wylaczony' ? d : 'mozliwy';
 };
+
+/**
+ * Zakres wpisu dla powiatu z kodu województwa `woj` (R38d, Z6P6). Wpis z parsera v6 ma zakres osobno dla każdego województwa
+ * (`zakres: lubelskie: lista`) i powiat dopasowujemy tylko do zakresu swojego województwa, nigdy do zbiorczego znacznika:
+ *  - `cale`: „całe województwo”, chyba że komunikat wyłącza coś w tym województwie albo jego lista jest niepełna;
+ *  - `czesc`: nigdy „całe” ani „nie ma na liście” (nie wiadomo, która to część), najwyżej „wymieniony” przy jednostce z listy;
+ *  - `lista`: „nie ma na liście” tylko gdy lista tego województwa jest kompletna (bez znaczników i bez pominiętych elementów).
+ * Wpis starszy (bez linii zakresu): dawna heurystyka (R38c, R38d).
+ */
+function zakresWojewodztwa(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 'zasieg' | 'miejsce'>>, woj: string, kodPowiatu: string, liczbaWojewodztw: number): Zakres {
+  const miejsce = wpis.miejsce ?? '';
+  const rodzaj = zakresyWojewodztw(miejsce).get(woj);
+  if (!rodzaj) {
+    // zasięg przybliżony, ale to województwo źródło podało bez jednostek, a jednostki są w innych: całe (R38c, P1);
+    // wyłączenie albo niepełna lista w tym województwie (R38d) cofa „całe”, także gdy źródło oznaczyło zasięg jako obszar
+    const cale = wpis.zasieg === 'obszar' ? !maZastrzezenia(miejsce, woj) : calyRegionZMiejsca(miejsce, woj);
+    return cale ? 'wojewodztwo' : dopasujDoListy(miejsce, kodPowiatu, liczbaWojewodztw);
+  }
+  if (rodzaj === 'cale' && !maZastrzezenia(miejsce, woj)) return 'wojewodztwo';
+  const d = dopasujDoListy(miejsce, kodPowiatu, liczbaWojewodztw);
+  if (d === 'wymieniony' || d === 'wylaczony') return d;
+  // „nie ma na liście” wymaga listy tego województwa: jednostek z tym województwem albo bez województwa
+  const maListe = rozbierzMiejsce(miejsce).some(j => !j.woj || j.woj === woj);
+  if (d === 'pozaLista' && rodzaj === 'lista' && maListe) return d;
+  return 'mozliwy';
+}
 
 /** Najwęższy zakres, w jakim wpis dotyczy powiatu (po kodach TERYT wpisu i jego zasięgu), albo null, gdy go nie dotyczy. */
 export function zakresDlaPowiatu(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 'zasieg' | 'miejsce'>>, kodPowiatu: string): Zakres | null {
@@ -191,12 +224,7 @@ export function zakresDlaPowiatu(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 
     // przy zasięgu przybliżonym kod 4-cyfrowy nie jest potwierdzeniem: potrzebna zgodność nazwy i województwa z danymi wpisu
     if (k === kodPowiatu) z = wpis.zasieg === 'przyblizony' ? potwierdzonyPowiat(wpis, kodPowiatu, liczbaWojewodztw) : 'powiat';
     else if (k.length > 4 && k.startsWith(kodPowiatu)) z = 'gmina';
-    else if (k.length === 2 && kodPowiatu.startsWith(k)) {
-      // zasięg przybliżony, ale to województwo źródło podało bez jednostek, a jednostki są w innych: całe (R38c, P1);
-      // wyłączenie albo niepełna lista w tym województwie (R38d) cofa „całe”, także gdy źródło oznaczyło zasięg jako obszar
-      const cale = wpis.zasieg === 'obszar' ? !maZastrzezenia(wpis.miejsce, k) : calyRegionZMiejsca(wpis.miejsce, k);
-      z = cale ? 'wojewodztwo' : dopasujDoListy(wpis.miejsce ?? '', kodPowiatu, liczbaWojewodztw);
-    }
+    else if (k.length === 2 && kodPowiatu.startsWith(k)) z = zakresWojewodztwa(wpis, k, kodPowiatu, liczbaWojewodztw);
     if (z && (wynik === null || WAGA[z] > WAGA[wynik])) wynik = z;
   }
   return wynik;

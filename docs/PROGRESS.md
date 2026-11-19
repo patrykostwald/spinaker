@@ -403,3 +403,21 @@ Zrobione i sprawdzone (testy lokalne, przebieg w Chromium headless, bez wdrożen
 Zrobione, niesprawdzone: zachowanie na danych produkcyjnych; nazwy gmin spoza słownika powiatów nie są weryfikowane (brak rejestru gmin w repozytorium, obowiązuje tylko kształt nazwy).
 Odnotowane: „w mieście Kraków” bez nazwy województwa w zdaniu daje jednostkę w `miejsce`, ale bez kodu TERYT (jak „w powiecie krakowskim” bez województwa); wyłączenie w osobnym zdaniu nie jest wiązane z województwem.
 
+## Teraz, PR #38: runda zamykająca (zamykająca recenzja R38d, zlecenie Z6P6)
+
+Zasady strukturalne: (1) zasięg zapisany osobno dla każdego województwa, front dopasowuje powiat do zakresu swojego województwa; (2) fail-closed w etykietach; (3) zdaniem odbiorców jest nagłówek alertu albo zdanie z czasownikiem wysłania, obowiązywania lub obejmowania.
+
+Zrobione i sprawdzone (testy lokalne, Chromium headless na harnessie SSR, bez wdrożenia):
+- Format `miejsce` (parser v6): linie `zakres: <województwo>: cale|czesc|lista` na każde województwo, `nieustalone: <województwo>` (albo `nieustalone: nazwy jednostek`, gdy nie wiadomo którego), jak dotąd `wyłączone: …`. Zakresy z kilku zdań, które się różnią, scalają się do `czesc`. `czesc` to „w części woj.”, „na południu woj.”, punkty listy po „części województwa:” albo jednostki bez znanego województwa; `lista` gdy źródło wymienia jednostki tego województwa.
+- Front (`teryt.ts`: `zakresyWojewodztw`; `powiaty.ts`: `zakresWojewodztwa`): `cale` daje „całe województwo” tylko bez wyłączeń i bez `nieustalone` w tym województwie; `czesc` nigdy „całe” ani „nie ma na liście”; „nie ma na liście” tylko dla `lista` z jednostką tego województwa i bez znaczników. Wpisy starsze (bez linii `zakres:`) zachowują dawną heurystykę.
+- Pkt 1: jednostka typu miasto nie daje „wymieniony” powiatowi ziemskiemu o tym rdzeniu nazwy (miasto Puck: powiat pucki „możliwe”).
+- Pkt 3: zdanie odbiorców = nagłówek „Alert RCB…” albo czasownik (wysłan-, obowiązuj-, obejmuj-, dotyczy, ogranicza się); punkt listy tylko po nagłówku z dwukropkiem; „Punkty pomocy otwarto w mieście Chełm” nie zmienia zasięgu. `zasieg_czesciowy` czyta te same zdania.
+- Pkt 4: „nie obowiązuje (już)” to wyłączenie; wyłączenie kończy się przed nowym członem po spójniku z nazwą województwa („…, a także w woj. zachodniopomorskim”) albo po średniku z nowym orzeczeniem, więc kod 32 zostaje.
+- Pkt 5: odsyłacze `(1)`, `[2]`, `*`, `¹` zdejmowane przed czytaniem; element z samą cyfrą daje `nieustalone`; rozpoznany adres („ul. …”) nadal nie jest jednostką.
+- Pkt 6: aktualizacja z „wyłącznie” albo „ogranicza się do” (i nowym zasięgiem) zastępuje wcześniejszą listę także dla kolejnych aktualizacji; „nie obowiązuje już w powiecie X” oznacza powiat jako wyłączony.
+- Pkt 7: archiwum: błąd przejściowy (429, 5xx) odkłada kartę do `niepobrane`, archiwum nie jest zakończone; kolejne uruchomienie ponawia tylko te karty (bez listy). Timeout zostawia kartę w kolejce jak dotąd. 404 pomija kartę jak dotąd. Polecenie drukuje „Archiwum RCB niedokończone…” przy 5xx, przy 429 kończy błędem jak dotąd.
+- Wersja parsera 6 (karty zapisane wersją 4 i 5 są czytane od nowa). Dane próbne (`dane-probne`) w formacie v6.
+
+Zrobione, niesprawdzone: zachowanie na danych produkcyjnych; build z włączoną flagą (zmiana nie dotyka flagi, build z flagą wyłączoną zaliczony); prawdziwa strona w przeglądarce (zrzuty z harnessu SSR bez pełnych stylów aplikacji).
+Odnotowane (ryzyka): front nie ma mapy gmina/miasto → powiat, więc przy `lista` z miastem lub gminą spoza słownika powiatów inny powiat tego województwa dostaje „nie ma na liście”, choć miasto może leżeć w jego granicach (np. miasto Rumia i powiat wejherowski); „nie obowiązuje już” bez nazwy województwa w zdaniu daje wyłączenie bez województwa (front: „możliwe”); wyłączenie w osobnym zdaniu nadal nie jest wiązane z województwem.
+

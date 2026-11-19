@@ -75,10 +75,17 @@ def test_zasieg_brak_i_uogolniony(client, zrodlo_rcb, zrob_wpis, zrob_zrodlo):
     assert wpis_z_api(client, powiat)["zasieg"] == "obszar"
 
 
+def linie_miejsca(alert):
+    """Linie `miejsce` bez linii zakresu per województwo („zakres: lubelskie: lista”, Z6P6): te sprawdza test_zasieg_rcb_r38e."""
+    return [linia for linia in alert["miejsce"].splitlines() if not linia.startswith(rcb.PREFIKS_ZAKRES)]
+
+
 def test_zasieg_czesciowy_rozroznia_tekst():
     assert rcb.zasieg_czesciowy("lubelskiego\npodkarpackiego") is False
     assert rcb.zasieg_czesciowy("lubelskiego\nChełm") is True
-    assert rcb.zasieg_czesciowy("lubelskiego", "na terenie części województwa lubelskiego") is True
+    assert rcb.zasieg_czesciowy("lubelskiego", "Alert RCB został wysłany do odbiorców na terenie części województwa lubelskiego") is True
+    assert rcb.zasieg_czesciowy("lubelskiego\nzakres: lubelskie: cale") is False
+    assert rcb.zasieg_czesciowy("lubelskiego\nzakres: lubelskie: czesc") is True
     assert rcb.zasieg_czesciowy("") is False
 
 
@@ -94,7 +101,7 @@ def test_jednostki_zachowuja_wojewodztwo_i_typ():
         "Alert RCB został wysłany do odbiorców na terenie: woj. lubelskiego - powiat: świdnicki; "
         "woj. dolnośląskiego - powiat: wałbrzyski.",
     )
-    assert alert["miejsce"].splitlines() == [
+    assert linie_miejsca(alert) == [
         "lubelskiego", "dolnośląskiego", "lubelskie: świdnicki", "dolnośląskie: wałbrzyski",
     ]
     assert alert["teryt"] == ["02", "06"] and alert["pewnosc_lokalizacji"] == 0.5
@@ -105,7 +112,7 @@ def test_jednostki_bez_dwukropka_po_wojewodztwie_i_gminy_miasta():
         "Alert RCB został wysłany do odbiorców na terenie woj. lubelskim: powiat świdnicki; "
         "w woj. dolnośląskim: powiat wałbrzyski, miasto Świdnica, gmina Żarów.",
     )
-    assert alert["miejsce"].splitlines()[2:] == [
+    assert linie_miejsca(alert)[2:] == [
         "lubelskie: świdnicki", "dolnośląskie: wałbrzyski", "dolnośląskie: miasto Świdnica", "dolnośląskie: gmina Żarów",
     ]
 
@@ -115,18 +122,18 @@ def test_wojewodztwa_przed_lista_nie_przypisuja_jednostek_do_jednego_z_nich():
     alert = parsuj_akapity(
         "Alert RCB został wysłany do odbiorców na terenie woj. lubelskiego i podkarpackiego - powiaty: chełmski, włodawski.",
     )
-    assert alert["miejsce"].splitlines() == ["lubelskiego", "podkarpackiego", "chełmski", "włodawski"]
+    assert linie_miejsca(alert) == ["lubelskiego", "podkarpackiego", "chełmski", "włodawski"]
 
 
 def test_wojewodztwo_nie_przechodzi_do_nastepnej_linii():
     alert = parsuj_akapity("Alert RCB został wysłany do odbiorców na terenie woj. lubelskiego:", "- powiaty: Chełm, włodawski")
-    assert alert["miejsce"].splitlines() == ["lubelskiego", "Chełm", "włodawski"]
+    assert linie_miejsca(alert) == ["lubelskiego", "Chełm", "włodawski"]
 
 
 def test_powiaty_bez_dwukropka_to_zasieg_przyblizony(client, zrodlo_rcb, zrob_wpis):
     # „w powiatach chełmskim i włodawskim” bez dwukropka: nie cały region (recenzja R38b, P1-1)
     alert = parsuj_akapity("Alert RCB został wysłany do odbiorców na terenie woj. lubelskiego w powiatach chełmskim i włodawskim.")
-    assert alert["miejsce"].splitlines() == ["lubelskiego", "lubelskie: chełmskim", "lubelskie: włodawskim"]
+    assert linie_miejsca(alert) == ["lubelskiego", "lubelskie: chełmskim", "lubelskie: włodawskim"]
     assert alert["teryt"] == ["06"] and alert["pewnosc_lokalizacji"] == 0.5
     dane = {pole: alert[pole] for pole in POLA}
     wpis = zrob_wpis(zrodlo_rcb, klasa=Klasa.ZWYKLY, link=link_rcb("10"), **dane)
@@ -138,7 +145,7 @@ def test_powiaty_bez_dwukropka_to_zasieg_przyblizony(client, zrodlo_rcb, zrob_wp
 
 def test_zdanie_o_calym_wojewodztwie_zostaje_obszarem():
     alert = parsuj_akapity("Alert RCB został wysłany do odbiorców na terenie woj. lubelskiego i podkarpackiego.")
-    assert alert["miejsce"].splitlines() == ["lubelskiego", "podkarpackiego"]
+    assert linie_miejsca(alert) == ["lubelskiego", "podkarpackiego"]
     assert alert["pewnosc_lokalizacji"] == 1
 
 
@@ -149,7 +156,7 @@ ODBIORCY = "Alert RCB został wysłany do odbiorców "
 def test_r38c_dwa_powiaty_kazdy_z_wlasnym_wojewodztwem():
     # zdanie recenzenta: wcześniej „lubelskie: świdnickim”, bo województwo po liście przechodziło do następnej listy
     alert = parsuj_akapity(ODBIORCY + "w powiecie włodawskim w woj. lubelskim oraz w powiecie świdnickim w woj. dolnośląskim.")
-    assert alert["miejsce"].splitlines() == [
+    assert linie_miejsca(alert) == [
         "lubelskie", "dolnośląskie", "lubelskie: włodawskim", "dolnośląskie: świdnickim",
     ]
     assert alert["teryt"] == ["02", "06"] and alert["pewnosc_lokalizacji"] == 0.5
@@ -160,45 +167,48 @@ def test_r38c_zalecenie_nie_dopisuje_jednostek_do_zasiegu():
     w_akapicie = parsuj_akapity(ODBIORCY + "w powiecie włodawskim w woj. lubelskim. Omijaj miasto Chełm.")
     osobne = parsuj_akapity(ODBIORCY + "w powiecie włodawskim w woj. lubelskim.", "Omijaj miasto Chełm.", "Mieszkańcy miasta Chełm powinni uważać.")
     for alert in (w_akapicie, osobne):
-        assert alert["miejsce"].splitlines() == ["lubelskie", "lubelskie: włodawskim"]
+        assert linie_miejsca(alert) == ["lubelskie", "lubelskie: włodawskim"]
 
 
 def test_r38c_cale_wojewodztwo_i_powiat_z_innego_zachowuja_zasiegi_osobno():
     alert = parsuj_akapity(ODBIORCY + "na terenie woj. lubelskiego oraz w powiecie świdnickim w woj. dolnośląskim.")
-    assert alert["miejsce"].splitlines() == ["lubelskiego", "dolnośląskie", "dolnośląskie: świdnickim"]
+    assert linie_miejsca(alert) == ["lubelskiego", "dolnośląskie", "dolnośląskie: świdnickim"]
     assert alert["teryt"] == ["02", "06"] and alert["pewnosc_lokalizacji"] == 0.5
     # odwrotna kolejność: województwo z listą po nazwie całego województwa
     odwrotnie = parsuj_akapity(ODBIORCY + "na terenie woj. lubelskiego oraz w woj. dolnośląskim w powiecie świdnickim.")
-    assert odwrotnie["miejsce"].splitlines() == ["lubelskiego", "dolnośląskie", "dolnośląskie: świdnickim"]
+    assert linie_miejsca(odwrotnie) == ["lubelskiego", "dolnośląskie", "dolnośląskie: świdnickim"]
 
 
 def test_r38c_nazwa_miedzy_wyliczeniami_nie_wiaze_sie_z_poprzednia_lista():
     # „oraz w woj.” otwiera nową grupę: województwo nie należy do powiatu przed spójnikiem
     alert = parsuj_akapity(ODBIORCY + "w woj. lubelskim w powiecie włodawskim oraz w woj. dolnośląskim w powiecie świdnickim.")
-    assert alert["miejsce"].splitlines()[2:] == ["lubelskie: włodawskim", "dolnośląskie: świdnickim"]
+    assert linie_miejsca(alert)[2:] == ["lubelskie: włodawskim", "dolnośląskie: świdnickim"]
 
 
 def test_r38c_jednostka_bez_pewnego_wojewodztwa_zostaje_bez_wojewodztwa():
     # powiat po spójniku, bez własnej nazwy województwa: nie dziedziczy cudzego
     alert = parsuj_akapity(ODBIORCY + "w woj. lubelskim w powiecie włodawskim oraz w powiecie świdnickim.")
-    assert alert["miejsce"].splitlines() == ["lubelskie", "lubelskie: włodawskim", "świdnickim"]
+    assert linie_miejsca(alert) == ["lubelskie", "lubelskie: włodawskim", "świdnickim"]
     assert alert["pewnosc_lokalizacji"] == 0.5
 
 
 def test_r38c_czesc_wojewodztwa_obok_powiatu_z_innego_nie_wyglada_na_cale():
     alert = parsuj_akapity(ODBIORCY + "na terenie części woj. lubelskiego oraz w powiecie świdnickim w woj. dolnośląskim.")
-    assert "lubelskie: część województwa" in alert["miejsce"].splitlines()
+    # Z6P6: część województwa to zakres `czesc` (nie linia „część województwa” udająca jednostkę)
+    assert "zakres: lubelskie: czesc" in alert["miejsce"].splitlines()
+    assert "zakres: dolnośląskie: lista" in alert["miejsce"].splitlines()
+    assert "lubelskie: część województwa" not in alert["miejsce"].splitlines()
 
 
 def test_r38c_probka_rcb_3_listopada_calych_wojewodztw():
     for alert in rcb.AdapterRCB(Zrodlo(adres="https://example.org/")).parsuj(odpowiedz(karta_rcb("03"))):
-        assert sorted(alert["miejsce"].splitlines()) == ["lubelskiego", "podkarpackiego"]
+        assert sorted(linie_miejsca(alert)) == ["lubelskiego", "podkarpackiego"]
         assert alert["teryt"] == ["06", "18"] and alert["pewnosc_lokalizacji"] == 1
 
 
 def test_r38c_probka_rcb_9_listopada_kazdy_powiat_w_swoim_wojewodztwie():
     alert = rcb.AdapterRCB(Zrodlo(adres="https://example.org/")).parsuj(odpowiedz(karta_rcb("09")))[0]
-    linie = alert["miejsce"].splitlines()
+    linie = linie_miejsca(alert)
     assert linie[:2] == ["lubelskiego", "podlaskiego"]
     assert "lubelskie: Chełm" in linie and "podlaskie: Białystok" in linie
     assert "podlaskie: Chełm" not in linie and "lubelskie: Białystok" not in linie
@@ -207,7 +217,7 @@ def test_r38c_probka_rcb_9_listopada_kazdy_powiat_w_swoim_wojewodztwie():
 
 def test_r38c_probka_rcb_10_listopada_chelm_tak_lublin_nie():
     alert = rcb.AdapterRCB(Zrodlo(adres="https://example.org/")).parsuj(odpowiedz(karta_rcb("10")))[0]
-    linie = alert["miejsce"].splitlines()
+    linie = linie_miejsca(alert)
     assert "lubelskie: Chełm" in linie and "lubelskie: chełmski" in linie
     assert not [m for m in linie if m.endswith(("Lublin", ": lubelski"))]
 
@@ -247,9 +257,10 @@ def sprawdz_odswiezone(zrodlo, liczba):
     assert all("lubelskie: Chełm" in m.splitlines() and "lubelskie: świdnicki" in m.splitlines() for m in miejsca)
 
 
-def test_r38c_wersja_parsera_jest_nowsza_niz_4():
-    # R38d: zmienia się `miejsce` (wyłączenia, miejscownik, zalecenia), więc wersja 5; karty zapisane wersją 4 są czytane od nowa
-    assert rcb.AdapterRCB.wersja_parsera == "5" and rcb.ArchiwumRCB.wersja_parsera == "5"
+def test_r38c_wersja_parsera_jest_nowsza_niz_5():
+    # R38d: zmienia się `miejsce` (wyłączenia, miejscownik, zalecenia), więc wersja 5; Z6P6: zakres per województwo, wersja 6;
+    # karty zapisane wersją 4 i 5 są czytane od nowa
+    assert rcb.AdapterRCB.wersja_parsera == "6" and rcb.ArchiwumRCB.wersja_parsera == "6"
 
 
 def test_r38c_ta_sama_tresc_nowa_wersja_parsera_parsuje_ponownie(monkeypatch, zrodlo_rcb):
@@ -291,6 +302,7 @@ def test_r38c_ta_sama_tresc_nowa_wersja_parsera_parsuje_ponownie(monkeypatch, zr
     {"strona": 1, "stron": 1, "karty": [], "zakonczone": True},  # zapisane przed wprowadzeniem znacznika wersji
     {"strona": 2, "stron": 5, "karty": [], "wersja_parsera": "3"},  # przejście w połowie
     {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "4"},  # parser sprzed R38d
+    {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "5"},  # parser sprzed zakresu per województwo (Z6P6)
 ])
 def test_r38c_archiwum_zapisane_starszym_parserem_jest_czytane_od_nowa(monkeypatch, zrodlo_rcb, stan_archiwum):
     adres = link_rcb("10")
@@ -309,19 +321,19 @@ def test_r38c_archiwum_zapisane_starszym_parserem_jest_czytane_od_nowa(monkeypat
     rcb.ArchiwumRCB(zrodlo_rcb).zbierz()  # karta
     zrodlo_rcb.refresh_from_db()
     assert [w.args[0].split("?")[-1] for w in pobierz.call_args_list][:1] == ["page=1&size=10"]
-    assert zrodlo_rcb.stan_adaptera["archiwum"]["wersja_parsera"] == "5" and zrodlo_rcb.stan_adaptera["archiwum"]["zakonczone"]
+    assert zrodlo_rcb.stan_adaptera["archiwum"]["wersja_parsera"] == "6" and zrodlo_rcb.stan_adaptera["archiwum"]["zakonczone"]
     sprawdz_odswiezone(zrodlo_rcb, 2)
 
 
 def test_r38c_archiwum_zapisane_biezacym_parserem_nie_wraca(monkeypatch, zrodlo_rcb):
-    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "5"}}
+    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [], "zakonczone": True, "wersja_parsera": "6"}}
     zrodlo_rcb.save(update_fields=["stan_adaptera"])
     pobierz = podstaw_siec(monkeypatch, link_rcb("10"))
     rcb.ArchiwumRCB(zrodlo_rcb).zbierz()
     assert pobierz.call_count == 0
 
 
-@pytest.mark.parametrize("wersja,ponownie", [("3", True), ("4", True), (None, True), ("5", False)])
+@pytest.mark.parametrize("wersja,ponownie", [("3", True), ("4", True), ("5", True), (None, True), ("6", False)])
 def test_r38c_polecenie_archiwum_wraca_do_kart_starszej_wersji(monkeypatch, zrodlo_rcb, wersja, ponownie):
     # archiwum RCB działa tylko przez to polecenie: stary znacznik „zakonczone” nie może go zatrzymać po zmianie parsera
     stan = {"strona": 1, "stron": 1, "karty": [], "zakonczone": True}
@@ -334,5 +346,5 @@ def test_r38c_polecenie_archiwum_wraca_do_kart_starszej_wersji(monkeypatch, zrod
     call_command("teraz_rcb_archiwum", limit=2)
     assert (pobierz.call_count == 2) is ponownie
     zrodlo_rcb.refresh_from_db()
-    assert zrodlo_rcb.stan_adaptera["archiwum"].get("wersja_parsera") == ("5" if ponownie else wersja)
+    assert zrodlo_rcb.stan_adaptera["archiwum"].get("wersja_parsera") == ("6" if ponownie else wersja)
     assert zrodlo_rcb.wpisy.count() == (2 if ponownie else 0)
