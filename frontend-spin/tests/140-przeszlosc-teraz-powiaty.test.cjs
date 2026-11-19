@@ -363,7 +363,8 @@ test('„Mój powiat”: alert RCB z 10.11 dla wybranych powiatów: Chełm wymie
   const m = load(`${dir}/model`);
   const d = load(`${dir}/dane-probne/index`);
   const tylkoAlert = d.probneWpisy().filter(w => w.id === 9006);
-  assert.equal(tylkoAlert[0].miejsce, miejsce);
+  // dane próbne w formacie parsera v6 (Z6P6): ta sama forma plus zakres województwa
+  assert.equal(tylkoAlert[0].miejsce, `${miejsce}\nzakres: lubelskie: lista`);
   const widoki = m.zbudujWidoki(tylkoAlert, []);
   const chelm = bezZnacznikow(renderuj({ powiaty: ['0662'], widoki }));
   assert.match(chelm, /Twój powiat jest wymieniony w komunikacie/);

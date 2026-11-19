@@ -47,6 +47,14 @@ class Command(BaseCommand):
             finally:
                 if cache.get(klucz) == znacznik:
                     cache.delete(klucz)
+            archiwum = zrodlo.stan_adaptera.get("archiwum", {})
+            if archiwum.get("niepobrane") and not archiwum.get("karty") and archiwum.get("strona", 1) > archiwum.get("stron", 0):
+                # cała lista przeczytana, ale karty z błędem przejściowym (429, 5xx) czekają na ponowienie: nie jest to „pobrane”
+                self.stdout.write(
+                    f"Archiwum RCB niedokończone: {len(archiwum['niepobrane'])} kart do ponowienia po błędzie przejściowym. "
+                    "Uruchom polecenie ponownie, pobierze tylko te karty.",
+                )
+                return
             if limit is None or licznik < limit:
                 sleep(5)
         self.stdout.write(f"Zapisano postęp archiwum RCB. Odpowiedzi w tym uruchomieniu: {licznik}.")

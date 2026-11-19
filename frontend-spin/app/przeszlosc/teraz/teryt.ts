@@ -113,16 +113,42 @@ function rozbierzLinie(surowa: string): JednostkaZMiejsca | null {
  */
 const PREFIKS_WYLACZONE = 'wyłączone:';
 const PREFIKS_NIEUSTALONE = 'nieustalone:';
-const jestZnacznikiem = (linia: string): boolean => linia.startsWith(PREFIKS_WYLACZONE) || linia.startsWith(PREFIKS_NIEUSTALONE);
+const PREFIKS_ZAKRES = 'zakres:';
+const jestZnacznikiem = (linia: string): boolean =>
+  linia.startsWith(PREFIKS_WYLACZONE) || linia.startsWith(PREFIKS_NIEUSTALONE) || linia.startsWith(PREFIKS_ZAKRES);
 
-export interface ZnacznikiMiejsca { wylaczone: JednostkaZMiejsca[]; ogolne: boolean; nieustalone: boolean }
+/**
+ * Zakres alertu w jednym województwie (parser RCB v6, R38d zlecenie Z6P6): `cale` (całe województwo), `czesc` (część bez wskazania
+ * jednostek: „w części woj.”, „na południu woj.”), `lista` (źródło wymienia jednostki tego województwa). Linia: „zakres: lubelskie: lista”.
+ * Kilka różnych linii dla jednego województwa daje `czesc`. Brak linii (wpis starszy niż parser v6): brak wpisu w mapie, wtedy
+ * działa dawna heurystyka.
+ */
+export type RodzajZakresu = 'cale' | 'czesc' | 'lista';
+const ZAKRES_LINIA = /^zakres:\s*([^:]+?)\s*:\s*(cale|czesc|lista)$/;
+
+export function zakresyWojewodztw(miejsce: string | undefined): Map<string, RodzajZakresu> {
+  const rodzaje = new Map<string, Set<RodzajZakresu>>();
+  for (const surowa of (miejsce ?? '').split(/\r?\n/)) {
+    const m = ZAKRES_LINIA.exec(surowa.trim());
+    const woj = m ? kodWojewodztwaZNazwy(m[1]) : null;
+    if (!m || !woj) continue;
+    rodzaje.set(woj, (rodzaje.get(woj) ?? new Set()).add(m[2] as RodzajZakresu));
+  }
+  return new Map([...rodzaje].map(([woj, r]): [string, RodzajZakresu] => [woj, r.size === 1 ? [...r][0] : 'czesc']));
+}
+
+export interface ZnacznikiMiejsca { wylaczone: JednostkaZMiejsca[]; ogolne: boolean; nieustalone: boolean; nieustaloneWoj: Set<string> }
 
 export function znacznikiMiejsca(miejsce: string | undefined): ZnacznikiMiejsca {
-  const wynik: ZnacznikiMiejsca = { wylaczone: [], ogolne: false, nieustalone: false };
+  const wynik: ZnacznikiMiejsca = { wylaczone: [], ogolne: false, nieustalone: false, nieustaloneWoj: new Set() };
   for (const surowa of (miejsce ?? '').split(/\r?\n/)) {
     const linia = surowa.trim();
-    if (linia.startsWith(PREFIKS_NIEUSTALONE)) wynik.nieustalone = true;
-    else if (linia.startsWith(PREFIKS_WYLACZONE)) {
+    if (linia.startsWith(PREFIKS_NIEUSTALONE)) {
+      // „nieustalone: lubelskie”: lista niepełna w tym województwie; „nieustalone: nazwy jednostek”: nie wiadomo w którym
+      const woj = kodWojewodztwaZNazwy(linia.slice(PREFIKS_NIEUSTALONE.length));
+      if (woj) wynik.nieustaloneWoj.add(woj);
+      else wynik.nieustalone = true;
+    } else if (linia.startsWith(PREFIKS_WYLACZONE)) {
       const reszta = linia.slice(PREFIKS_WYLACZONE.length).trim();
       const jednostka = !reszta || reszta === 'nieokreślone' || kodWojewodztwaZNazwy(reszta) ? null : rozbierzLinie(reszta);
       if (jednostka) wynik.wylaczone.push(jednostka);
@@ -138,7 +164,7 @@ export const maWylaczenia = (z: ZnacznikiMiejsca, woj: string): boolean => z.ogo
 /** Wyłączenia albo lista niepełna dla województwa `woj`: wtedy nie wolno uznać go za całe ani powiedzieć „nie ma na liście”. */
 export const maZastrzezenia = (miejsce: string | undefined, woj: string): boolean => {
   const z = znacznikiMiejsca(miejsce);
-  return z.nieustalone || maWylaczenia(z, woj);
+  return z.nieustalone || z.nieustaloneWoj.has(woj) || maWylaczenia(z, woj);
 };
 
 /**
@@ -149,6 +175,9 @@ export const maZastrzezenia = (miejsce: string | undefined, woj: string): boolea
  */
 export function calyRegionZMiejsca(miejsce: string | undefined, kod: string): boolean {
   const woj = kod.slice(0, 2);
+  // wpis z parsera v6: o „całym” województwie decyduje jego własny zakres, nie to, co alert mówi o innych województwach
+  const rodzaj = zakresyWojewodztw(miejsce).get(woj);
+  if (rodzaj) return rodzaj === 'cale' && !maZastrzezenia(miejsce, woj);
   const linie = (miejsce ?? '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (!linie.some(l => kodWojewodztwaZNazwy(l) === woj)) return false;
   if (maZastrzezenia(miejsce, woj)) return false; // wyłączenia albo niepełna lista: to nie jest dowód całości (R38d)
@@ -171,7 +200,7 @@ export const jednostkiZMiejsca = (miejsce: string | undefined): string[] => {
 
 /** Dopisek do opisu miejsca: jednostki wyłączone w komunikacie, wyłączenie bez wskazanej jednostki, niepełna lista (R38d, P1-1). */
 function opisZnacznikow(miejsce: string | undefined): string {
-  const { wylaczone, ogolne, nieustalone } = znacznikiMiejsca(miejsce);
+  const { wylaczone, ogolne, nieustalone, nieustaloneWoj } = znacznikiMiejsca(miejsce);
   const nazwaWoj = (kod: string | null) => WOJEWODZTWA.find(w => w.kod === kod)?.nazwa;
   const nazwy = [...new Set(wylaczone.map(j => {
     const tekst = j.typ === 'powiat' ? j.nazwa : `${j.typ === 'gmina' ? 'gmina' : 'miasto'} ${j.nazwa}`;
@@ -180,7 +209,7 @@ function opisZnacznikow(miejsce: string | undefined): string {
   return [
     nazwy.length ? `; wyłączone w komunikacie: ${nazwy.join(', ')}` : '',
     ogolne ? '; komunikat zawiera wyłączenia: sprawdź jego treść' : '',
-    nieustalone ? '; lista jednostek może być niepełna' : '',
+    nieustalone || nieustaloneWoj.size ? '; lista jednostek może być niepełna' : '',
   ].join('');
 }
 
@@ -195,7 +224,10 @@ export function opisMiejsca(wpis: Pick<Wpis, 'teryt' | 'dokladnosc' | 'szerokosc
     // województwo podane bez jednostek obok jednostek z innych województw to zasięg całego województwa (R38c, P1)
     const cale = [...new Set(wpis.teryt.map(k => k.slice(0, 2)))].filter(k => calyRegionZMiejsca(wpis.miejsce, k)).map(nazwaObszaru);
     const calosc = cale.length ? `całe: ${cale.join(', ')}; ` : '';
-    const bazowy = `w obrębie: ${obszary.join(', ')}; ${calosc}${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
+    // część województwa bez wskazania jednostek (parser v6): nie „całe” i nie „nie ma na liście”
+    const czesci = [...zakresyWojewodztw(wpis.miejsce)].filter(([, rodzaj]) => rodzaj === 'czesc').map(([woj]) => nazwaObszaru(woj));
+    const czesc = czesci.length ? `część: ${czesci.join(', ')}; ` : '';
+    const bazowy = `w obrębie: ${obszary.join(', ')}; ${calosc}${czesc}${lista.length ? `źródło wymienia: ${lista.join(', ')}` : 'dokładnego zasięgu źródło nie podaje'}`;
     return bazowy + opisZnacznikow(wpis.miejsce);
   }
   if (obszary.length) return `dotyczy: ${obszary.join(', ')}`;

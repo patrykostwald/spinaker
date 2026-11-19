@@ -33,7 +33,8 @@ def miejscownik(kod):
 
 
 def linie(alert):
-    return alert["miejsce"].splitlines()
+    """Linie `miejsce` bez linii zakresu per województwo (Z6P6); zakresy sprawdza test_zasieg_rcb_r38e."""
+    return [linia for linia in alert["miejsce"].splitlines() if not linia.startswith(rcb.PREFIKS_ZAKRES)]
 
 
 def objete(alert):
@@ -206,7 +207,8 @@ def test_twardy_limit_nazwy_jednostki(nazwa):
     # w powiecie obowiązuje słownik, więc „Xyz” też odpada; „Xyz” jako miasto czy gmina byłoby dozwolone (wielka litera)
     alert = parsuj_akapity(ODBIORCY + f"na terenie woj. lubelskiego w powiatach: chełmski, {nazwa}.")
     assert objete(alert) == ["lubelskiego", "lubelskie: chełmski"]
-    assert rcb.LINIA_NIEUSTALONE in linie(alert), "lista niepełna: front nie powie „nie ma na liście”"
+    # Z6P6: znacznik jest per województwo („nieustalone: lubelskie”), tak jak zakres
+    assert "nieustalone: lubelskie" in linie(alert), "lista niepełna: front nie powie „nie ma na liście”"
 
 
 def test_adres_nie_jest_nieustalona_jednostka():
