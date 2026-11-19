@@ -190,6 +190,16 @@ const potwierdzonyPowiat = (wpis: Partial<Pick<Wpis, 'miejsce'>>, kodPowiatu: st
 };
 
 /**
+ * Zabezpieczenie strukturalne (R38e, Z6P7a): „nie ma na liście” tylko dla ściśle rozpoznanego wzorca: lista tego województwa
+ * (jednostki z tym województwem albo bez niego) składa się WYŁĄCZNIE z powiatów ziemskich. Miasto albo gmina na liście
+ * (Rumia, Żarów) nie dają pewnego przypisania do powiatu, więc wtedy etykieta to „możliwe: sprawdź w źródle”.
+ */
+export const czyListaZamknieta = (miejsce: string, woj: string): boolean => {
+  const lista = rozbierzMiejsce(miejsce).filter(j => !j.woj || j.woj === woj);
+  return lista.length > 0 && lista.every(j => j.typ === 'powiat');
+};
+
+/**
  * Zakres wpisu dla powiatu z kodu województwa `woj` (R38d, Z6P6). Wpis z parsera v6 ma zakres osobno dla każdego województwa
  * (`zakres: lubelskie: lista`) i powiat dopasowujemy tylko do zakresu swojego województwa, nigdy do zbiorczego znacznika:
  *  - `cale`: „całe województwo”, chyba że komunikat wyłącza coś w tym województwie albo jego lista jest niepełna;
@@ -210,8 +220,7 @@ function zakresWojewodztwa(wpis: Pick<Wpis, 'teryt'> & Partial<Pick<Wpis, 'zasie
   const d = dopasujDoListy(miejsce, kodPowiatu, liczbaWojewodztw);
   if (d === 'wymieniony' || d === 'wylaczony') return d;
   // „nie ma na liście” wymaga listy tego województwa: jednostek z tym województwem albo bez województwa
-  const maListe = rozbierzMiejsce(miejsce).some(j => !j.woj || j.woj === woj);
-  if (d === 'pozaLista' && rodzaj === 'lista' && maListe) return d;
+  if (d === 'pozaLista' && rodzaj === 'lista' && czyListaZamknieta(miejsce, woj)) return d;
   return 'mozliwy';
 }
 

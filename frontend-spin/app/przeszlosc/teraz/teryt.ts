@@ -123,8 +123,8 @@ const jestZnacznikiem = (linia: string): boolean =>
  * Kilka różnych linii dla jednego województwa daje `czesc`. Brak linii (wpis starszy niż parser v6): brak wpisu w mapie, wtedy
  * działa dawna heurystyka.
  */
-export type RodzajZakresu = 'cale' | 'czesc' | 'lista';
-const ZAKRES_LINIA = /^zakres:\s*([^:]+?)\s*:\s*(cale|czesc|lista)$/;
+export type RodzajZakresu = 'cale' | 'czesc' | 'lista' | 'lista_otwarta';
+const ZAKRES_LINIA = /^zakres:\s*([^:]+?)\s*:\s*(cale|czesc|lista|lista_otwarta)$/;
 
 export function zakresyWojewodztw(miejsce: string | undefined): Map<string, RodzajZakresu> {
   const rodzaje = new Map<string, Set<RodzajZakresu>>();

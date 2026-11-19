@@ -24,3 +24,6 @@ anthropic>=1.8,<2
 
 # Text-layer extraction only, no OCR (public records 090).
 pypdf>=5,<7
+
+# Geokoder Teraz: granice powiatow i wojewodztw (indeks STRtree); pyshp i pyproj sa tylko w teraz/geo/zbuduj_dane.py.
+shapely>=2.1,<3

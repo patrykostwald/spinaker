@@ -65,6 +65,13 @@ PRZYPADKI = {
         "Aktualizacja 11:00",
         "Od 11:00 alert obejmuje wyłącznie powiat chełmski w woj. lubelskim.",
     ),
+    # Z6P7a: zamknięta lista tylko dla ściśle rozpoznanego wzorca (reszta: `lista_otwarta`, front pokazuje „Sprawdź w źródle”)
+    "lista-zamknieta": (ODBIORCY + "w powiatach chełmskim i włodawskim w woj. lubelskim.",),
+    "miasto-rumia": ("Alert RCB obowiązuje na terenie miasta Rumia w woj. pomorskim.",),
+    "gmina-zarow": ("Alert RCB obejmuje gminę Żarów w woj. dolnośląskim.",),
+    "czesc-w-tym-powiat": ("Alert RCB obejmuje część woj. lubelskiego, w tym powiat chełmski.",),
+    "wybrane-rejony-z-lista": (ODBIORCY + "wybranych rejonów woj. lubelskiego: powiat chełmski.",),
+    "odsylacz-nr": ("Alert RCB dotyczy powiatów chełmskiego i włodawskiego (odsyłacz nr 1) w woj. lubelskim.",),
 }
 
 
@@ -87,7 +94,8 @@ def test_fixture_frontu_zgadza_sie_z_parserem():
 def test_miasto_puck_zostaje_miastem_w_wojewodztwie_z_lista():
     alert = parsuj(ODBIORCY + "w mieście Puck w woj. pomorskim.")
     assert linie_miejsca(alert) == ["pomorskie", "pomorskie: miasto Puck"]
-    assert zakresy(alert) == ["zakres: pomorskie: lista"] and alert["teryt"] == ["22"]
+    # miasto na liście: lista otwarta (nie wolno powiedzieć „nie ma na liście” o powiecie, Z6P7a)
+    assert zakresy(alert) == ["zakres: pomorskie: lista_otwarta"] and alert["teryt"] == ["22"]
 
 
 # --- pkt 2: zakres per województwo ---
@@ -103,7 +111,7 @@ def test_powiat_w_innym_wojewodztwie_nie_robi_z_niego_calego():
 
 def test_trzy_zasiegi_w_jednym_zdaniu():
     alert = parsuj(ODBIORCY + "w całym woj. lubelskim, w części woj. podkarpackiego i w powiecie świdnickim w woj. dolnośląskim.")
-    assert zakresy(alert) == ["zakres: lubelskie: cale", "zakres: podkarpackie: czesc", "zakres: dolnośląskie: lista"]
+    assert zakresy(alert) == ["zakres: lubelskie: cale", "zakres: podkarpackie: czesc", "zakres: dolnośląskie: lista_otwarta"]
     assert "dolnośląskie: świdnickim" in alert["miejsce"].splitlines() and alert["teryt"] == ["02", "06", "18"]
 
 
@@ -261,7 +269,8 @@ def test_aktualizacja_wylacznie_zastepuje_wczesniejsza_liste():
     pierwszy, aktualizacja = parsuj_wszystkie(*PRZYPADKI["zmiana-zasiegu-w-aktualizacji"])
     assert "dolnośląskie: świdnickim" in pierwszy["miejsce"].splitlines() and pierwszy["teryt"] == ["02", "06"]
     assert linie_miejsca(aktualizacja) == ["lubelskie", "lubelskie: chełmski"]
-    assert zakresy(aktualizacja) == ["zakres: lubelskie: lista"] and aktualizacja["teryt"] == ["06"]
+    # zdanie z godziną i słowem spoza białej listy: lista otwarta (konserwatywnie), zasięg i kody bez zmian
+    assert zakresy(aktualizacja) == ["zakres: lubelskie: lista_otwarta"] and aktualizacja["teryt"] == ["06"]
     assert "świdnick" not in aktualizacja["miejsce"]
 
 
@@ -346,13 +355,13 @@ def test_archiwum_przejsciowy_blad_ostatniej_karty_nie_konczy_archiwum(monkeypat
     assert [w.args[0] for w in drugi.call_args_list] == [ostatnia]
     zrodlo_rcb.refresh_from_db()
     archiwum = zrodlo_rcb.stan_adaptera["archiwum"]
-    assert archiwum["zakonczone"] and archiwum["wersja_parsera"] == "6" and not archiwum.get("niepobrane")
+    assert archiwum["zakonczone"] and archiwum["wersja_parsera"] == rcb.ArchiwumRCB.wersja_parsera and not archiwum.get("niepobrane")
     assert wpis_z_api(client, wpis)["teryt"] == ["06", "18"]
 
 
 def test_archiwum_pomija_karte_z_bledem_trwalym_i_konczy(monkeypatch, zrodlo_rcb):  # noqa: F811
     pierwsza, druga = link_rcb("03"), link_rcb("10")
-    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga], "wersja_parsera": "6"}}
+    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo_rcb.save(update_fields=["stan_adaptera"])
     monkeypatch.setattr(Adapter, "pobierz", Mock(side_effect=[(odpowiedz(None, 404), SCOPE), (odpowiedz(karta_rcb("10")), SCOPE)]))
     monkeypatch.setattr("teraz.management.commands.teraz_rcb_archiwum.sleep", Mock())
@@ -363,7 +372,7 @@ def test_archiwum_pomija_karte_z_bledem_trwalym_i_konczy(monkeypatch, zrodlo_rcb
 
 def test_archiwum_karta_z_bledem_przejsciowym_w_srodku_nie_blokuje_reszty(monkeypatch, zrodlo_rcb):  # noqa: F811
     pierwsza, druga, trzecia = link_rcb("03"), link_rcb("09"), link_rcb("10")
-    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga, trzecia], "wersja_parsera": "6"}}
+    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 1, "stron": 1, "karty": [pierwsza, druga, trzecia], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo_rcb.save(update_fields=["stan_adaptera"])
     pobierz = Mock(side_effect=[(odpowiedz(None, 500), SCOPE), (odpowiedz(karta_rcb("09")), SCOPE), (odpowiedz(karta_rcb("10")), SCOPE)])
     monkeypatch.setattr(Adapter, "pobierz", pobierz)
@@ -377,7 +386,7 @@ def test_archiwum_karta_z_bledem_przejsciowym_w_srodku_nie_blokuje_reszty(monkey
 
 def test_archiwum_ponawia_niepobrane_karty_az_do_skutku(monkeypatch, zrodlo_rcb):  # noqa: F811
     karta = link_rcb("03")
-    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 2, "stron": 1, "karty": [], "niepobrane": [karta], "wersja_parsera": "6"}}
+    zrodlo_rcb.stan_adaptera = {"archiwum": {"strona": 2, "stron": 1, "karty": [], "niepobrane": [karta], "wersja_parsera": rcb.ArchiwumRCB.wersja_parsera}}
     zrodlo_rcb.save(update_fields=["stan_adaptera"])
     monkeypatch.setattr("teraz.management.commands.teraz_rcb_archiwum.sleep", Mock())
     # druga próba też kończy się błędem 500: niepobrana karta wraca do kolejki "niepobrane", archiwum nadal niezakończone

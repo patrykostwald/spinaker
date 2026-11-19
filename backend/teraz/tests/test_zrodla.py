@@ -154,7 +154,7 @@ def test_rcb_miejsce_zawiera_tylko_nazwy_jednostek():
     # jednostka dostaje województwo tylko z własnej linii (gminy z linii bez województwa zostają bez niego), typ gminy i miasta w nazwie
     assert set(alert["miejsce"].splitlines()) == {
         "lubelskie", "lubelskie: włodawski", "lubelskie: Chełm",
-        "gmina Pruszków", "gmina Nowa Wieś", "miasto Warszawa", "zakres: lubelskie: lista",
+        "gmina Pruszków", "gmina Nowa Wieś", "miasto Warszawa", "zakres: lubelskie: lista_otwarta",
     }
     assert "ul. Leśna 12" in alert["tresc"] and alert["teryt"] == ["06"]
 
