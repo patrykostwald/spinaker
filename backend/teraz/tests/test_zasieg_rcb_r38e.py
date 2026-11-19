@@ -27,9 +27,14 @@ pytestmark = pytest.mark.django_db
 PLIK_FRONTU = Path(__file__).resolve().parents[3] / "frontend-spin/tests/147-przeszlosc-teraz-zasieg-rcb.json"
 
 
+def element_html(akapit):
+    """Akapit „li:tekst” to element listy (`<ul><li>`), każdy inny to `<p>`."""
+    return f"<ul><li>{akapit[3:]}</li></ul>" if akapit.startswith("li:") else f"<p>{akapit}</p>"
+
+
 def parsuj_wszystkie(*akapity):
     html = ('<article class="article-area__article"><h2>Alert RCB</h2><p class="event-date">10.11.2026</p>'
-            '<div class="editor-content">' + "".join(f"<p>{akapit}</p>" for akapit in akapity) + "</div></article>")
+            '<div class="editor-content">' + "".join(element_html(akapit) for akapit in akapity) + "</div></article>")
     return rcb.parsuj_karte(OdpowiedzHTTP(200, {}, html.encode(), "utf-8"), link_rcb("10"))
 
 
@@ -86,6 +91,23 @@ PRZYPADKI = {
     "r38e-oprocz": ("Oprócz powiatu kartuskiego alert obejmuje również powiat kościerski w woj. pomorskim.",),
     "r38e-wysokie-mazowieckie": ("Alert RCB obowiązuje w mieście Wysokie Mazowieckie w woj. podlaskim.",),
     "r38e-sluzby-radom": ("Alert RCB obowiązuje w całym woj. lubelskim.", "Dodatkowych strażaków wysłano do miasta Radom w woj. mazowieckim."),
+    # Z6P7: reszta zasięgu RCB (struktura: zdanie nierozpoznane w pełni nie zmienia zasięgu)
+    "z6p7-wybrane-rejony": ("Alert RCB wysłano do mieszkańców wybranych rejonów woj. lubelskiego.",),
+    "z6p7-nie-obowiazuje-bez-podmiotu": (
+        "Alert RCB obowiązuje w powiecie puckim w woj. pomorskim.", "Nie obowiązuje już w powiecie puckim."),
+    "z6p7-juz-tylko": (
+        "Alert RCB obejmuje powiat świdnicki w woj. dolnośląskim oraz powiat chełmski w woj. lubelskim.",
+        "Aktualizacja 11:00", "Od 11:00 alert obejmuje już tylko powiat chełmski w woj. lubelskim."),
+    "z6p7-naglowek-aktualizacji": (
+        "Alert RCB obejmuje powiat świdnicki w woj. dolnośląskim oraz powiat chełmski w woj. lubelskim.",
+        "Aktualizacja 11:00: od teraz alert obejmuje wyłącznie powiat chełmski w woj. lubelskim."),
+    "z6p7-godz": ("Alert RCB obowiązuje od godz. 11:00 w powiecie wejherowskim w woj. pomorskim.",),
+    "z6p7-punkty-li": (
+        "Alert RCB obejmuje wyłącznie następujące powiaty w woj. pomorskim:", "li:pucki", "li:wejherowski"),
+    "z6p7-miasto-mazowiecki": ("Alert RCB obowiązuje w mieście Mazowiecki w woj. podlaskim.",),
+    "z6p7-odwolanie-jednego-powiatu": (
+        "Alert RCB obowiązuje w powiecie puckim i kartuskim w woj. pomorskim.",
+        "Aktualizacja 12:00", "Odwołano alert w powiecie puckim."),
 }
 
 
@@ -214,7 +236,8 @@ def test_punkt_listy_to_odbiorcy_tylko_po_naglowku_z_dwukropkiem():
 # --- pkt 4: wyłączenie przypisane do właściwego członu ---
 def test_wylaczenie_w_osobnym_zdaniu_po_alercie_dla_wojewodztwa():
     alert = parsuj(ODBIORCY + "w woj. pomorskim.", "Komunikat nie obowiązuje w powiecie puckim.")
-    assert linie_miejsca(alert) == ["pomorskie", "wyłączone: puckim"]
+    # wyłączenie bez województwa trafia do jedynego znanego województwa zasięgu (Z6P7 pkt 4)
+    assert linie_miejsca(alert) == ["pomorskie", "wyłączone: pomorskie: puckim"]
     assert zakresy(alert) == ["zakres: pomorskie: cale"] and alert["teryt"] == ["22"]
     assert zasieg_api(alert) == "przyblizony"
 
@@ -339,7 +362,7 @@ def blad(kod):
     return BladPobrania("timeout") if kod == "timeout" else (odpowiedz(None, kod), SCOPE)
 
 
-@pytest.mark.parametrize("kod", [500, 503, 429, "timeout"])
+@pytest.mark.parametrize("kod", [408, 500, 503, 429, "timeout"])
 def test_archiwum_przejsciowy_blad_ostatniej_karty_nie_konczy_archiwum(monkeypatch, client, zrodlo_rcb, zrob_wpis, kod):  # noqa: F811
     pierwsza, ostatnia = link_rcb("10"), link_rcb("03")
     wpis = zapisz_stara_karte(zrodlo_rcb, zrob_wpis, "03")
