@@ -57,6 +57,16 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   podlaskie i śląskie), więc sama nie dawała kodu. Teraz powiat zapisany jako dopisek tuż za gminą („Opole (powiat
   opolski)”, „, powiat …”, „(pow. …)”) jest rozstrzygany zgodnością z tą gminą (uwaga `kontekst`); powiat obok
   gminy, z którą nie jest zgodny („Kraków (powiat opolski)”), nadal nie daje kodu.
+  Powiat wieloznaczny rozstrzyga też gmina wskazana tuż za nim, w nawiasie lub po przecinku („powiat opolski (gmina
+  Poniatowa)”, „powiat opolski, w gminie Poniatowa” daje powiat lubelski `0612`; gmina po kropce jest osobną
+  wzmianką). Gdy gmina przed powiatem i gmina za nim wskazują różne powiaty („Alerty: miasto Opole, powiat opolski
+  (gmina Poniatowa).”), powiat zostaje nierozstrzygnięty (uwaga `sprzeczne-gminy`), a pewność wyniku jest najwyżej
+  0,75. Tak samo każdy powiat wskazany wprost, ale nierozstrzygnięty („Ostrzeżenie dla Warszawy i powiatu
+  opolskiego.”, „Pożar w Krakowie (powiat opolski)”): zasięg jest częściowo nieznany, więc wynik idzie do przeglądu.
+  Dopisek województwa tuż za nazwą („Leszno (woj. mazowieckie)”, „Chełm, woj. lubelskie”) wygrywa z powiatem i
+  województwem z osobnych zdań, które zostają zasięgiem alertu: „Awaria w Lesznie (woj. mazowieckie). Alert dla
+  powiatu leszczyńskiego.” daje gminę Leszno na Mazowszu i powiat leszczyński, a pewność spada do 0,75 (uwaga
+  `konflikt-kontekstu`), bo powiat alertu wskazywałby miasto Leszno w Wielkopolsce.
 - Wyjątek: miasto wygrywa z wiejskim homonimem (pewność 0,65, uwagi `homonim`, `preferowane-miasto`),
   gdy jest jedynym takim kandydatem **w tym samym województwie**: miasto na prawach powiatu (Chełm) albo
   gmina miejska obok wiejskiej w tym samym powiecie (Mielec). Miasto z wiejskim homonimem w innym
@@ -79,9 +89,13 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   „stan alarmowy”, „wezbranie”, „powódź”); „Pożar w Wiśle” poza taką okolicznością to nadal miasto Wisła.
   Nazwa klubu (w każdym przypadku: „Wisły”, „Legii”, „Lecha”, „Śląska”) blokuje miasto stojące tuż po niej
   („Wisła Kraków”, „Raków Częstochowa”, „Legii Warszawa”): to drużyna, nie miejsce zdarzenia. Bez miasta za nią
-  blokuje samą siebie, gdy w tym samym zdaniu jest słowo z kręgu sportu (kibic, klub, mecz, piłkarz, zawodnik,
-  trener, drużyna, stadion, derby, liga, puchar, kolejka: „Kibice Wisły zatrzymani w Płocku” daje tylko Płock);
-  bez takiego słowa zostaje gminą („Pożar w Wiśle”, gmina Wisła istnieje). Miasto zdarzenia w tym samym zdaniu
+  blokuje samą siebie, gdy w tym samym zdaniu jest słowo klubowe (kibic, klub, piłkarz, zawodnik, trener, drużyna,
+  stadion, derby, liga, puchar, kolejka: „Kibice Wisły zatrzymani w Płocku” daje tylko Płock) i nazwa nie stoi po
+  „w/we/na/przy” (miejscownik: „Drużyna spędziła obóz w Wiśle” to miejsce); bez takiego słowa zostaje gminą („Pożar w
+  Wiśle”, gmina Wisła istnieje). Samo „mecz/mecze” nie czyni nazwy klubem: „W Wiśle i w Ustroniu odwołano mecze.”
+  daje oba miejsca, a „Mecz Wisły w Płocku odwołany” blokuje nazwę w dopełniaczu jako wycięcie sporne (uwaga `klub`,
+  pewność 0,75); po nazwie z miastem klubu sam mecz wystarcza („Wisła Kraków przegrała mecz w Płocku”, bezspornie).
+  Miasto zdarzenia w tym samym zdaniu
   zostaje. Przecinek, przyimek i koniec zdania przerywają blokadę miasta. Lista: `_RZEKI`, `_KLUBY`, `_SPORT_*`
   w `geokoder.py`. Nazwa rzeki (cała lista `_RZEKI`: Wisła, Odra, Warta, Bug, San, Nysa...) nie daje też gminy po
   słowie hydrologicznym w zasięgu dwóch wyrazów w tym samym zdaniu (`_HYDRO_PRZED_RZEKA`: poziom, stan, rzeka,
@@ -105,6 +119,8 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   odpada tylko wtedy, gdy w tekście jest też wyraźne miejsce z przyimkiem lub znacznikiem („Hanna Kraków zaginęła w
   Warszawie” i „Zaginięcie Wita Kalisza zgłoszono w Warszawie” dają samą Warszawę, pewność 0,75, odrzucony kandydat
   zostaje w `dopasowania` z uwagą `imie`); bez takiego miejsca zostaje miejscem („Hanna Kraków zaginęła” daje Kraków).
+  Miejscem zdarzenia jest też powiat lub województwo po „w” („Hanna Kraków zaginęła w powiecie pruszkowskim” daje
+  sam powiat `1421`, pewność 0,75, Kraków z uwagą `imie`).
   Nie dotyczy definicji „Hanna Lublin to nazwa kawiarni” ani poprzedniego wyrazu będącego miastem („Jarosław Przemyśl”).
 - Formy przymiotnikowe nazw na „-o”: „Główna/Główny/Główne/Główną/Głównej/Głównych” (np. „Komenda Główna Policji”) nie
   są miastem Głowno („ó” w tekście i „o” w nazwie rozróżnia regułę; „y” i „e” nie są rzeczownikowymi formami nazw
@@ -152,10 +168,12 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   miejsce jednostki lub zdarzenia, pochodzenie zostaje w `dopasowania` z uwagami `pochodzenie` i `poza-wynikiem`, a
   nie w `teryt` („Sąd Rejonowy w Chełmie skazał mieszkańca Lublina” daje Chełm; jednostka zostaje jako miejsce, gdy jest
   jedyna). Pochodzenie zostaje, gdy jest jedynym miejscem, i gdy za jego listą stoi trasa: „do”, „przez” albo „po” +
-  nazwa wielką literą, w oknie 5 wyrazów, w tym samym zdaniu i przed spójnikiem „i” („Kierowca z Lublina do Chełma”,
+  nazwa wielką literą, w oknie 5 wyrazów, w tym samym zdaniu i przed spójnikiem „i”, a słowo trasy stoi zaraz za nazwą
+  albo po słowie ruchu (jechał, jadąc, podróżował, kierował się, trasa, droga) („Kierowca z Lublina do Chełma”,
   „Kierowca z Lublina jechał dziś rano do Warszawy i miał wypadek w Płocku” daje Lublin, Warszawę i Płock), także gdy
   cel nie został rozpoznany. „Po wypadku” trasą nie jest („Kierowca z Krakowa zmarł po wypadku w Warszawie” daje
-  Warszawę). Nierozstrzygnięta nazwa na liście („Olsztyn” bez kontekstu) przekazuje rolę dalej: w „Kierowcy z
+  Warszawę), a „przez” z rzeczownikiem pospolitym to przyczyna („Kierowca z Krakowa miał wypadek w Warszawie przez
+  śliską nawierzchnię” daje samą Warszawę, pewność 0,75; tak samo „do wieczora”). Nierozstrzygnięta nazwa na liście („Olsztyn” bez kontekstu) przekazuje rolę dalej: w „Kierowcy z
   Olsztyna i Elbląga utknęli w Nowym Sączu” Elbląg jest tak samo pochodzeniem.
 - Zasięg krajowy (`kraj`) tylko przy słowach o zasięgu: „obowiązuje w całym kraju”, „na terenie całego kraju”,
   „dla całej Polski”. „Z całej Polski”, „najwięcej w całym kraju” i „na terenie Polski” nim nie są. `kraj` nie
@@ -164,7 +182,8 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   gdy w treści padają dokładniejsze miejsca („Ostrzeżenie dla województwa mazowieckiego. Najsilniejsze
   opady w Warszawie.” daje `('14', '1465011')`, dokładność `wojewodztwo`). Szerszy kod znika tylko przy czystej
   hierarchii jednego miejsca: (1) „w” przed każdym poziomem, rozdzielone samym przecinkiem („w woj. lubelskim,
-  w powiecie chełmskim, w gminie Rejowiec” daje tylko gminę); (2) dopisek za nazwą („Chełm, woj. lubelskie”,
+  w powiecie chełmskim, w gminie Rejowiec” daje tylko gminę; wtrącenie „..., zwłaszcza w gminie Zakopane” to wyliczenie
+  zasięgu: „Alert obowiązuje w powiecie tatrzańskim, zwłaszcza w gminie Zakopane.” daje `1217` i `1217011`); (2) dopisek za nazwą („Chełm, woj. lubelskie”,
   „Zakopane (powiat tatrzański)”, „bieszczadzkiego (woj. podkarpackie), tatrzańskiego (woj. małopolskie)”, „A, B
   (woj. X)”); (3) lista powiatów pod województwem bez „dla” („części województwa: lubelskiego - powiaty: A, B” daje
   same powiaty). Kod szerszy poprzedzony „dla” nigdy nie znika, także nad listą powiatów („Ostrzeżenie dla woj.
@@ -185,7 +204,7 @@ Nadrzędna: **lepiej `brak` albo województwo niż zgadnięta gmina lub powiat.*
   jeszcze bardziej).
   Heurystyki (stała `HEURYSTYKI_WYCINAJACE`, uwaga w dopasowaniu): `pochodzenie` (miejsce pochodzenia obok zdarzenia),
   `jednostka` (miejsce jednostki obok zdarzenia), `rzeka` (rzeka po słowie hydrologicznym, w tekście hydrologicznym albo
-  przed miastem), `klub` (klub bez słowa ze sportu w zdaniu), `kraina` („Kotlina Kłodzka”), `imie` (nazwa po imieniu
+  przed miastem), `klub` (klub bez słowa klubowego w zdaniu albo z samym „meczem”), `kraina` („Kotlina Kłodzka”), `imie` (nazwa po imieniu
   przy miejscu z przyimkiem) i `powiat-wyklucza` (powiat z tekstu wyklucza nazwę; dopisek tuż za nią obniża pewność do
   0,6, powiat z innego zdania do 0,75). „Wypadek w Warszawie” (nic nie wycięto) ma 0,9, „Kierowca z Lublina rozbił
   samochód w Warszawie” 0,75, „Poziom Wisły w Warszawie rośnie” 0,75. Obniżka dotyczy tylko sytuacji spornych, gdy
@@ -252,6 +271,10 @@ Wersje narzędzi do budowy (`pyshp==3.1.9`, `pyproj==3.7.2`) są przypięte w na
 - Znane ograniczenie: imię na początku zdania bez nazwiska („Jarosław potwierdził pożar w Rzeszowie”) daje miasto
   Jarosław (pewność 0,65, poniżej progu publikacji automatycznej 0,8, więc wymaga sprawdzenia). Dotyczy tylko miast
   o nazwie imienia (Jarosław); Hanna i Bolesław to gminy wiejskie, a te bez przyimka nie są miejscem.
+- Znane ograniczenie (zamykająca recenzja, do okresu cienia): „Mieszkanki z Krakowa i Warszawy bez prądu, awarie także
+  w Lublinie.” traci Kraków i Warszawę („mieszkanki” w mianowniku liczby mnogiej pasuje do wzorca rzeczownika osobowego, a
+  wyjątek `_NIE_POCHODZENIE_MIANOWNIK` zna tylko „mieszkańcy”), a wynik ma 0,75 i idzie do przeglądu. „Samo mecz” po nazwie klubu w dopełniaczu bez słowa klubowego jest
+  wycięciem spornym (0,75), nie bezspornym.
 - Znane ograniczenie: wycięcie przez rzekę po słowie hydrologicznym obniża pewność do 0,75 także wtedy, gdy rzeka jest
   oczywista („Poziom Wisły w Warszawie rośnie”): komunikat idzie do przeglądu. Bezsporne są tylko jawne znaczniki
   („na/nad/rzeka X”); zmiana jest jednym miejscem w `_blokada_rzeki`.

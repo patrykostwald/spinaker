@@ -24,6 +24,10 @@ Zasady (plan budowy Teraz, sekcje 3, 5 i 7a oraz opinia prawnika Z0):
   padają dokładniejsze miejsca (te trafiają do `dopasowania`). Kod po „dla” i kod w nagłówku alertu nigdy nie
   znika. Szerszy kod znika tylko przy czystej hierarchii jednego miejsca: „w woj. X, w powiecie Y, w gminie Z”,
   dopisek za nazwą („Chełm, woj. lubelskie”, „A (woj. X)”) albo lista powiatów pod województwem bez „dla”.
+* Powiat wieloznaczny („opolski”) rozstrzyga gmina tuż przed nim (dopisek) i tuż za nim („powiat opolski (gmina
+  Poniatowa)”); gdy wskazują różne powiaty albo powiat zostaje nierozstrzygnięty, pewność wyniku to najwyżej 0,75.
+  Dopisek województwa za nazwą („Leszno (woj. mazowieckie)”) wygrywa z powiatem z osobnego zdania alertu; konflikt
+  obu obniża pewność do 0,75.
 * Powiat z tekstu, który wyklucza wszystkich kandydatów nazwy („Pożar w Lesznie, powiat pruszkowski”, „Kraków,
   powiat pruszkowski”), daje sam powiat: bez gminy, bez przejścia na województwo i bez miasta spoza powiatu; gdy to
   dopisek tuż za nazwą, pewność spada do 0,6. Miasto na prawach powiatu jest zgodne z powiatem o swojej nazwie
@@ -33,7 +37,10 @@ Zasady (plan budowy Teraz, sekcje 3, 5 i 7a oraz opinia prawnika Z0):
   rzeczownika osobowego albo rzeczownik i zaraz po nim dopełniacz; cała lista „z A i B”) i miejsce jednostki nie
   trafiają do `teryt`, gdy w zdaniu jest miejsce zdarzenia (jednostka: gdy jest jedyna, zostaje); zostają w
   `dopasowania` z uwagą `poza-wynikiem`. „z/ze” bez osoby, „od”, trasa i kierunek („do”, „po”, „przez”) i
-  „mieszkańcy” w mianowniku (dotknięci zdarzeniem) pochodzeniem nie są.
+  „mieszkańcy” w mianowniku (dotknięci zdarzeniem) pochodzeniem nie są. Trasą jest „do/przez/po” + nazwa wielką
+  literą, zaraz za nazwą albo po słowie ruchu; „przez” z rzeczownikiem pospolitym („przez mgłę”) to przyczyna.
+* Klub: samo „mecz” nie czyni nazwy klubem; potrzebne słowo klubowe (kibice, klub, drużyna, piłkarze, kolejka, liga)
+  i nazwa w dopełniaczu, albo nazwa klubu z miastem klubu („Wisła Kraków”). „w Wiśle” (miejscownik) to miejsce.
 * Zabezpieczenie strukturalne: wynik, w którym sporna heurystyka wycięła lub zablokowała miejsce
   (`HEURYSTYKI_WYCINAJACE`), ma pewność najwyżej `PEWNOSC_PO_WYCIECIU_MAX` (0,75) i nie wyższą niż przed wycięciem;
   wycięte miejsce zostaje w `dopasowania` z uwagą powodu. Bezsporne blokady i wycięte miejsca obecne w wyniku z innej
@@ -180,8 +187,12 @@ _KLUBY = (
     "Resovia", "GKS", "Puszcza", "Stomil", "Znicz",
 )
 # Słowa z kręgu sportu w zdaniu: nazwa klubu bez miasta za nią nie jest wtedy gminą („Kibice Wisły zatrzymani w Płocku”).
-_SPORT_PREFIKSY = ("kibic", "klub", "pilkar", "zawodnik", "trener", "druzyn", "stadion", "derb", "puchar", "kolejk", "kolejc", "mecz")
-_SPORT_NIE = ("meczet",)  # meczet to nie mecz
+_SPORT_PREFIKSY = ("kibic", "klub", "pilkar", "zawodnik", "trener", "druzyn", "stadion", "derb", "puchar", "kolejk", "kolejc")
+# Samo „mecz/mecze” to kontekst słaby: nie czyni nazwy klubem (zob. `_blokada_klubu`); „meczet” to nie mecz.
+_SPORT_SLABY_PREFIKSY = ("mecz",)
+_SPORT_NIE = ("meczet",)
+# Przyimki z miejscownikiem: „w Wiśle”, „na Odrze” to miejsce, a nie nazwa klubu w dopełniaczu („Kibice Wisły”).
+_PRZYIMKI_MIEJSCOWNIKA = frozenset({"w", "we", "na", "przy"})
 _SPORT_WYRAZY = frozenset({"liga", "ligi", "lidze", "lige", "ligach", "ligom", "ligami", "lig"})  # „lig...” w prefiksie łapałoby „ligawa”
 _OKNO_SPORTU = 40
 _PRZED_RZEKA = frozenset({"na", "nad", "wzdluz", "rzeka", "rzeki", "rzece", "rzeke", "rzekach", "dorzecze", "dorzeczu", "dolinie"})
@@ -241,6 +252,9 @@ _OSOBA_Z = re.compile(
 )
 _NIE_POCHODZENIE_MIANOWNIK = frozenset({"mieszkancy"})
 _SLOWA_TRASY = frozenset({"do", "po", "przez"})  # trasa i kierunek („z A przez B do C”, „od A po B”): nie wycina miejsc
+# Słowa ruchu przed „do/przez/po”: bez nich (i bez przylegania do nazwy) „przez” to przyczyna, a nie trasa.
+_RUCH_PREFIKSY = ("jech", "jadac", "jadacy", "jedzie", "podroz", "zmierza", "wracal", "przejezdz", "kierowal")
+_RUCH_WYRAZY = frozenset({"trasa", "trasie", "trase", "trasy", "droga", "drodze", "droge"})
 _OKNO_TRASY = 5  # tyle wyrazów za nazwą (lub końcem listy) sprawdzamy w poszukiwaniu słowa trasy
 _KONIEC_OKNA_TRASY = frozenset({"i", "oraz"})  # spójnik zamyka okno: „jechał do Warszawy i miał wypadek w Płocku”
 _MAKS_ELEMENTOW_LISTY = 8
@@ -696,12 +710,13 @@ def _miasto_zaraz_po(tokeny: list[Token], nastepny: int, ind: _Indeksy) -> int:
     return 0
 
 
-def _kontekst_sportowy(tokeny: list[Token], i: int) -> bool:
-    """Czy w zdaniu z tokenem `i` jest słowo z kręgu sportu („kibice”, „mecz”, „stadion”, „derby”, „liga”...).
+def _kontekst_sportowy(tokeny: list[Token], i: int) -> int:
+    """Siła kontekstu sportowego zdania z tokenem `i`: 2 (kibice, klub, drużyna, piłkarze, kolejka, liga...), 1 (tylko „mecz”), 0.
 
     Przeszukiwanie jest ograniczone do `_OKNO_SPORTU` tokenów w każdą stronę (zdanie bywa bardzo długie).
     """
     n = len(tokeny)
+    sila = 0
     for kierunek in (-1, 1):
         k = i
         for _ in range(_OKNO_SPORTU):
@@ -714,18 +729,24 @@ def _kontekst_sportowy(tokeny: list[Token], i: int) -> bool:
                 if k >= n or tokeny[k].poczatek_zdania:
                     break
             z = tokeny[k].zlozony
-            if z in _SPORT_WYRAZY or (z.startswith(_SPORT_PREFIKSY) and not z.startswith(_SPORT_NIE)):
-                return True
-    return False
+            if z in _SPORT_WYRAZY or z.startswith(_SPORT_PREFIKSY):
+                return 2
+            if z.startswith(_SPORT_SLABY_PREFIKSY) and not z.startswith(_SPORT_NIE):
+                sila = 1
+    return sila
 
 
 def _blokada_klubu(tokeny: list[Token], i: int, ind: _Indeksy) -> tuple[int, int, bool]:
     """(liczba tokenów do pominięcia, długość nazwy klubu, czy blokada jest bezsporna), gdy od `i` stoi nazwa klubu.
 
     „Wisły Kraków”, „Legii Warszawa”, „Kibice Wisły”. Nazwa klubu (w każdym przypadku) blokuje miasto po niej; miasto
-    zdarzenia w tym samym zdaniu zostaje. Bez miasta za nią nazwa blokuje samą siebie, gdy w zdaniu jest słowo z kręgu
-    sportu („Kibice Wisły zatrzymani w Płocku”); bez takiego słowa zostaje gminą (gmina Wisła istnieje). Bezsporna
-    jest blokada w zdaniu ze słowem ze sportu; bez niego („Wisła Kraków zaginęła w Warszawie”) to heurystyka sporna.
+    zdarzenia w tym samym zdaniu zostaje. Bez miasta za nią nazwa blokuje samą siebie tylko przy kontekście klubowym
+    (słowo z kręgu sportu: „Kibice Wisły zatrzymani w Płocku”) i nie po przyimku z miejscownikiem („w Wiśle” to
+    miejsce); bez takiego słowa zostaje gminą (gmina Wisła istnieje). Samo słowo „mecz/mecze” nie czyni nazwy klubem:
+    „W Wiśle i w Ustroniu odwołano mecze.” daje oba miejsca, a „Mecz Wisły w Płocku” blokuje nazwę jako spór
+    (wycięcie, pewność najwyżej 0,75). Bezsporna jest blokada ze słowem klubowym albo samym meczem po nazwie z miastem
+    klubu („Wisła Kraków przegrała mecz”); bez żadnego słowa sportowego („Wisła Kraków zaginęła w Warszawie”) to
+    heurystyka sporna.
     """
     klub = _szukaj(tokeny, i, ind.kluby)
     if not klub:
@@ -733,8 +754,10 @@ def _blokada_klubu(tokeny: list[Token], i: int, ind: _Indeksy) -> tuple[int, int
     sport = _kontekst_sportowy(tokeny, i)
     miasto = _miasto_zaraz_po(tokeny, i + klub[0], ind)
     if miasto:
-        return klub[0] + miasto, klub[0], sport
-    return (klub[0], klub[0], True) if sport else (0, 0, True)
+        return klub[0] + miasto, klub[0], sport > 0
+    if sport == 0 or (i > 0 and tokeny[i - 1].zlozony in _PRZYIMKI_MIEJSCOWNIKA):
+        return 0, 0, True
+    return klub[0], klub[0], sport == 2
 
 
 def _blokada_rzeki(
@@ -1175,11 +1198,16 @@ def _zawez_skrot(kandydaci: list[str], konteksty: list[tuple[set[str], int | Cal
     return kandydaci, False
 
 
-def _rozstrzygnij_powiat(h: _Trafienie, wszystkie_woj: set[str], gmina_przed: tuple[str, ...] = ()) -> _Rozstrzygniecie:
-    """Rozstrzyga nazwę powiatu. `gmina_przed`: kody gminy, której powiat jest dopiskiem („Opole (powiat opolski)”).
+def _rozstrzygnij_powiat(
+    h: _Trafienie, wszystkie_woj: set[str], gmina_przed: tuple[str, ...] = (), gmina_po: tuple[str, ...] = (),
+) -> _Rozstrzygniecie:
+    """Rozstrzyga nazwę powiatu. `gmina_przed`: kody gminy, której powiat jest dopiskiem („Opole (powiat opolski)”);
+    `gmina_po`: kody gminy wskazanej tuż za powiatem lub w nawiasie za nim („powiat opolski (gmina Poniatowa)”).
 
     Nazwa powiatu bywa wieloznaczna („opolski”: lubelskie i opolskie; „bielski”, „krośnieński”). Gdy województwo nie
-    rozstrzyga, powiat zgodny z gminą stojącą tuż przed nim („Opole” - 1609, nie 0612) jest dopiskiem do niej.
+    rozstrzyga, powiat zgodny z gminą stojącą tuż przed nim („Opole” - 1609, nie 0612) jest dopiskiem do niej, a z
+    gminą stojącą tuż za nim („Poniatowa” - 0612) jest jej powiatem. Gdy obie gminy wskazują różne powiaty
+    („miasto Opole, powiat opolski (gmina Poniatowa)”), powiat zostaje nierozstrzygnięty (uwaga `sprzeczne-gminy`).
     """
     kandydaci = list(h.kody)
     uwagi: list[str] = []
@@ -1187,8 +1215,12 @@ def _rozstrzygnij_powiat(h: _Trafienie, wszystkie_woj: set[str], gmina_przed: tu
         kandydaci, uzyto = _zawez(kandydaci, [(h.zakres, 2), (wszystkie_woj, 2)])
         if uzyto:
             uwagi.append("kontekst")
-    if len(kandydaci) > 1 and gmina_przed:
-        zgodne = [k for k in kandydaci if any(_zgodny_z_powiatem(g, {k}) for g in gmina_przed)]
+    if len(kandydaci) > 1 and (gmina_przed or gmina_po):
+        przed = [k for k in kandydaci if any(_zgodny_z_powiatem(g, {k}) for g in gmina_przed)]
+        po = [k for k in kandydaci if any(_zgodny_z_powiatem(g, {k}) for g in gmina_po)]
+        if przed and po and not set(przed) & set(po):  # sąsiednie gminy wskazują różne powiaty: nie wybieramy żadnego
+            return _Rozstrzygniecie((), 0.0, ("homonim", "niejednoznaczne", "sprzeczne-gminy"), odrzucone=True)
+        zgodne = [k for k in przed if k in po] if przed and po else (przed or po)
         if len(zgodne) == 1:
             kandydaci = zgodne
             uwagi.append("kontekst")
@@ -1225,8 +1257,14 @@ def _preferowane_miasto(kandydaci: list[str]) -> str | None:
 
 def _rozstrzygnij_gmine(
     h: _Trafienie, tokeny: list[Token], ctx_pow: set[str], ctx_woj: set[str], obok: frozenset[str] = frozenset(),
+    obok_woj: frozenset[str] = frozenset(),
 ) -> _Rozstrzygniecie:
-    """Rozstrzyga nazwę gminy kontekstem. `obok`: powiaty wpisane tuż za nazwą („Kraków, powiat pruszkowski”).
+    """Rozstrzyga nazwę gminy kontekstem. `obok`: powiaty wpisane tuż za nazwą („Kraków, powiat pruszkowski”);
+    `obok_woj`: województwo dopisane tuż za nazwą („Leszno (woj. mazowieckie)”).
+
+    Dopisek za nazwą (powiat, potem województwo) wygrywa z powiatem i województwem z osobnych zdań, które zostają
+    zasięgiem alertu: „Awaria w Lesznie (woj. mazowieckie). Alert dla powiatu leszczyńskiego.” to gmina Leszno na
+    Mazowszu. Gdy powiat z innego zdania wskazywałby innego kandydata niż dopisek, wynik jest sporny (najwyżej 0,75).
 
     Powiat z tekstu, który wyklucza wszystkie kandydaty, daje `sprzeczny` (zostaje sam powiat). Nazwa wieloznaczna
     i skrót sprawdzają wszystkie powiaty z tekstu, nazwa jednoznaczna tylko powiat stojący tuż za nią (inny powiat
@@ -1246,14 +1284,20 @@ def _rozstrzygnij_gmine(
     # Alert dla powiatu leszczyńskiego.” to Leszno z powiatem pruszkowskim, a nie miasto Leszno)
     ctx_powiatu = set(obok) or ctx_pow
     konteksty = [(ctx_powiatu, _zgodny_z_powiatem), (ctx_woj, _w_wojewodztwie)]
-    kontrola = set(obok) or (ctx_pow if (h.skrot or len(kandydaci) > 1) else set())
+    dopisek_woj = bool(obok_woj) and not obok and any(_w_wojewodztwie(k, set(obok_woj)) for k in kandydaci)
+    if dopisek_woj:
+        konteksty.insert(0, (set(obok_woj), _w_wojewodztwie))
+    kontrola = set(obok) or (ctx_pow if (h.skrot or len(kandydaci) > 1) and not dopisek_woj else set())
+    # powiat z osobnego zdania wskazywałby kandydata spoza województwa z dopisku: konflikt, wynik do przeglądu
+    konflikt = dopisek_woj and bool(ctx_pow) and any(_zgodny_z_powiatem(k, ctx_pow) for k in kandydaci) and not any(
+        _zgodny_z_powiatem(k, ctx_pow) for k in kandydaci if _w_wojewodztwie(k, set(obok_woj)))
     if kontrola and not any(_zgodny_z_powiatem(k, kontrola) for k in kandydaci):
         # powiat z tekstu wyklucza wszystkich kandydatów („Pożar w Lesznie, powiat pruszkowski”, „Kraków, powiat
         # pruszkowski”): zostaje sam powiat (to osobne trafienie), z niską pewnością; nie przechodzimy na województwo
         # tego powiatu ani na miasto spoza niego. Pewność wyniku obniżamy do 0,6, gdy sprzeczny powiat jest dopiskiem do
         # tej nazwy. Powiat z innego zdania to osobna wzmianka: wynik spada tylko do 0,75 (zabezpieczenie strukturalne),
         # i to wtedy, gdy nazwa bez tego powiatu byłaby przyjęta (nazwa wieloznaczna bez rozstrzygnięcia i tak odpada).
-        sporny = bool(obok) or bool(_rozstrzygnij_gmine(h, tokeny, set(), ctx_woj).kody)
+        sporny = bool(obok) or bool(_rozstrzygnij_gmine(h, tokeny, set(), ctx_woj, obok_woj=obok_woj).kody)
         return _Rozstrzygniecie((), 0.0, ("powiat-wyklucza", "niejednoznaczne"), odrzucone=True, sprzeczny=bool(obok), sporny=sporny)
     if h.skrot:
         kandydaci, uzyto = _zawez_skrot(kandydaci, konteksty)
@@ -1292,7 +1336,11 @@ def _rozstrzygnij_gmine(
             kod = wynik.kody[0]
             dlugosc = {sl.WOJEWODZTWO: 2, sl.POWIAT: 4, sl.GMINA: 7}[poziom]
             uwagi_jednostki = ["jednostka"] + ([f"spadek-do-{'wojewodztwa' if dlugosc == 2 else 'powiatu'}"] if dlugosc < 7 else [])
-            return _Rozstrzygniecie((kod[:dlugosc],), min(wynik.pewnosc, PEWNOSC_JEDNOSTKA_MAX), wynik.uwagi + tuple(uwagi_jednostki))
+            return _Rozstrzygniecie(
+                (kod[:dlugosc],), min(wynik.pewnosc, PEWNOSC_JEDNOSTKA_MAX), wynik.uwagi + tuple(uwagi_jednostki), sporny=konflikt)
+    if konflikt and wynik.kody:
+        wynik.sporny = True
+        wynik.uwagi += ("konflikt-kontekstu",)
     return wynik
 
 
@@ -1380,8 +1428,9 @@ def _przylegle(tokeny: list[Token], szerszy: _Przyjety, wezszy: _Przyjety) -> bo
     if s.koniec <= w.start:  # szersze stoi przed węższym: „w” przed obydwoma i sam przecinek między nimi
         if not (w.znacznik or w.typ == "pow") or not _w_przed(tokeny, w.poczatek) or not _w_przed(tokeny, s.poczatek):
             return False
-        luka = w.start - s.koniec
-        return 0 < luka <= 4 and _bez_konca_zdania(tokeny, s.koniec, w.start) and _bez_dwukropka(tokeny, s.koniec, w.start)
+        # „w” węższego miejsca stoi tuż za szerszym: „w powiecie Y, w gminie Z”; wtrącenie („..., zwłaszcza w gminie Z”)
+        # to wyliczenie zasięgu, a nie hierarchia jednego miejsca
+        return w.poczatek == s.koniec + 1 and _bez_konca_zdania(tokeny, s.koniec, w.start) and _bez_dwukropka(tokeny, s.koniec, w.start)
     if w.koniec <= s.start:  # szersze stoi po węższym
         luka = s.start - w.koniec
         if w.znacznik or w.typ == "pow":
@@ -1553,16 +1602,23 @@ def _role_pochodzenia(tokeny: list[Token], elementy: list[_Przyjety]) -> tuple[l
 def _slowo_trasy_za(tokeny: list[Token], koniec: int) -> bool:
     """Czy za nazwą (do `_OKNO_TRASY` wyrazów, to samo zdanie, przed spójnikiem „i”) stoi trasa: „do/po/przez” + nazwa.
 
-    Słowo trasy to „do”, „przez” albo „po” przed nazwą pisaną wielką literą („od A po B”); „po wypadku” trasą nie jest.
+    Słowo trasy to „do”, „przez” albo „po”, po którym stoi nazwa pisana wielką literą („od A po B”, „przez Kraków”);
+    „po wypadku”, „do wieczora” i „przez śliską nawierzchnię” (rzeczownik pospolity: przyczyna) trasą nie są. Okno
+    trasy otwiera słowo zaraz za nazwą („Lublina do Chełma”, „Krakowa przez Tarnów”) albo słowo ruchu między nazwą
+    a słowem trasy („jechał dziś rano do Warszawy”, „trasa”, „droga”).
     """
+    ruch = False
     for k in range(koniec, min(koniec + _OKNO_TRASY, len(tokeny))):
         if not _bez_konca_zdania(tokeny, k, k + 1):
             return False
         z = tokeny[k].zlozony
         if z in _KONIEC_OKNA_TRASY:
             return False
-        if z in _SLOWA_TRASY and (z != "po" or (k + 1 < len(tokeny) and tokeny[k + 1].wielka and not tokeny[k + 1].cyfra)):
-            return True
+        if z in _SLOWA_TRASY:
+            if (ruch or k == koniec) and k + 1 < len(tokeny) and tokeny[k + 1].wielka and not tokeny[k + 1].cyfra:
+                return True
+        elif z in _RUCH_WYRAZY or z.startswith(_RUCH_PREFIKSY):
+            ruch = True
     return False
 
 
@@ -1706,24 +1762,53 @@ def geokoduj(tekst: str | None) -> Wynik:
                 return tuple(gmina.kody)
         return ()
 
+    gminy_po_starcie = sorted((h for h in trafienia if h.typ == "gmina"), key=lambda g: g.poczatek if g.poczatek >= 0 else g.start)
+    starty_gmin = [g.poczatek if g.poczatek >= 0 else g.start for g in gminy_po_starcie]
+
+    def gmina_po_powiecie(h: _Trafienie) -> tuple[str, ...]:
+        """Kody gminy wskazanej tuż za powiatem: „powiat opolski (gmina Poniatowa)”, „powiat X, w gminie Y”."""
+        idx = bisect_left(starty_gmin, h.koniec)
+        if idx >= len(gminy_po_starcie):
+            return ()
+        gmina, start = gminy_po_starcie[idx], starty_gmin[idx]
+        if start - h.koniec > 1 or not _bez_konca_zdania(tokeny, h.koniec, start + 1) or not _bez_dwukropka(tokeny, h.koniec, start):
+            return ()
+        if not all(tokeny[k].zlozony in ("w", "we") for k in range(h.koniec, start)):
+            return ()
+        return tuple(gmina.kody)
+
     for h in trafienia:
         if h.typ == "pow":
-            wyniki.append((h, _rozstrzygnij_powiat(h, ctx_woj, gmina_przed_powiatem(h) if len(h.kody) > 1 else ())))
+            wieloznaczny = len(h.kody) > 1
+            wyniki.append((h, _rozstrzygnij_powiat(
+                h, ctx_woj, gmina_przed_powiatem(h) if wieloznaczny else (), gmina_po_powiecie(h) if wieloznaczny else ())))
     ctx_pow = {r.kody[0] for h, r in wyniki if r.kody and len(r.kody[0]) == 4}
     powiaty_w_tekscie = sorted(((h, r) for h, r in wyniki if h.typ == "pow" and r.kody), key=lambda para: para[0].start)
     starty_powiatow = [h.start for h, _ in powiaty_w_tekscie]
 
+    woj_z_dopiskiem = {w.poczatek: w.kody[0][:2] for w in trafienia if w.typ == "woj" and w.tryb == "znacznik" and w.kody and w.poczatek >= 0}
+
+    def woj_za_nazwa(h: _Trafienie) -> frozenset[str]:
+        """Województwo dopisane tuż za nazwą: „Leszno (woj. mazowieckie)”, „Chełm, woj. lubelskie”."""
+        kod = woj_z_dopiskiem.get(h.koniec)
+        if kod and h.koniec < len(tokeny) and ("," in tokeny[h.koniec].sep or "(" in tokeny[h.koniec].sep):
+            return frozenset({kod})
+        return frozenset()
+
     def rozstrzygnij_gmine(h: _Trafienie) -> _Rozstrzygniecie:
         obok = _powiaty_za_nazwa(tokeny, h, starty_powiatow, powiaty_w_tekscie) if powiaty_w_tekscie else frozenset()
-        return _rozstrzygnij_gmine(h, tokeny, ctx_pow, ctx_woj, obok)
+        return _rozstrzygnij_gmine(h, tokeny, ctx_pow, ctx_woj, obok, woj_za_nazwa(h))
 
     for h in trafienia:
         if h.typ == "gmina":
             wyniki.append((h, rozstrzygnij_gmine(h)))
     wyniki.sort(key=lambda para: para[0].start)
     # wyraźne miejsce z przyimkiem („w Warszawie”, „gmina X”): nazwa po imieniu, które bywa też gminą, wtedy odpada
+    # (także powiat lub województwo po „w”: „Hanna Kraków zaginęła w powiecie pruszkowskim”)
     jest_miejsce_z_przyimkiem = any(
-        h.typ == "gmina" and not h.bez_przyimka and not h.po_imieniu and r.kody for h, r in wyniki)
+        r.kody and ((h.typ == "gmina" and not h.bez_przyimka and not h.po_imieniu)
+                    or (h.typ in ("pow", "woj") and h.tryb in ("znacznik", "lista") and _w_przed(tokeny, h.poczatek)))
+        for h, r in wyniki)
 
     dopasowania: list[Dopasowanie] = []
     przyjete: list[_Przyjety] = []
@@ -1731,6 +1816,8 @@ def geokoduj(tekst: str | None) -> Wynik:
     nierozstrzygniete: list[_Przyjety] = []
     odrzucone = 0
     sprzeczne = any(r.sprzeczny for _, r in wyniki)
+    # powiat wskazany wprost, ale nierozstrzygnięty (nazwa wieloznaczna: „powiat opolski”): zasięg alertu jest niepewny
+    powiat_nierozstrzygniety = any(h.typ == "pow" and r.odrzucone for h, r in wyniki)
     sporne_powiaty = any(r.sporny for _, r in wyniki)
     for h, r in wyniki:
         fraza, start, koniec = _fraza(tekst_wejsciowy, tokeny, h, mapa)
@@ -1804,6 +1891,8 @@ def geokoduj(tekst: str | None) -> Wynik:
         pewnosc = min(pewnosc, PEWNOSC_SPRZECZNY_KONTEKST)
     if odrzucone:  # zob. wyżej: tylko nazwy ze znacznikiem
         pewnosc *= WSPOLCZYNNIK_ODRZUCONEJ_NAZWY
+    if powiat_nierozstrzygniety:  # reszta miejsc nie ukrywa, że część zasięgu jest nieznana: do przeglądu, nie do automatu
+        pewnosc = min(pewnosc, PEWNOSC_PO_WYCIECIU_MAX)
     if zasieg_kraju:  # zasięg krajowy jest najgrubszy, ale nie zeruje konkretnych miejsc
         return Wynik(kody, KRAJ, round(min(pewnosc, PEWNOSC_KRAJ), 2), dopasowania_krotka, uwagi_wyniku)
     dokladnosc = min((_dokladnosc(k) for k in kody), key=lambda p: sl.DLUGOSC_KODU[p])
