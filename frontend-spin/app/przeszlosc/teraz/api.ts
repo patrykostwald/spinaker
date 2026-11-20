@@ -129,8 +129,8 @@ export async function pobierzWpisyTeryt(okres: Okres, kodyWojewodztw: string[], 
  * Wspólne ustawienia zapytań. Domyślny klient aplikacji (providers.tsx) wyłącza odświeżanie po powrocie do okna, więc tu jest
  * włączone jawnie: po powrocie do karty dane starsze niż `staleTime` są pobierane od razu, bez czekania na następny cykl.
  */
-const wspolne = { refetchIntervalInBackground: false, refetchOnWindowFocus: true, refetchOnReconnect: true, retry: 1, retryDelay: 2000 } as const;
-const co = (ms: number) => ({ refetchInterval: ms, staleTime: ms / 2 });
+export const wspolne = { refetchIntervalInBackground: false, refetchOnWindowFocus: true, refetchOnReconnect: true, retry: 1, retryDelay: 2000 } as const;
+export const co = (ms: number) => ({ refetchInterval: ms, staleTime: ms / 2 });
 
 export function useStan(probne: boolean) {
   return useQuery<Stan>({

@@ -5,6 +5,8 @@ import { KOLEJNOSC_STATUSOW, metaStatusu, metaWarstwy } from './warstwy';
 import { WOJEWODZTWA } from './teryt';
 import { EtykietaStatusu, IkonaOstrzezenia, IkonaWarstwy } from './Ikony';
 import { WyborOkresu } from './WyborOkresu';
+import type { DaneZrodel } from './zrodla';
+import { LegendaSkadIJak, PanelZrodel, ZrodlaWarstwy } from './PanelZrodel';
 
 /**
  * Panel warstw: filtry (czas, województwo), przełączniki warstw z kolorem, ikoną, liczbą wpisów i świeżością, legenda.
@@ -12,6 +14,7 @@ import { WyborOkresu } from './WyborOkresu';
  * Warstwy bez żadnego publicznego źródła są osobno, wyłączone: nie udają, że coś pokazują. Warstwy wyłączone przez redakcję
  * (`wylaczona`) nie dochodzą tu wcale (TerazPage przekazuje tylko dostępne).
  * Filtr województwa jest przybliżony (prostokąty, nie granice), co jest napisane pod polem.
+ * Łącze i zdrowie źródeł (GET zrodla/): etykiety przy warstwach, panel „Źródła i ich stan” i sekcja legendy „Skąd i jak”.
  */
 export interface PanelWarstwProps {
   warstwy: Warstwa[];
@@ -21,6 +24,8 @@ export interface PanelWarstwProps {
   okres: Okres;
   woj: string | null;
   ladowanie: boolean;
+  /** Stan źródeł (łącze, zdrowie); pominięty = bez znaczników łącza i zdrowia. */
+  zrodla?: DaneZrodel;
   onPrzelacz: (kod: string) => void;
   onWszystkie: (wlacz: boolean) => void;
   onOkres: (o: Okres) => void;
@@ -83,9 +88,12 @@ export function PanelWarstw(p: PanelWarstwProps) {
           <p className="tz-warstwa__opis" title={meta.opis}>{meta.opis}</p>
           <p className="tz-warstwa__stan" title={wiersz ? `${wiersz.ostatniePobranie} · ${wiersz.komunikaty}` : undefined}>{wiersz ? `${wiersz.ostatniePobranie} · ${wiersz.komunikaty}` : 'stan niedostępny'}</p>
           {ostrzega && <p className="tz-warstwa__ostrz"><IkonaOstrzezenia rozmiar={14} /><span><strong>Możliwa luka w danych.</strong> {wiersz?.komunikat}.</span></p>}
+          {p.zrodla && <ZrodlaWarstwy dane={p.zrodla} slugi={w.zrodla.map(z => z.slug)} />}
         </li>;
       })}
     </ul>
+
+    {p.zrodla && <PanelZrodel dane={p.zrodla} />}
 
     {przygotowywane.length > 0 && <details className="tz-przygotowanie">
       <summary>Warstwy w przygotowaniu ({przygotowywane.length})</summary>
@@ -100,6 +108,7 @@ export function PanelWarstw(p: PanelWarstwProps) {
         {KOLEJNOSC_STATUSOW.map(s => <li key={s}><EtykietaStatusu status={s} /><span>{metaStatusu(s).opis}</span></li>)}
       </ul>
       <p className="tz-legenda__lead">Obszar bez punktu to prostokąt: linia ciągła (komunikat, potwierdzone), przerywana (zgłoszone, ocena), kropkowana (odwołane, bez zdarzenia). Liczba w kółku to grupa znaczników, kliknij, aby przybliżyć.</p>
+      <LegendaSkadIJak />
     </details>
   </div>;
 }

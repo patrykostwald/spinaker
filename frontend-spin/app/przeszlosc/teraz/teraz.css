@@ -5,6 +5,9 @@
    Kolor nie jest jedynym nośnikiem znaczenia: warstwa = ikona + nazwa, status = kształt + słowo, luka = ikona + zdanie.
    ===================================================================== */
 
+/* łącze i zdrowie źródeł (etykiety, panel źródeł, legenda „Skąd i jak”): osobny plik, dołączony tutaj, żeby strona miała jeden arkusz */
+@import './zrodla.css';
+
 .tz {
   --tz-ostrz: #ffb454; --tz-ostrz-tlo: rgba(255, 180, 84, .12);
   --tz-panel-w: 380px; --tz-karta-w: 390px; --tz-r: 12px; --tz-tap: 44px;

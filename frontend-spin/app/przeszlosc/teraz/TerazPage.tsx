@@ -18,6 +18,7 @@ import { ListaWpisow } from './ListaWpisow';
 import { MojPowiat } from './MojPowiat';
 import { PanelWarstw } from './PanelWarstw';
 import { TabelaWpisow } from './TabelaWpisow';
+import { useZrodla } from './zrodla-api';
 import { NIEPEWNOSC, OKRESY } from './warstwy';
 import './teraz.css';
 
@@ -81,6 +82,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const wojKody = useMemo(() => kodyWojewodztw(powiaty), [powiaty]);
   const powiatyQ = useWpisyPowiatow(probne, okres, wojKody, !wMapie && pamiecGotowa);
   const zdarzeniaQ = useZdarzenia(probne);
+  const zrodla = useZrodla(probne);
 
   // pamięć przeglądarki (walidowana w pamiec.ts): tylko dla parametrów, których nie ma w adresie (adres wygrywa)
   useEffect(() => {
@@ -249,7 +251,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
       ladowanie: wMapie && wpisyQ.isPending && pamiecGotowa, niedostepne: wpisyNiedostepne, nieaktualne: wpisyQ.isError && !!wpisyQ.data,
       uciete: wpisyQ.data?.uciete ?? false, pominiete: wpisyQ.data?.pominiete ?? 0, pobrane: pobraneWpisy,
     }}
-    warstwy={stanWarstw} zdarzenia={stanZdarzen} brakWybranego={brakWybranego} />;
+    warstwy={stanWarstw} zdarzenia={stanZdarzen} zrodla={zrodla} brakWybranego={brakWybranego} />;
   const tekstNiepelnych = `Dane niepełne: pobraliśmy ${liczbaKomunikatow(pobraneWpisy)}, ale nie wszystkie (ograniczenie opisujemy wyżej). Żaden pobrany nie pasuje do wybranych warstw, czasu i regionu: ${NIEPEWNOSC}.`;
   const tekstPustejListy = wpisyNiedostepne
     ? `Dane niedostępne, nie pokazujemy listy: ${NIEPEWNOSC}.`
@@ -287,7 +289,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
     <div className="tz-glowna">
       {wMapie && <aside id="tz-panel" className="tz-panel" aria-labelledby="tz-panel-tytul">
         <PanelWarstw warstwy={warstwy} wiersze={wiersze} wlaczone={wlaczone} naMapie={naMapie} okres={okres} woj={woj}
-          ladowanie={warstwyQ.isPending} onPrzelacz={przelacz} onWszystkie={wszystkie} onOkres={setOkres} onWoj={setWoj} onZamknij={zamknijPanel} />
+          ladowanie={warstwyQ.isPending} zrodla={zrodla} onPrzelacz={przelacz} onWszystkie={wszystkie} onOkres={setOkres} onWoj={setWoj} onZamknij={zamknijPanel} />
       </aside>}
 
       <section className="tz-scena" aria-label={NAZWY_WIDOKOW[widok]} {...inert}>
@@ -301,14 +303,14 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
             </button>
             {bezGranic && <div id="tz-bez-granic" className="tz-bez-granic">
               <p>Komunikaty dla obszarów, których granic jeszcze nie rysujemy. Miejsce podajemy słowami.</p>
-              <ListaWpisow widoki={bezMiejsca} warstwy={warstwyDlaNazw} wybrany={wybranyId} onWybierz={wybierz} etykieta="Komunikaty bez granic na mapie" pusta="Brak." />
+              <ListaWpisow widoki={bezMiejsca} warstwy={warstwyDlaNazw} zrodla={zrodla} wybrany={wybranyId} onWybierz={wybierz} etykieta="Komunikaty bez granic na mapie" pusta="Brak." />
             </div>}
           </div>}
         </>}
         {widok === 'lista' && <div className="tz-lista-ramka">
           {mapa.niedostepna && <p className="tz-lista__uwaga" role="status">Ta przeglądarka nie obsługuje mapy, dlatego pokazujemy listę.</p>}
           <div className="tz-komunikaty-inline">{komunikatyDanych}</div>
-          <ListaWpisow widoki={widoczne} warstwy={warstwyDlaNazw} wybrany={wybranyId} onWybierz={wybierz} etykieta="Komunikaty od najnowszych" pusta={tekstPustejListy} />
+          <ListaWpisow widoki={widoczne} warstwy={warstwyDlaNazw} zrodla={zrodla} wybrany={wybranyId} onWybierz={wybierz} etykieta="Komunikaty od najnowszych" pusta={tekstPustejListy} />
         </div>}
         {widok === 'tabela' && <div className="tz-ramka">
           <div className="tz-komunikaty-inline">{komunikatyDanych}</div>
@@ -317,7 +319,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
         </div>}
         {widok === 'powiat' && <div className="tz-ramka tz-ramka--powiat">
           <div className="tz-komunikaty-inline">
-            <KomunikatyDanych warstwy={stanWarstw} zdarzenia={stanZdarzen} />
+            <KomunikatyDanych warstwy={stanWarstw} zdarzenia={stanZdarzen} zrodla={zrodla} />
           </div>
           <MojPowiat powiaty={powiaty} onZmien={zmienPowiaty} okres={okres} onOkres={setOkres}
             widoki={widokiPowiatow} warstwy={warstwyDlaNazw}
@@ -337,7 +339,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
       </section>
 
       {kartaOtwarta && wybranyWidok && <aside className="tz-karta" aria-label="Szczegóły wpisu">
-        <KartaWpisu widok={wybranyWidok} warstwy={warstwyDlaNazw} adres={adres} onZamknij={zamknijKarte} />
+        <KartaWpisu widok={wybranyWidok} warstwy={warstwyDlaNazw} zrodla={zrodla} adres={adres} onZamknij={zamknijKarte} />
       </aside>}
     </div>
 
