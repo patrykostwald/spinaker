@@ -29,15 +29,20 @@ def adresy(zdarzenie):
     return [reverse(f"teraz:{w.name}", kwargs={"pk": zdarzenie.pk} if w.name == "zdarzenie" else {}) for w in urlpatterns]
 
 
+def z_parametrami(adres):
+    """Oś czasu wymaga zakresu; reszta adresów działa bez parametrów."""
+    return f"{adres}?od=2026-01-01T00:00:00Z&do=2026-01-03T00:00:00Z&krok=dzien" if adres == reverse("teraz:os") else adres
+
+
 def podpis():
     return signing.dumps(key_digest(), salt=SALT)
 
 
 def test_flaga_wylaczona_anonim_dostaje_404_mimo_rozgrzanego_cache(client, dane, settings):
     lista = adresy(dane)
-    assert len(lista) == 5
+    assert len(lista) == 7
     for adres in lista:  # rozgrzanie wspólnego cache przy publicznym starcie
-        assert client.get(adres).status_code == 200, adres
+        assert client.get(z_parametrami(adres)).status_code == 200, adres
     settings.TERAZ_PUBLICZNE = False
     for adres in lista:
         odpowiedz = client.get(adres)
@@ -67,7 +72,7 @@ def test_flaga_wylaczona_wazny_podglad_200_bez_wspolnego_cache(client, dane, set
     monkeypatch.setattr(teraz_cache, "get", get)
     monkeypatch.setattr(teraz_cache, "set", set_)
     for adres in adresy(dane):
-        odpowiedz = client.get(adres)
+        odpowiedz = client.get(z_parametrami(adres))
         assert odpowiedz.status_code == 200, adres
         assert odpowiedz["Cache-Control"] == "private, no-store", adres
         assert "Cookie" in odpowiedz["Vary"], adres
@@ -102,7 +107,7 @@ def test_flaga_wylaczona_personel_200_zwykly_uzytkownik_404(client, dane, settin
     personel = django_user_model.objects.create_user("redakcja", password="x", is_staff=True)
     client.force_login(personel)
     for adres in adresy(dane):
-        odpowiedz = client.get(adres)
+        odpowiedz = client.get(z_parametrami(adres))
         assert odpowiedz.status_code == 200, adres
         assert odpowiedz["Cache-Control"] == "private, no-store", adres
 
@@ -152,7 +157,7 @@ def test_flaga_wlaczona_odpowiedzi_poboczne_bez_naglowka_prywatnego(client, dane
 def test_flaga_wlaczona_anonim_200(client, dane, settings):
     settings.TERAZ_PUBLICZNE = True
     for adres in adresy(dane):
-        odpowiedz = client.get(adres)
+        odpowiedz = client.get(z_parametrami(adres))
         assert odpowiedz.status_code == 200, adres
         assert odpowiedz["Cache-Control"] == "no-store", adres
 

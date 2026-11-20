@@ -32,7 +32,7 @@ class ZrodloAdmin(admin.ModelAdmin):
                     "rekomendowany_tryb", "wyjatek_decyzja")
         if obj and obj.tryb == Zrodlo.Tryb.PUBLICZNY:
             return (*pola, "slug", "nazwa", "instytucja", "warstwa", "sposob_dostepu", "adres",
-                    "zrodlo_dostepu", "podstawa_prawna", "rejestr_podstaw_url", "czestotliwosc_s",
+                    "rodzaj_lacza", "zrodlo_dostepu", "podstawa_prawna", "rejestr_podstaw_url", "czestotliwosc_s",
                     "atrybucja", "redystrybucja_pro", "rekomendowany_tryb", "wyjatek_decyzja")
         if obj and obj.podstawa_rekomendowana and request.user.is_superuser:
             return (*pola, "rekomendowany_tryb")

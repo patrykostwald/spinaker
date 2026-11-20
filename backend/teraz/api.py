@@ -1,3 +1,4 @@
+import copy
 from datetime import timedelta
 from urllib.parse import urlencode
 
@@ -19,9 +20,10 @@ from rest_framework.throttling import SimpleRateThrottle
 
 from news.preview import valid_preview
 
+from . import historia
 from .cache import BLEDY_CACHE, CZAS_CACHE, klucz_odpowiedzi
 from .zrodla.rcb import zasieg_czesciowy
-from .models import Klasa, Warstwa, Wpis, WylacznikKategorii, Zdarzenie, Zrodlo, sprawdz_bbox
+from .models import Klasa, Warstwa, Wpis, Zdarzenie, Zrodlo, sprawdz_bbox
 
 NIEPEWNOSC = "nie mamy pewności, sprawdź Alert RCB i 112"
 MAKSYMALNY_PREFIKS = {
@@ -62,6 +64,7 @@ class FiltryWpisow(serializers.Serializer):
     do = serializers.DateTimeField(required=False)
     teryt = serializers.RegexField(r"\A[0-9]{1,7}\Z", required=False)
     bbox = serializers.CharField(required=False, max_length=100)
+    na = serializers.DateTimeField(required=False, help_text="Stan na moment: wpisy opublikowane do tego czasu, w wersji z tego czasu.")
 
     def validate_bbox(self, value):
         try:
@@ -74,6 +77,22 @@ class FiltryWpisow(serializers.Serializer):
     def validate(self, attrs):
         if "od" in attrs and "do" in attrs and attrs["od"] > attrs["do"]:
             raise serializers.ValidationError("Początek zakresu musi poprzedzać jego koniec.")
+        return attrs
+
+
+class FiltryOsi(serializers.Serializer):
+    od = serializers.DateTimeField()
+    do = serializers.DateTimeField()
+    krok = serializers.ChoiceField(choices=["dzien", "godzina"], default="dzien")
+
+    def validate(self, attrs):
+        if attrs["od"] > attrs["do"]:
+            raise serializers.ValidationError("Początek zakresu musi poprzedzać jego koniec.")
+        rozpietosc = attrs["do"] - attrs["od"]
+        jednostek = rozpietosc.days + 2 if attrs["krok"] == "dzien" else int(rozpietosc.total_seconds() // 3600) + 2
+        if jednostek > historia.MAKS_KUBELKOW[attrs["krok"]]:
+            raise serializers.ValidationError(
+                f"Zakres jest za duży: najwyżej {historia.MAKS_KUBELKOW[attrs['krok']]} przedziałów przy kroku {attrs['krok']}.")
         return attrs
 
 
@@ -132,6 +151,76 @@ class WpisSerializer(serializers.ModelSerializer):
         return dane
 
 
+class WpisNaSerializer(WpisSerializer):
+    """Wpis w stanie z chwili `context["na"]`: pola wersji obowiązującej wtedy, maskowanie jak dla wersji bieżącej.
+
+    Gdy wersji z tamtej chwili nie znamy albo nie wolno jej pokazać (wpis wrażliwy ma decyzję redakcji tylko dla wersji
+    bieżącej), zwracamy sam znacznik z `brak_danych`, bez treści i lokalizacji.
+    """
+
+    def to_representation(self, instance):
+        stan = historia.stan_wpisu_na(instance, self.context["na"])
+        powod = None
+        if stan is None:
+            powod = historia.Powod.HISTORIA_NIEPELNA
+        elif not historia.wersja_dostepna_publicznie(instance, stan):
+            powod = "historia_niedostepna"
+        if powod:
+            return {"id": instance.pk, "zrodlo": instance.zrodlo.slug, "warstwa": instance.zrodlo.warstwa,
+                    "brak_danych": True, "powod": powod}
+        kopia = copy.copy(instance)
+        for pole, wartosc in stan.pola.items():
+            if wartosc is not None or pole != "opublikowano_at":
+                setattr(kopia, pole, wartosc)
+        dane = super().to_representation(kopia)
+        dane["stan"] = {
+            "wersja": "biezaca" if stan.biezaca else "poprzednia",
+            "obowiazywala_do": serializers.DateTimeField().to_representation(stan.obowiazywala_do)
+            if stan.obowiazywala_do else None,
+        }
+        return dane
+
+
+class BrakDanychSerializer(serializers.Serializer):
+    powod = serializers.CharField()
+    zrodla = serializers.ListField(child=serializers.CharField())
+    od = serializers.DateTimeField(allow_null=True)
+    do = serializers.DateTimeField(allow_null=True)
+
+
+class KubelekSerializer(serializers.Serializer):
+    od = serializers.DateTimeField()
+    do = serializers.DateTimeField()
+    liczba = serializers.IntegerField(allow_null=True, help_text="Wpisy potwierdzone; null, gdy zero wynika z luki w danych.")
+    w_przegladzie = serializers.IntegerField(help_text="Wpisy wrażliwe czekające w przeglądzie (stan bieżący).")
+    luka_retencji = serializers.BooleanField()
+    luka_zrodel = serializers.ListField(child=serializers.CharField())
+
+
+class OsSerializer(serializers.Serializer):
+    od = serializers.DateTimeField()
+    do = serializers.DateTimeField()
+    krok = serializers.CharField()
+    strefa = serializers.CharField()
+    pewnosc_min = serializers.FloatField()
+    luka_retencji = serializers.BooleanField()
+    kubelki = KubelekSerializer(many=True)
+    brak_danych = BrakDanychSerializer(many=True)
+
+
+class ZrodloPubliczneSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    nazwa = serializers.CharField()
+    instytucja = serializers.CharField()
+    warstwa = serializers.CharField()
+    atrybucja = serializers.CharField()
+    rodzaj_lacza = serializers.CharField()
+    czestotliwosc_s = serializers.IntegerField()
+    ostatni_sukces_at = serializers.DateTimeField(allow_null=True)
+    ostatni_blad = serializers.CharField(allow_null=True, help_text="Ogólny kod błędu, bez szczegółów wewnętrznych.")
+    luka = serializers.BooleanField(help_text="Brak sukcesu dłużej niż 3 x częstotliwość.")
+
+
 class ZdarzenieSerializer(serializers.ModelSerializer):
     wpisy = WpisSerializer(source="publiczne_wpisy", many=True)
     zweryfikowal = serializers.SerializerMethodField()
@@ -183,15 +272,12 @@ class StanSerializer(serializers.Serializer):
 
 def stan_warstw():
     teraz = timezone.now()
-    wylaczone = set(WylacznikKategorii.objects.filter(
-        aktywny=True, warstwa__isnull=False,
-    ).values_list("warstwa", flat=True))
+    wylaczone = historia.wylaczone_warstwy()
     liczby = dict(Wpis.objects.publiczne().filter(
         opublikowano_at__range=(teraz - timedelta(hours=24), teraz),
     ).values_list("zrodlo_id").annotate(liczba=Count("pk")))
     grupy = {warstwa: [] for warstwa in Warstwa.values}
-    zrodla = Zrodlo.objects.filter(tryb=Zrodlo.Tryb.PUBLICZNY).exclude(warstwa__in=wylaczone).order_by("slug")
-    for zrodlo in zrodla:
+    for zrodlo in historia.zrodla_publiczne(wylaczone):
         sukces = zrodlo.ostatni_sukces_at
         prog_luki_s = max(2 * zrodlo.czestotliwosc_s, 300)
         grupy[zrodlo.warstwa].append({
@@ -308,7 +394,7 @@ class PublicznyOdczyt(GenericAPIView):
         filtry.is_valid(raise_exception=True)
         self.filtry = filtry.validated_data
         self.parametry_url = self.filtry.copy()
-        for pole in ("od", "do"):
+        for pole in ("od", "do", "na"):
             if pole in self.filtry:
                 self.parametry_url[pole] = self.filtry[pole].isoformat()
         if "bbox" in self.filtry:
@@ -386,10 +472,21 @@ class WpisyView(PublicznyOdczyt):
     serializer_class = WpisSerializer
     filtry_class = FiltryWpisow
     pagination_class = StronicowanieTeraz
+    wynik_na = None
+
+    def get_serializer_class(self):
+        return WpisNaSerializer if "na" in getattr(self, "filtry", {}) else WpisSerializer
+
+    def get_serializer_context(self):
+        kontekst = super().get_serializer_context()
+        if self.wynik_na is not None:
+            kontekst["na"] = self.na
+        return kontekst
 
     def get_queryset(self):
         dane = self.filtry
-        wpisy = Wpis.objects.publiczne().select_related("zrodlo").order_by("-opublikowano_at", "-pk")
+        podstawa = self.wynik_na.queryset if self.wynik_na is not None else Wpis.objects.publiczne()
+        wpisy = podstawa.select_related("zrodlo").order_by("-opublikowano_at", "-pk")
         for filtr, pole in (("warstwa", "zrodlo__warstwa"), ("od", "opublikowano_at__gte"), ("do", "opublikowano_at__lte")):
             if filtr in dane:
                 wpisy = wpisy.filter(**{pole: dane[filtr]})
@@ -412,7 +509,45 @@ class WpisyView(PublicznyOdczyt):
         return wpisy
 
     def odczytaj(self):
-        return self.lista(self.get_queryset())
+        if "na" not in self.filtry:
+            return self.lista(self.get_queryset())
+        # moment z przyszłości nie ma stanu: czytamy stan na teraz i podajemy faktycznie użyty czas
+        teraz = timezone.now()
+        self.na = min(self.filtry["na"], teraz)
+        self.wynik_na = historia.wpisy_na(self.na)
+        odpowiedz = self.lista(self.get_queryset())
+        odpowiedz.data.update(
+            na=serializers.DateTimeField().to_representation(self.na),
+            luka_retencji=historia.luka_retencji(self.na, teraz),
+            brak_danych=BrakDanychSerializer(historia.brak_danych_na(self.na, self.wynik_na, teraz), many=True).data,
+        )
+        return odpowiedz
+
+
+class ZrodlaView(PublicznyOdczyt):
+    serializer_class = ZrodloPubliczneSerializer
+
+    def odczytaj(self):
+        teraz = timezone.now()
+        zrodla = [{
+            "slug": zrodlo.slug, "nazwa": zrodlo.nazwa, "instytucja": zrodlo.instytucja, "warstwa": zrodlo.warstwa,
+            "atrybucja": zrodlo.atrybucja,
+            "rodzaj_lacza": zrodlo.rodzaj_lacza or Zrodlo.RODZAJ_Z_DOSTEPU.get(zrodlo.sposob_dostepu, ""),
+            "czestotliwosc_s": zrodlo.czestotliwosc_s, "ostatni_sukces_at": zrodlo.ostatni_sukces_at,
+            "ostatni_blad": historia.kod_bledu(zrodlo), "luka": historia.luka_zrodla(zrodlo, teraz),
+        } for zrodlo in historia.zrodla_publiczne()]
+        return Response(self.get_serializer(zrodla, many=True).data)
+
+
+class OsView(PublicznyOdczyt):
+    serializer_class = OsSerializer
+    filtry_class = FiltryOsi
+
+    def odczytaj(self):
+        dane = self.filtry
+        wynik = historia.os_czasu(dane["od"], dane["do"], dane["krok"])
+        wynik.update(krok=dane["krok"], strefa=timezone.get_default_timezone_name(), pewnosc_min=historia.PEWNOSC_MIN)
+        return Response(self.get_serializer(wynik).data)
 
 
 class ZdarzeniaView(PublicznyOdczyt):

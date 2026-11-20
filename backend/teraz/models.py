@@ -79,6 +79,19 @@ class Zrodlo(models.Model):
         X = "x", "X"
         WEBSOCKET = "websocket", "WebSocket"
 
+    class RodzajLacza(models.TextChoices):
+        X = "x", "X"
+        API = "api", "API"
+        MCI = "mci", "MCI"
+        RSS = "rss", "RSS"
+        SCRAPING = "scraping", "Strona WWW (scraping)"
+        WEBSOCKET = "websocket", "WebSocket"
+        PLIK = "plik", "Plik"
+        RECZNE = "reczne", "Ręczne"
+
+    # Domyślny rodzaj łącza wynika ze sposobu dostępu (rejestr adapterów może go nadpisać).
+    RODZAJ_Z_DOSTEPU = {"x": "x", "api": "api", "rss": "rss", "html": "scraping", "websocket": "websocket"}
+
     class Redystrybucja(models.TextChoices):
         ALLOW = "allow", "Dozwolona"
         DENY = "deny", "Zabroniona"
@@ -89,6 +102,8 @@ class Zrodlo(models.Model):
     instytucja = models.CharField(max_length=200, help_text="Instytucja publikująca komunikaty.")
     warstwa = models.CharField(max_length=16, choices=Warstwa.choices, db_index=True, help_text="Warstwa mapy.")
     sposob_dostepu = models.CharField(max_length=9, choices=SposobDostepu.choices, help_text="Kanał pobierania komunikatów.")
+    rodzaj_lacza = models.CharField(max_length=9, choices=RodzajLacza.choices, blank=True,
+        help_text="Rodzaj łącza pokazywany publicznie. Puste: wyprowadzane ze sposobu dostępu przy zapisie.")
     adres = models.CharField(max_length=2048, help_text="Adres używany przez adapter.")
     czestotliwosc_s = models.PositiveIntegerField(default=300, validators=[MinValueValidator(1)], help_text="Odstęp między pobraniami w sekundach.")
     tryb = models.CharField(max_length=12, choices=Tryb.choices, default=Tryb.WEWNETRZNY, db_index=True, help_text="Tryb publikacji i pobierania.")
@@ -131,6 +146,13 @@ class Zrodlo(models.Model):
         except ValidationError as exc:
             raise ValidationError({"adres": exc}) from exc
 
+    def save(self, *args, **kwargs):
+        if not self.rodzaj_lacza:
+            self.rodzaj_lacza = self.RODZAJ_Z_DOSTEPU.get(self.sposob_dostepu, "")
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "rodzaj_lacza"}
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.nazwa
 
@@ -165,16 +187,24 @@ class Pobranie(models.Model):
 
 
 class WpisQuerySet(models.QuerySet):
-    def publiczne(self):
+    def bramka(self):
+        """Wspólna część bramki publikacji: źródło publiczne, aktywny pomiar, brak wyczyszczenia i wyłącznika kategorii."""
         wylaczniki = WylacznikKategorii.objects.filter(aktywny=True).filter(
             Q(warstwa=OuterRef("zrodlo__warstwa")) | Q(klasa=OuterRef("klasa"))
         )
         return (self.filter(zrodlo__tryb=Zrodlo.Tryb.PUBLICZNY)
                 .filter(pomiar_aktywny=True)
-                .filter(Q(klasa=Klasa.ZWYKLY) | Q(status_przegladu=StatusPrzegladu.DOPUSZCZONY))
-                .exclude(status_przegladu=StatusPrzegladu.WSTRZYMANY)
                 .filter(usunieto_at__isnull=True)
                 .filter(~Exists(wylaczniki)))
+
+    def publiczne(self):
+        return (self.bramka()
+                .filter(Q(klasa=Klasa.ZWYKLY) | Q(status_przegladu=StatusPrzegladu.DOPUSZCZONY))
+                .exclude(status_przegladu=StatusPrzegladu.WSTRZYMANY))
+
+    def w_przegladzie(self):
+        """Wrażliwe wpisy czekające na decyzję redakcji; tylko do liczenia, nigdy do pokazywania treści."""
+        return self.bramka().filter(status_przegladu=StatusPrzegladu.DO_PRZEGLADU).exclude(klasa=Klasa.ZWYKLY)
 
 
 class Wpis(models.Model):
