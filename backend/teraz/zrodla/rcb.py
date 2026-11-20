@@ -47,11 +47,12 @@ TEKST_MIEJSCA = re.compile(r"^alert rcb .*?(?:odbiorc|teren|województw|powiat)|
 NAGLOWEK_ALERTU = re.compile(r"^\W*alert rcb\b", re.I)
 # Nagłówek listy jednostek: z dwukropkiem („powiaty: A, B”) albo bez („w powiatach A i B”, „powiat świdnicki”, „w mieście Kraków”).
 NAGLOWEK_JEDNOSTEK = re.compile(
-    r"(?:\b(?:w|we)\s+)?\b(?P<typ>powiat|powiec|gmin|miast|mieśc)[^\W\d_]*(?:\s*:\s*|\s+(?=[^\W\d_]))", re.I,
+    r"(?:\b(?:w|we)\s+)?\b(?P<typ>powiat|powiec|gmin|miast|mieśc|pow\.)[^\W\d_]*(?:\s*:\s*|\s+(?=[^\W\d_]))", re.I,
 )
 NAGLOWEK_WOJEWODZTW = re.compile(r"\bwojewództw(?:o|a)?\s*:", re.I)
-TYPY_JEDNOSTEK = {"powiat": "", "powiec": "", "gmin": "gmina ", "miast": "miasto ", "mieśc": "miasto "}
-KONIEC_ZDANIA = re.compile(r"(?<!woj)\.(?:\s|$)", re.I)
+TYPY_JEDNOSTEK = {"powiat": "", "powiec": "", "pow.": "", "gmin": "gmina ", "miast": "miasto ", "mieśc": "miasto "}
+# Kropka po skrócie („godz.”, „ul.”, „woj.”, „pow.”, „al.”) nie kończy zdania (Z6P7 pkt 7).
+KONIEC_ZDANIA = re.compile(r"(?<!\bwoj)(?<!\bgodz)(?<!\bul)(?<!\bpow)(?<!\bal)\.(?:\s|$)", re.I)
 KONCOWKA_SEGMENTU = re.compile(
     r"[\s,;:\-\u2013\u2014]*(?:\b(?:oraz|i|a|także|w|we|woj|województwie|województwa|województwo)\b\.?[\s,;:\-\u2013\u2014]*)*$", re.I,
 )
@@ -63,7 +64,7 @@ ADRES = re.compile(r"\d|\bnr\b|" + ADRES_SLOWO.pattern, re.I)
 NAZWA_JEDNOSTKI = re.compile(r"[^\W\d_]+(?:[ -][^\W\d_]+){0,2}")
 ODSTEP_KARTY = timedelta(minutes=10)
 CZESC_REGIONU = re.compile(r"\bczęś(?:ć|ci)\s+(?:woj\.|województw)", re.I)
-WZMIANKA_JEDNOSTKI = re.compile(r"\b(?:powiat|powiec|gmin|miast|mieśc)[^\W\d_]*", re.I)
+WZMIANKA_JEDNOSTKI = re.compile(r"\b(?:powiat|powiec|gmin|miast|mieśc)[^\W\d_]*|\bpow\.", re.I)
 ROZDZIELNIK = r"[\s,;:\-\u2013\u2014]"
 # Zdanie z zaleceniem, nie z odbiorcami: czasownik zalecenia w dowolnym miejscu zdania („Omijaj miasto Chełm”, „W powiecie
 # chełmskim zalecamy pozostanie w domach”, „Dla mieszkańców … zalecamy …”). Formy dwuznaczne („bądź”, „ogranicz”) tylko w
@@ -102,9 +103,19 @@ NAWIAS_JEDNOSTKI = re.compile(r"\(\s*((?:powiat|powiec|gmin|miast|mieśc)[^()]*)
 # („wysłany do odbiorców”, „obowiązuje”, „obejmuje”, „dotyczy”, „ogranicza się do”). Sama wzmianka o mieście lub województwie
 # („Punkty pomocy otwarto w mieście Chełm”) nie zmienia zasięgu.
 CZASOWNIK_ODBIORCOW = re.compile(
-    r"\b(?:wysł\w+|wysyła\w*|rozesł\w+|skierowan\w+|obowiązuj\w*|obejmuj\w*|obejm\w+|dotyczy|dotyczą|dotyczył\w*|"
+    r"\b(?:obowiązuj\w*|obejmuj\w*|obejm\w+|dotyczy|dotyczą|dotyczył\w*|"
     r"ogranicza\s+się|ograniczon\w+\s+do|zawężon\w+|zawężono)\b", re.I,
 )
+# Czasownik wysłania liczy się jako zdanie o odbiorcach tylko z podmiotem alertu: „Alert wysłano do mieszkańców…” tak,
+# „Dodatkowych strażaków wysłano do miasta Radom w woj. mazowieckim” nie (Z6P7 pkt 3). Podmiot w mianowniku albo bierniku:
+# „po alercie”, „w związku z alertem” go nie tworzą.
+CZASOWNIK_WYSLANIA = re.compile(r"\b(?:wysł\w+|wysyła\w*|rozesł\w+|skierowan\w+)\b", re.I)
+PODMIOT_ALERTU = re.compile(r"\b(?:alert|alerty|komunikat|komunikaty|ostrzeżenie|sms|wiadomość|powiadomienie)\b", re.I)
+# „Nie obowiązuje już w powiecie puckim” bez podmiotu: wyłączenie, nie zalecenie „nie …” (Z6P7 pkt 4).
+WYLACZENIE_BEZ_PODMIOTU = re.compile(r"^\W*nie\s+(?:dotyczy|obejmuje|obowiązuje)\b", re.I)
+# Zdanie o zasięgu, którego nie rozpoznaliśmy w pełni (bez czasownika i nagłówka odbiorców), ale z jednostką lub województwem i
+# słowem, które mogło zmienić znaczenie wcześniejszego zasięgu: nie zmieniamy zasięgu, tylko oznaczamy go jako nieustalony.
+ZAWEZENIE = re.compile(r"\b(?:już\s+tylko|tylko|jedynie|wyłącznie|ogranicz\w+|zawęż\w+)\b", re.I)
 PUNKT_LISTY = re.compile(r"^[-•]\s")
 # Strukturalna linia listy odbiorców („- lubelskie - powiaty: A, B”, „gminy: A, B”): zaczyna się od typu jednostek z dwukropkiem,
 # opcjonalnie po punkcie i nazwie województwa. Proza z dwukropkiem („Punkty pomocy w miastach: …”) nią nie jest.
@@ -122,14 +133,26 @@ ODSYLACZ = re.compile(
 # albo nowe zdanie orzekające po średniku („…nie obowiązuje już w woj. X; obowiązuje w woj. Y”).
 KONIEC_WYLACZENIA = re.compile(
     r"(?:,\s*|\s+)(?:a\s+także|także|oraz|i|a)\s+(?=(?:w|we)\s+(?:woj\.|województw)|woj\.)|"
-    r";\s*(?=(?:alert\s+|komunikat\s+)?(?:obowiązuj|obejmuj|dotyczy)\w*)", re.I,
+    r";\s*(?=(?:alert\s+|komunikat\s+)?(?:obowiązuj|obejmuj|dotyczy)\w*)|"
+    # „Oprócz powiatu X alert obejmuje również powiat Y”: orzeczenie twierdzące kończy wyłączenie, Y jest objęty (Z6P7 pkt 4);
+    # „nie obejmuje” i „alert nie dotyczy” go nie kończą
+    r"(?<!\bnie)(?:,\s*|\s+)(?:(?:alert|komunikat|ostrzeżeni)\w*(?:\s+rcb)?\s+)?(?:obejmuj|obowiązuj|dotycz)\w*\b", re.I,
 )
-# Zmiana zasięgu w aktualizacji: nowa lista zastępuje dotychczasową („Od 11:00 alert obejmuje wyłącznie powiat chełmski”).
-ZMIANA_ZASIEGU = re.compile(r"\b(?:wyłącznie|ogranicza\s+się\s+do|ograniczon\w+\s+do)\b", re.I)
+# Zmiana zasięgu w aktualizacji: nowa lista zastępuje dotychczasową („Od 11:00 alert obejmuje wyłącznie powiat chełmski”,
+# „obejmuje już tylko”).
+ZMIANA_ZASIEGU = re.compile(
+    r"\b(?:już\s+tylko|tylko|jedynie|wyłącznie|ogranicza\s+się\s+do|ograniczon\w+\s+do|zawężon\w+\s+do|zawężono\s+do)\b", re.I,
+)
+# Nagłówek aktualizacji: „Aktualizacja 11:00”, „Aktualizacja - g. 10:55”, „Aktualizacja! - 22:41”; treść po nim to początek aktualizacji.
+NAGLOWEK_AKTUALIZACJI = re.compile(
+    r"^aktualizacja\b[\s!:.\-\u2013\u2014]*(?:\(?\s*(?:z\s+|o\s+)?(?:godz(?:inie)?\.?|g\.?)?\s*(?:[01]?\d|2[0-3]):[0-5]\d\s*\)?)?"
+    r"[\s!:.\-\u2013\u2014]*", re.I,
+)
 # Część województwa przed jego nazwą: „w części woj. X”, „na południu woj. X”, „w północno-wschodniej części woj. X”.
 _KIERUNEK = r"(?:północn\w*|południow\w*|wschodni\w*|zachodni\w*|centraln\w*)"
 CZESC_PRZED_NAZWA = re.compile(
-    r"(?:\bczęś(?:ć|ci)|\bna\s+(?:północy|południu|wschodzie|zachodzie|północnym|południowym|wschodnim|zachodnim|centrum)(?:[\s-]+\w+)?"
+    r"(?:\bczęś(?:ć|ci)|\b(?:wybran|niektór|poszczególn|określon)\w+\s+(?:rejon|obszar|teren|miejscowoś|region|okolic|czę|gmin|powiat|miast)\w*"
+    r"|\bna\s+(?:północy|południu|wschodzie|zachodzie|północnym|południowym|wschodnim|zachodnim|centrum)(?:[\s-]+\w+)?"
     r"|\bw\s+" + _KIERUNEK + r"(?:[\s-]+" + _KIERUNEK + r")?\s+części)\s+(?:woj\.|województw\w*)\s*$", re.I,
 )
 LACZNIK_WOJEWODZTW = re.compile(r"\s*,\s*(?:(?:i|oraz)\s+)?|\s+(?:i|oraz)\s+", re.I)
@@ -251,33 +274,65 @@ def _zdanie_odbiorcow(zdanie):
     („Alert RCB …”) albo zdanie z czasownikiem wysłania, obowiązywania lub obejmowania („wysłany do odbiorców”, „obowiązuje”,
     „obejmuje”, „dotyczy”); sama wzmianka o mieście lub województwie nim nie jest. Zdanie z czasownikiem zalecenia („zalecamy”,
     „nie powinni”, „unikaj”) też nie, chyba że to nagłówek alertu: czytamy go do pierwszego zalecenia."""
-    zalecenie = REKOMENDACJA.search(zdanie)
+    bez_podmiotu = WYLACZENIE_BEZ_PODMIOTU.match(zdanie)
+    zalecenie = REKOMENDACJA.search(zdanie, bez_podmiotu.end() if bez_podmiotu else 0)
     if zalecenie:
-        if not NAGLOWEK_ALERTU.match(zdanie):
+        if not (NAGLOWEK_ALERTU.match(zdanie) or bez_podmiotu):
             return None
         zdanie = zdanie[:zalecenie.start()]
-    if NAGLOWEK_ALERTU.match(zdanie) or CZASOWNIK_ODBIORCOW.search(zdanie) or STRUKTURA_LISTY.match(zdanie):
+    if (NAGLOWEK_ALERTU.match(zdanie) or CZASOWNIK_ODBIORCOW.search(zdanie) or STRUKTURA_LISTY.match(zdanie)
+            or CZASOWNIK_WYSLANIA.search(zdanie) and PODMIOT_ALERTU.search(zdanie)):
         return zdanie
     return None
 
 
+def _nazwa_punktu(punkt):
+    """Punkt listy będący samą nazwą jednostki („- pucki”): bez własnego nagłówka typu, nazwy województwa i zalecenia."""
+    tekst = PUNKT_LISTY.sub("", punkt).strip(" ;,.")
+    if (not tekst or len(tekst.split()) > 3 or NAGLOWEK_JEDNOSTEK.search(tekst) or NAZWA_WOJ.search(tekst)
+            or WOJ_MIEJSCOWNIK.search(tekst) or NAZWA_MIEJSCOWNIK.search(tekst) or REKOMENDACJA.search(tekst)):
+        return None
+    return tekst
+
+
+def _naglowek_z_punktami(naglowek, punkty):
+    """Nagłówek „… powiaty w woj. pomorskim:” z punktami „- pucki”, „- wejherowski” czytamy jak jedno zdanie
+    „… powiaty pucki, wejherowski w woj. pomorskim” (Z6P7 pkt 7): nazwy stoją zaraz po nagłówku typu, reszta nagłówka po nich."""
+    typ = list(NAGLOWEK_JEDNOSTEK.finditer(naglowek))[-1]
+    przed = naglowek[:typ.end()].rstrip()
+    reszta = naglowek[typ.end():].strip(" :")
+    return f"{przed if przed.endswith(':') else przed + ':'} {', '.join(punkty)}{' ' + reszta if reszta else ''}"
+
+
 def _zdania_odbiorcow(linie):
     """Zdania o odbiorcach z linii (tekst, czy to punkt listy po „części województwa:”). Punkt listy („- lubelskiego - powiaty: …”)
-    i linia „powiaty: …” liczą się tylko po nagłówku zakończonym dwukropkiem; inne punkty to nie odbiorcy."""
+    i linia „powiaty: …” liczą się tylko po nagłówku zakończonym dwukropkiem; inne punkty to nie odbiorcy. Punkty będące samymi
+    nazwami jednostek (elementy `<li>`: „- pucki”) pod nagłówkiem z typem jednostek dopisujemy do tego nagłówka."""
+    linie = [linia.strip() for linia in linie]
     otwarta = czesc_listy = False
-    for linia in linie:
-        linia = linia.strip()
+    i = 0
+    while i < len(linie):
+        linia = linie[i]
+        i += 1
         if otwarta and PUNKT_LISTY.match(linia):
             yield linia, czesc_listy
             continue
         otwarta = czesc_listy = False
         zdania = [zdanie.strip() for zdanie in KONIEC_ZDANIA.split(linia)]
-        for zdanie in zdania:
+        ostatnie = _zdanie_odbiorcow(zdania[-1]) if zdania else None
+        otwiera = bool(ostatnie) and linia.endswith(":")
+        punkty = []
+        if otwiera and NAGLOWEK_JEDNOSTEK.search(ostatnie) and not CZESC_BEZ_NAZWY.search(ostatnie):
+            while i + len(punkty) < len(linie) and PUNKT_LISTY.match(linie[i + len(punkty)]) and _nazwa_punktu(linie[i + len(punkty)]):
+                punkty.append(_nazwa_punktu(linie[i + len(punkty)]))
+        for numer, zdanie in enumerate(zdania):
             tekst = _zdanie_odbiorcow(zdanie)
+            if punkty and numer == len(zdania) - 1:
+                tekst = _naglowek_z_punktami(tekst, punkty)
             if tekst and tekst.strip():
                 yield tekst.strip(), False
-        ostatnie = _zdanie_odbiorcow(zdania[-1]) if zdania else None
-        if ostatnie and linia.endswith(":"):
+        i += len(punkty)
+        if otwiera:
             otwarta, czesc_listy = True, bool(CZESC_BEZ_NAZWY.search(ostatnie))
 
 
@@ -371,6 +426,21 @@ def _miejscowniki(zdanie):
             yield lista.start() + m.start(), m.group(1), lista.start() + m.end()
 
 
+POPRZEDNI_WYRAZ = re.compile(r"([^\W\d_]+)[  -]$")
+SLOWA_WOJEWODZTWA = frozenset({"woj", "województwa", "województwie", "województwo", "województwach"})
+
+
+def _czlon_nazwy_jednostki(zdanie, m):
+    """Nazwa województwa napisana Wielką literą zaraz po innym wyrazie z Wielkiej litery („Wysokie Mazowieckie”) jest członem nazwy
+    miejscowości, nie województwem (Z6P7 pkt 8). Pisownia samymi wielkimi literami i tytuł „Województwa Lubelskiego” to nie ten przypadek."""
+    nazwa = m.group(0)
+    poprzedni = POPRZEDNI_WYRAZ.search(zdanie[:m.start()])
+    if not (poprzedni and nazwa[0].isupper() and nazwa[1:].islower()):
+        return False
+    slowo = poprzedni.group(1)
+    return slowo[0].isupper() and slowo[1:].islower() and slowo.casefold() not in SLOWA_WOJEWODZTWA
+
+
 def _wojewodztwa_zdania(zdanie, poczatek):
     """Wzmianki o województwach w zdaniu jako (pozycja, kod, nominatyw, koniec, część); nazwy w adresie („ul. Lubelska”) pomijamy.
     Zapis nazwy jest znormalizowany (małe litery, miejscownik jako mianownik), także dla zdania pisanego wielkimi literami.
@@ -380,6 +450,8 @@ def _wojewodztwa_zdania(zdanie, poczatek):
     koniec_nazw = adres.start() if adres else poczatek
     nazwy = []
     for m in NAZWA_WOJ.finditer(zdanie):
+        if _czlon_nazwy_jednostki(zdanie, m):
+            continue
         kod = WOJEWODZTWA[m.group(1).lower()]
         nazwy.append((m.start(), kod, WOJ_RDZEN[kod] + m.group(0)[len(m.group(1)):].lower(), m.end()))
     for poz, rdzen, koniec in _miejscowniki(zdanie):
@@ -469,16 +541,20 @@ def _jednostki_zdania(zdanie, wojewodztwa, jednostki, czesc_domyslna=False, z_wy
             not typ and not pominieto and all(_powiat_ziemski(nazwa) for nazwa in nazwy) for typ, nazwy, _, pominieto in wlasne
         )
 
-    zakresy = {}
+    rodzaje = {}
     for kod, czesc in wspomniane:
-        if kod in z_nazwami:
+        if czesc or czesc_domyslna:
+            # „część woj. X, w tym powiat Y” i „wybranych rejonów woj. X”: wyliczenie nie jest wyczerpujące (Z6P7 pkt 2)
+            rodzaj = "czesc"
+        elif kod in z_nazwami:
             rodzaj = "lista" if zamknieta(kod, czesc) else "lista_otwarta"
-        elif czesc or czesc_domyslna or kod in z_naglowkiem or nieprzypisane:
+        elif kod in z_naglowkiem or nieprzypisane:
             rodzaj = "czesc"
         else:
             rodzaj = "cale"
-        if kod not in zakresy or RODZAJ_ZAKRESU[rodzaj] > RODZAJ_ZAKRESU[zakresy[kod]]:
-            zakresy[kod] = rodzaj
+        rodzaje.setdefault(kod, set()).add(rodzaj)
+    # jedno zdanie z częścią województwa wystarcza: lista tego samego województwa z innego członu nie jest wtedy zamknięta
+    zakresy = {kod: "czesc" if "czesc" in r else max(r, key=RODZAJ_ZAKRESU.get) for kod, r in rodzaje.items()}
     return zakresy, nieustalone
 
 
@@ -536,7 +612,7 @@ def _wylaczenia(wyl, po, domyslne, jednostki):
     jednostki.append(LINIA_WYLACZENIE_OGOLNE)
 
 
-def _zdanie_do_zasiegu(zdanie, wojewodztwa, jednostki, czesc_domyslna=False):
+def _zdanie_do_zasiegu(zdanie, wojewodztwa, jednostki, czesc_domyslna=False, domyslne=()):
     """Jedno zdanie o odbiorcach. Parser jest zachowawczy (R38d): po „z wyłączeniem”, „z wyjątkiem”, „poza”, „oprócz”, „bez”,
     „nie obowiązuje” jednostki nie są objęte alertem, więc nie trafiają do zasięgu; zapisujemy je osobno jako „wyłączone: …”
     (zasięg zostaje przybliżony), a gdy nie da się ich wskazać, jako „wyłączone: nieokreślone”. Wyłączenie obejmuje tylko swój
@@ -549,14 +625,20 @@ def _zdanie_do_zasiegu(zdanie, wojewodztwa, jednostki, czesc_domyslna=False):
     zakresy, nieustalone = _jednostki_zdania(
         zdanie[:wyl.start()] if wyl else zdanie, wojewodztwa, jednostki, czesc_domyslna, z_wylaczeniem=bool(wyl))
     _dopisz_zakresy(jednostki, zakresy, nieustalone)
+    kody = set(zakresy)
     if not wyl:
-        return
+        return kody
     reszta = zdanie[wyl.end():]
     granica = KONIEC_WYLACZENIA.search(reszta)
     po, dalej = (reszta[:granica.start()], reszta[granica.end():]) if granica else (reszta, "")
-    _wylaczenia(wyl, po, next(iter(zakresy)) if len(zakresy) == 1 else None, jednostki)
+    # województwo wyłączenia bez własnej nazwy: z części przed nim, z dalszej części zdania („Oprócz X alert obejmuje Y w woj. Z”)
+    # albo z wcześniejszego zasięgu, jeśli jest dokładnie jedno; w innym razie wyłączenie zostaje bez województwa
+    kody_dalej = _zdanie_do_zasiegu(dalej, [], [], czesc_domyslna, domyslne) if dalej.strip() else set()
+    kandydaci = kody or kody_dalej or set(domyslne)
+    _wylaczenia(wyl, po, next(iter(kandydaci)) if len(kandydaci) == 1 else None, jednostki)
     if dalej.strip():
-        _zdanie_do_zasiegu(dalej, wojewodztwa, jednostki, czesc_domyslna)
+        kody |= _zdanie_do_zasiegu(dalej, wojewodztwa, jednostki, czesc_domyslna, domyslne)
+    return kody
 
 
 def _jednostki(linie):
@@ -567,35 +649,143 @@ def _jednostki(linie):
     obejmuje więcej niż jedno województwo (recenzja PR #38, R38b P1-1). Czytamy tylko zdania o odbiorcach, każde osobno:
     zalecenie („Omijaj miasto Chełm”) ani punkt pomocy nie dopisują jednostek do zasięgu (R38c P1, R38d P1-3, Z6P6 zasada 3).
     Wyłączenia („z wyłączeniem powiatu X”) trafiają do linii „wyłączone: …”, nie do zasięgu."""
+    return _jednostki_z_kontekstem(linie, ())
+
+
+KODY_NOMINATYW = {nazwa: kod for kod, nazwa in WOJ_NOMINATYW.items()}
+
+
+def _kody_zakresow(linie):
+    """Kody województw z linii „zakres: …” pola `miejsce`."""
+    zakresy = (ZAKRES_LINIA.fullmatch(linia) for linia in linie)
+    return {KODY_NOMINATYW[zakres.group(1)] for zakres in zakresy if zakres and zakres.group(1) in KODY_NOMINATYW}
+
+
+def _wzmianka_zasiegu(tekst):
+    return bool(WZMIANKA_JEDNOSTKI.search(tekst) or NAZWA_WOJ.search(tekst) or WOJ_MIEJSCOWNIK.search(tekst))
+
+
+def _niejasna_zmiana(linie):
+    """Zdanie z jednostką lub województwem i słowem wyłączenia albo zawężenia („poza”, „tylko”), którego nie rozpoznaliśmy jako
+    zdania o odbiorcach: nie zmienia zasięgu, ale wcześniejszy zasięg mógł przez nie zmienić znaczenie (Z6P7, zasada strukturalna)."""
+    for linia in linie:
+        for zdanie in KONIEC_ZDANIA.split(linia):
+            if (zdanie.strip() and _zdanie_odbiorcow(zdanie) is None and not REKOMENDACJA.search(zdanie)
+                    and _wzmianka_zasiegu(zdanie) and (WYLACZENIE.search(zdanie) or ZAWEZENIE.search(zdanie))):
+                return True
+    return False
+
+
+def _jednostki_z_kontekstem(linie, poprzednie):
+    """To samo co `_jednostki`, z zasięgiem ustalonym wcześniej (`poprzednie`: linie `miejsce`, np. z pierwotnego komunikatu przy
+    aktualizacji): wyłączenie bez województwa trafia do jedynego znanego województwa (Z6P7 pkt 4), a zdanie nierozpoznane,
+    które mogło zmienić znaczenie zasięgu, daje znacznik „nieustalone”."""
     wojewodztwa, jednostki = [], []
+    kody = _kody_zakresow(poprzednie)
     for tekst, czesc in _zdania_odbiorcow(linie):
-        _zdanie_do_zasiegu(tekst, wojewodztwa, jednostki, czesc)
+        kody |= _zdanie_do_zasiegu(tekst, wojewodztwa, jednostki, czesc, domyslne=kody if len(kody) == 1 else ())
+    if _niejasna_zmiana(linie) and (wojewodztwa or jednostki or poprzednie):
+        jednostki.append(LINIA_NIEUSTALONE)
     return _scal_zakresy(list(dict.fromkeys([*wojewodztwa, *jednostki])))
 
 
 def _zmienia_zasieg(linie, wlasne):
-    """Aktualizacja jawnie zmienia zasięg („Od 11:00 alert obejmuje wyłącznie powiat chełmski w woj. lubelskim”, „ogranicza się
-    do …”): zdanie o odbiorcach ze słowem zmiany i czytelnym nowym zasięgiem. Nowa lista zastępuje wcześniejszą."""
+    """Aktualizacja jawnie zmienia zasięg („Od 11:00 alert obejmuje wyłącznie / już tylko powiat chełmski w woj. lubelskim”,
+    „ogranicza się do …”): zdanie o odbiorcach ze słowem zmiany i czytelnym nowym zasięgiem z województwem. Nowa lista zastępuje
+    wcześniejszą."""
     return any(ZAKRES_LINIA.fullmatch(linia) for linia in wlasne) and any(
         ZMIANA_ZASIEGU.search(tekst) for tekst, _ in _zdania_odbiorcow(linie))
 
 
+def _zmiana_nieczytelna(linie):
+    """Aktualizacja mówi o zawężeniu zasięgu do jednostek, ale nie umiemy odczytać nowego zasięgu z województwem: poprzedni
+    zostaje (szerzej, nigdy węziej niż źródło), tylko oznaczony jako nieustalony."""
+    return any(ZMIANA_ZASIEGU.search(tekst) and _wzmianka_zasiegu(tekst) for tekst, _ in _zdania_odbiorcow(linie))
+
+
 def _sekcje(akapity):
+    """Sekcje karty jako (aktualizacja, godzina, linie, naglowek): `naglowek` to treść po „Aktualizacja 11:00:” w tej samej linii
+    (Z6P7 pkt 6), nie jest w `linie`, żeby tożsamość aktualizacji liczona z `linie` nie zmieniła się dla starszych kart."""
     sekcje = []
-    aktualizacja, godzina, linie = False, None, []
+    aktualizacja, godzina, linie, naglowek = False, None, [], ""
     for linia in akapity:
         aktualizacja_wiersz = bool(AKTUALIZACJA.match(linia))
         tylko_godzina = GODZINA.fullmatch(linia.rstrip("."))
         separator = re.fullmatch(r"[-\u2013\u2014_ ]{3,}", linia)
         if aktualizacja_wiersz or tylko_godzina or separator:
-            if linie:
-                sekcje.append((aktualizacja, godzina, linie))
+            if linie or naglowek:
+                sekcje.append((aktualizacja, godzina, linie, naglowek))
             aktualizacja, godzina, linie = aktualizacja_wiersz, GODZINA.search(linia), []
+            naglowek = linia[NAGLOWEK_AKTUALIZACJI.match(linia).end():].strip() if aktualizacja_wiersz else ""
+            naglowek = naglowek if re.search(r"[^\W\d_]{3,}", naglowek) else ""
         else:
             linie.append(linia)
-    if linie:
-        sekcje.append((aktualizacja, godzina, linie))
+    if linie or naglowek:
+        sekcje.append((aktualizacja, godzina, linie, naglowek))
     return sekcje
+
+
+def _kody_miejsca(miejsce):
+    """Kody województw z jednostek objętych alertem: linie z samą nazwą województwa i z nazwą województwa przed dwukropkiem.
+    Nazwa województwa w środku nazwy jednostki („miasto Wysokie Mazowieckie”) kodu nie dopisuje (Z6P7 pkt 8); znaczniki
+    „wyłączone: …” i „nieustalone: …” też nie."""
+    kody = set()
+    for linia in _bez_znacznikow(miejsce):
+        nazwa = NAZWA_WOJ.fullmatch(linia.partition(": ")[0])
+        if nazwa:
+            kody.add(WOJEWODZTWA[nazwa.group(1).lower()])
+    return sorted(kody)
+
+
+def _klucz_jednostki(linia):
+    """(kod województwa albo None, przedrostek typu, nazwa w formie ze słownika) jednostki z linii `miejsce`."""
+    przedrostek, _, reszta = linia.partition(": ")
+    nazwa_woj = NAZWA_WOJ.fullmatch(przedrostek)
+    kod = WOJEWODZTWA[nazwa_woj.group(1).lower()] if nazwa_woj else None
+    if not nazwa_woj:
+        reszta = linia
+    typ = next((typ for typ in ("miasto ", "gmina ") if reszta.startswith(typ)), "")
+    nazwa = reszta[len(typ):]
+    return kod, typ, _nazwa_ze_slownika(nazwa) or nazwa.casefold()
+
+
+def _ta_sama_jednostka(a, b):
+    return a[1:] == b[1:] and (a[0] is None or b[0] is None or a[0] == b[0])
+
+
+def _status_odwolania(tresc, miejsce):
+    """Status zdarzenia i linie wyłączeń dla karty (Z6P7, R38g). Odwołanie bez wskazania jednostek („Odwołano alert RCB”, „Brak
+    zagrożenia na terenie Polski”) albo obejmujące całą listę jednostek i województw zasięgu to „Odwołane”. Odwołanie jednostek
+    ze swojego zdania („Odwołano alert w powiecie puckim”) przy szerszym zasięgu nie odwołuje całego zdarzenia: reszta zostaje
+    aktywna, a odwołane jednostki trafiają do linii „wyłączone: …” tej karty."""
+    if not ODWOLANIE.search(tresc):
+        return Zdarzenie.Status.KOMUNIKAT_OFICJALNY, []
+    zdania = [zdanie for linia in tresc.splitlines() for zdanie in KONIEC_ZDANIA.split(linia) if ODWOLANIE.search(zdanie)]
+    if not zdania or not all(_wzmianka_zasiegu(zdanie) for zdanie in zdania):
+        return Zdarzenie.Status.ODWOLANE, []
+    odwolane_woj, odwolane = set(), []
+    for zdanie in zdania:
+        wojewodztwa, jednostki = [], []
+        _jednostki_zdania(_rozwin_nawiasy(ODSYLACZ.sub("", zdanie)), wojewodztwa, jednostki)
+        odwolane += [linia for linia in jednostki if not linia.startswith(PREFIKSY_ZNACZNIKOW)]
+        odwolane_woj |= {WOJEWODZTWA[NAZWA_WOJ.fullmatch(nazwa).group(1).lower()] for nazwa in wojewodztwa}
+    klucze = [_klucz_jednostki(linia) for linia in odwolane]
+    zasieg = _bez_znacznikow(miejsce)
+    jednostki_zasiegu = [linia for linia in zasieg if not NAZWA_WOJ.fullmatch(linia) and not ZAKRES_LINIA.fullmatch(linia)]
+    szerokie = [kod for kod, rodzaj in ((KODY_NOMINATYW[z.group(1)], z.group(2)) for z in map(ZAKRES_LINIA.fullmatch, miejsce.splitlines()) if z)
+                if rodzaj in ("cale", "czesc")]
+    if not jednostki_zasiegu and not szerokie:
+        return Zdarzenie.Status.ODWOLANE, []  # nic nie wiemy o zasięgu poza samym odwołaniem
+    pokryte = all(
+        _klucz_jednostki(linia)[0] in odwolane_woj or any(_ta_sama_jednostka(_klucz_jednostki(linia), klucz) for klucz in klucze)
+        for linia in jednostki_zasiegu
+    ) and all(kod in odwolane_woj for kod in szerokie)
+    if pokryte:
+        return Zdarzenie.Status.ODWOLANE, []
+    kody_zasiegu = _kody_miejsca("\n".join(zasieg))
+    wylaczone = [PREFIKS_WYLACZONE + (linia if ": " in linia or len(kody_zasiegu) != 1 else f"{WOJ_NOMINATYW[kody_zasiegu[0]]}: {linia}")
+                 for linia in odwolane]
+    return Zdarzenie.Status.KOMUNIKAT_OFICJALNY, wylaczone or [LINIA_WYLACZENIE_OGOLNE]
 
 
 def parsuj_karte(odpowiedz, adres):
@@ -620,12 +810,16 @@ def parsuj_karte(odpowiedz, adres):
         publikacja = publikacja if publikacja.tzinfo else publikacja.replace(tzinfo=WARSZAWA)
         dokladna = True
     elementy = edytor.znajdz(lambda el: el.tag in {"p", "li", "h3", "h4", "hr"}) if edytor else ()
-    akapity = [linia for el in elementy for linia in ("---" if el.tag == "hr" else el.tekst()).splitlines()]
-    akapity = [uprosc(linia) for linia in akapity if linia.strip()]
+    akapity = []
+    for el in elementy:
+        linie_elementu = [uprosc(linia) for linia in ("---" if el.tag == "hr" else el.tekst()).splitlines() if linia.strip()]
+        if el.tag == "li" and linie_elementu and not PUNKT_LISTY.match(linie_elementu[0]) and not AKTUALIZACJA.match(linie_elementu[0]):
+            linie_elementu[0] = "- " + linie_elementu[0]  # element listy czytamy jak punkt listy (Z6P7 pkt 7)
+        akapity.extend(linie_elementu)
     wprowadzenie = uprosc(intro.tekst()) if intro else ""
     sekcje = _sekcje(akapity)
-    aktualizacje = [(godz, linie) for aktualizacja, godz, linie in sekcje if aktualizacja]
-    oryginalne = [(godz, linie) for aktualizacja, godz, linie in sekcje if not aktualizacja]
+    aktualizacje = [(godz, naglowek, linie) for aktualizacja, godz, linie, naglowek in sekcje if aktualizacja]
+    oryginalne = [(godz, linie) for aktualizacja, godz, linie, _ in sekcje if not aktualizacja]
     if not oryginalne and wprowadzenie:
         oryginalne = [(None, [wprowadzenie])]
     if not oryginalne:
@@ -638,28 +832,32 @@ def parsuj_karte(odpowiedz, adres):
     wynik = []
     tytul = tytul.tekst()
     grupa = urlsplit(adres).path
-    for aktualizacja, godz, linie in [(False, godzina, tekst), *((True, godz, linie) for godz, linie in aktualizacje)]:
+    for aktualizacja, godz, naglowek, linie in [(False, godzina, "", tekst), *((True, godz, naglowek, linie) for godz, naglowek, linie in aktualizacje)]:
         czas = _czas(data, godz)
         laczone = miejsca
+        tresc_id = "\n".join(linie)
+        if naglowek:
+            linie = [naglowek, *linie]
         if aktualizacja:
-            wlasne = _jednostki(linie)
+            wlasne = _jednostki_z_kontekstem(linie, miejsca)
             if _zmienia_zasieg(linie, wlasne):
                 # jawna zmiana zasięgu zastępuje wcześniejszą listę, także dla kolejnych aktualizacji (Z6P6 pkt 6)
                 miejsca = laczone = wlasne
             else:
-                laczone = _scal_zakresy(list(dict.fromkeys([*miejsca, *wlasne])))
+                laczone = _scal_zakresy(list(dict.fromkeys([*miejsca, *wlasne, *([LINIA_NIEUSTALONE] if _zmiana_nieczytelna(linie) else [])])))
+        tresc = "\n".join(linie)
+        status, odwolane = _status_odwolania(tresc, "\n".join(laczone))
+        laczone = list(dict.fromkeys([*laczone, *odwolane]))
         miejsce = "\n".join(laczone)
         # kod województwa tylko z jednostek objętych alertem: znaczniki „wyłączone: …” i „nieustalone: …” go nie dopisują
-        kody = sorted({WOJEWODZTWA[nazwa.lower()] for nazwa in NAZWA_WOJ.findall("\n".join(_bez_znacznikow(miejsce)))})
-        tresc = "\n".join(linie)
+        kody = _kody_miejsca(miejsce)
         # wybrane powiaty w województwie: kod 2-cyfrowy to tylko przybliżenie (pewność 0,5); cały region: pewność 1
         pewnosc = (0.5 if zasieg_czesciowy(miejsce, tresc) else 1) if kody else 0
         ident = grupa
         if aktualizacja:
             godzina_id = f"{czas:%H:%M}" if czas else "bez-godziny"
-            skrot = sha256(f"{grupa}:{godzina_id}:{tresc[:LIMIT_TRESCI]}".encode()).hexdigest()
+            skrot = sha256(f"{grupa}:{godzina_id}:{(tresc_id or tresc)[:LIMIT_TRESCI]}".encode()).hexdigest()
             ident = f"rcb:aktualizacja:{skrot}"
-        status = Zdarzenie.Status.ODWOLANE if ODWOLANIE.search(tresc) else Zdarzenie.Status.KOMUNIKAT_OFICJALNY
         wynik.append(wpis(
             ident, tytul, adres, publikacja, tresc=tresc, czas_zrodlowy_at=czas,
             dokladna_godzina_publikacji=dokladna, miejsce=miejsce[:16000], teryt=kody,
@@ -671,7 +869,7 @@ def parsuj_karte(odpowiedz, adres):
 
 class AdapterRCB(Adapter):
     limit_zadan = 2
-    wersja_parsera = "7"
+    wersja_parsera = "8"
 
     def parsuj(self, odpowiedz):
         return parsuj_karte(odpowiedz, getattr(self, "adres_aktualnej_karty", self.zrodlo.adres))

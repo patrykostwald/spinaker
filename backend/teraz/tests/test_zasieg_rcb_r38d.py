@@ -93,8 +93,8 @@ def test_slabe_wylaczenie_bez_jednostek_niczego_nie_zastrzega():
     alert = parsuj_akapity(ODBIORCY + "na terenie woj. lubelskiego.", "Alert nie dotyczy pozostałych terenów kraju.")
     assert linie(alert) == ["lubelskiego"] and alert["pewnosc_lokalizacji"] == 1
     z_jednostka = parsuj_akapity(ODBIORCY + "na terenie woj. lubelskiego.", "Alert nie dotyczy miasta Lublin.")
-    # osobne zdanie nie wiąże wyłączenia z województwem (front czyta je jak jednostkę bez województwa)
-    assert linie(z_jednostka) == ["lubelskiego", "wyłączone: miasto Lublin"]
+    # osobne zdanie bez województwa: wyłączenie trafia do jedynego znanego województwa zasięgu (Z6P7 pkt 4)
+    assert linie(z_jednostka) == ["lubelskiego", "wyłączone: lubelskie: miasto Lublin"]
 
 
 def test_bez_w_innym_znaczeniu_nie_ucina_zdania():
