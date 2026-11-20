@@ -4,6 +4,8 @@ import { serverFeatureVerified } from '../../../lib/features';
 import { parsuj } from './parametry';
 import { parsujPowiaty } from './powiaty';
 import { TerazPage } from './TerazPage';
+// style osi czasu (Os.tsx) na poziomie trasy: testy renderujące TerazPage nie ładują arkuszy CSS
+import './os.css';
 
 /**
  * „Teraz”: mapa Polski na żywo z warstwami komunikatów służb i instytucji (Z6a) oraz widoki tabela i „Mój powiat” (Z6b). Za flagą NEXT_PUBLIC_TERAZ_ENABLED

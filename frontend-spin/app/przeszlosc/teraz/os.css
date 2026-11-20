@@ -1,0 +1,144 @@
+/* =====================================================================
+   „Teraz”: oś czasu i przełącznik TODAY / PRZESZŁOŚĆ (W4, Os.tsx). Pas między linią stanu a mapą, stała wysokość w obu trybach:
+   zmienia się tylko wygląd baneru (ramka i tło ostrzegawcze w archiwum). Od 900 px lewa kolumna ma szerokość panelu warstw,
+   a histogram zaczyna się nad mapą; dolna linia baneru i podpis luk stoją na jednej wysokości.
+   Kreskowanie = brak w naszych danych (nigdy zero); kreska 2 px = mamy dane, zero komunikatów.
+   ===================================================================== */
+
+/* pas osi to dodatkowy wiersz siatki strony: mapa dostaje resztę wysokości */
+.tz:has(> .tz-os) { grid-template-rows: auto auto auto minmax(0, 1fr); }
+
+.tz-os {
+  --tz-os-kreski: repeating-linear-gradient(135deg, color-mix(in srgb, var(--sc-text-2) 75%, transparent) 0 1.5px, transparent 1.5px 5px);
+  /* nad nakładkami mapy (z 3) i kartą (z 5), pod rozwinięciem linii stanu (z 40) i arkuszami telefonu (z 30) */
+  position: relative; z-index: 7; display: grid; gap: 6px 8px; align-items: center;
+  padding: 8px 12px 10px; border-bottom: 1px solid var(--sc-line); background: var(--sc-surface); font-size: 13px; line-height: 18px;
+  /* telefon: kolejność wzrokowa = kolejność w DOM i fokusu (tryb, przesuwanie, suwak, tempo, krok, szczegóły luk) */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "tryb . ruch"
+    "stan stan stan"
+    "wykres wykres wykres"
+    "daty daty daty"
+    "predkosc . krok"
+    "luki luki luki";
+}
+
+/* ---------- przyciski (cele 44 px) ---------- */
+.tz-os :is(.tz-os__tryb, .tz-os__krok) { display: inline-flex; justify-self: start; padding: 3px; border-radius: 10px; background: var(--sc-surface-3); }
+.tz-os__tryb { grid-area: tryb; }
+.tz-os__krok { grid-area: krok; justify-self: end; }
+.tz-os :is(.tz-os__tryb, .tz-os__krok) button {
+  min-height: var(--tz-tap); min-width: 56px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--sc-text-2); font: 600 13px/1 var(--sc-font-sans); letter-spacing: .04em; cursor: pointer; white-space: nowrap;
+}
+.tz-os__tryb button { letter-spacing: .08em; }
+.tz-os :is(.tz-os__tryb, .tz-os__krok) button[aria-pressed="true"] { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc-accent) 55%, transparent); }
+.tz-os[data-tryb="przeszlosc"] .tz-os__tryb button[aria-pressed="true"] { background: var(--tz-ostrz-tlo); color: var(--tz-ostrz); box-shadow: inset 0 0 0 1.5px var(--tz-ostrz); }
+.tz-os__ruch { grid-area: ruch; display: inline-flex; gap: 4px; justify-self: end; }
+.tz-os__ruch button {
+  display: inline-grid; place-items: center; width: var(--tz-tap); height: var(--tz-tap); padding: 0; border: 0; border-radius: 10px;
+  background: var(--sc-surface-3); color: var(--sc-text); cursor: pointer;
+}
+.tz-os__ruch button:hover:not(:disabled) { background: var(--sc-line-strong); }
+.tz-os__ruch .tz-os__odtworz { background: var(--sc-bg); color: var(--sc-accent); box-shadow: inset 0 0 0 1px var(--sc-accent); }
+.tz-os button:disabled, .tz-os select:disabled { opacity: .4; cursor: not-allowed; }
+.tz-os__predkosc { grid-area: predkosc; justify-self: start; }
+/* select i napis „Bez animacji” mają tę samą szerokość: ograniczony ruch nie zmienia układu */
+.tz-os__predkosc :is(select, .tz-os__bez-ruchu) { width: 108px; }
+.tz-os__predkosc select { min-height: var(--tz-tap); padding: 0 8px; border: 0; border-radius: 10px; background: var(--sc-surface-3); color: var(--sc-text); font: 600 13px/1 var(--sc-font-sans); }
+.tz-os__bez-ruchu { display: inline-grid; place-items: center; min-height: var(--tz-tap); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--sc-line-strong); color: var(--sc-text-2); font-size: 13px; text-align: center; }
+
+/* ---------- baner stanu: TODAY spokojny, archiwum wyraźne (Von Restorff); ta sama geometria w obu trybach ---------- */
+.tz-os__stan { grid-area: stan; display: grid; align-content: end; min-width: 0; padding: 4px 10px; border-radius: 8px; box-shadow: inset 3px 0 0 var(--sc-line-strong); }
+.tz-os__stan p { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tz-os__naglowek { display: flex; align-items: center; gap: 6px; font: 700 12px/18px var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz-os__moment { font-weight: 600; color: var(--sc-text); }
+.tz-os__okno { color: var(--sc-text-2); }
+.tz-os__kropka { width: 8px; height: 8px; border-radius: 50%; background: var(--sc-accent); }
+.tz-os__znak { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--tz-ostrz); color: var(--sc-bg); font-size: 11px; letter-spacing: 0; }
+.tz-os[data-tryb="przeszlosc"] .tz-os__stan { background: var(--tz-ostrz-tlo); box-shadow: inset 3px 0 0 var(--tz-ostrz); }
+.tz-os[data-tryb="przeszlosc"] .tz-os__naglowek { color: var(--tz-ostrz); }
+/* scena w archiwum: ramka w kolorze baneru, żeby mapa i lista nie wyglądały jak dane bieżące */
+.tz:has(> .tz-os[data-tryb="przeszlosc"]) .tz-scena::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; box-shadow: inset 0 0 0 3px var(--tz-ostrz); }
+
+/* ---------- histogram i suwak ---------- */
+.tz-os__wykres { grid-area: wykres; position: relative; height: 40px; }
+.tz-os__slupki { position: absolute; inset: 2px 0 0; display: flex; align-items: stretch; gap: 2px; }
+.tz-os__slupek { position: relative; flex: 1 1 0; min-width: 0; border-bottom: 1px solid var(--sc-line-strong); }
+.tz-os__slupek[data-wybrany] { background: color-mix(in srgb, var(--sc-accent) 14%, transparent); }
+.tz-os[data-tryb="przeszlosc"] .tz-os__slupek[data-wybrany] { background: color-mix(in srgb, var(--tz-ostrz) 16%, transparent); }
+.tz-os__liczba { position: absolute; left: 0; right: 0; bottom: 0; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--sc-text-3); }
+/* wczytywanie: przerywana linia i jasne tło, nie kreska zera */
+.tz-os__slupek[data-stan="ladowanie"] { border-bottom: 1px dashed var(--sc-text-3); background: color-mix(in srgb, var(--sc-text-3) 10%, transparent); }
+.tz-os__slupek[data-okno] .tz-os__liczba { background: var(--sc-accent); }
+/* luka to tło, nie słupek: przygaszone kreskowanie nie wygląda jak „najwięcej komunikatów” (Von Restorff) */
+.tz-os__kreski { position: absolute; inset: 0; background: var(--tz-os-kreski); opacity: .6; }
+.tz-os__slupek[data-stan="czesciowy"] .tz-os__kreski { opacity: .4; }
+.tz-os__uchwyt { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px solid var(--tz-ostrz); transform: translateX(-1px); pointer-events: none; }
+.tz-os__uchwyt::after { content: ""; position: absolute; left: -6px; top: 50%; width: 10px; height: 22px; margin-top: -11px; border-radius: 4px; background: var(--tz-ostrz); box-shadow: 0 0 0 2px var(--sc-surface); }
+.tz-os__uchwyt[data-teraz] { border-left-color: var(--sc-accent); }
+.tz-os__uchwyt[data-teraz]::after { background: var(--sc-accent); }
+/* natywny suwak (klawiatura: strzałki, Home, End, PageUp, PageDown), zwężony o pół słupka z każdej strony (left i width w Os.tsx)
+   i z kciukiem 1 px: wartość i leży nad środkiem słupka i, więc kliknięcie wybiera ten słupek, który widać */
+.tz-os__suwak { position: absolute; top: 50%; height: var(--tz-tap); margin: 0; transform: translateY(-50%); opacity: 0; cursor: ew-resize; -webkit-appearance: none; appearance: none; background: transparent; }
+.tz-os__suwak::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 1px; height: var(--tz-tap); }
+.tz-os__suwak::-moz-range-thumb { width: 1px; height: var(--tz-tap); border: 0; }
+.tz-os__suwak:disabled { cursor: default; }
+/* obrys tylko przy fokusie z klawiatury (jak inne przyciski strony) */
+.tz-os__wykres:has(.tz-os__suwak:focus-visible) { outline: 2px solid var(--sc-focus, var(--sc-accent)); outline-offset: 2px; border-radius: 4px; }
+
+.tz-os__daty { grid-area: daty; position: relative; height: 16px; margin-top: 3px; color: var(--sc-text-3); font-size: 12px; line-height: 16px; }
+.tz-os__daty span { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+.tz-os__daty span[data-wyrownanie="start"] { transform: none; }
+.tz-os__daty span[data-wyrownanie="koniec"] { transform: translateX(-100%); }
+
+/* podpis luk: jedna krótka linia jako przycisk „Szczegóły” (pełny opis, nazwy źródeł i legenda w panelu; działa na dotyku i klawiaturze) */
+.tz-os__luki { grid-area: luki; align-self: center; min-width: 0; }
+.tz .tz-os__luki-przycisk { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; color: var(--sc-text-2); font: 400 12px/16px var(--sc-font-sans); text-align: left; cursor: pointer; }
+.tz-os__luki-tekst { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tz-os__rozwin { flex: none; color: var(--sc-text); text-decoration: underline; text-underline-offset: 3px; }
+.tz-os__wzor { flex: none; display: inline-block; width: 14px; height: 10px; background: var(--tz-os-kreski); box-shadow: inset 0 0 0 1px var(--sc-text-3); }
+.tz-os__szczegoly { position: absolute; z-index: 45; left: 8px; right: 8px; top: calc(100% + 4px); display: grid; gap: 8px; justify-items: start; max-height: 50dvh; overflow: auto;
+  padding: 12px; border-radius: var(--tz-r); background: var(--sc-surface); color: var(--sc-text); font-size: 14px; line-height: 1.45; box-shadow: 0 12px 30px rgba(0, 0, 0, .45), inset 0 0 0 1px var(--sc-line-strong); }
+.tz-os__szczegoly[hidden] { display: none; }
+/* legenda przed podpisem luk tylko na szerokim ekranie (na telefonie jest w szczegółach) */
+.tz-os__legenda { display: none; }
+
+/* ---------- komputer: lewa kolumna jak panel warstw, histogram nad mapą ---------- */
+@media (min-width: 900px) {
+  .tz-os {
+    gap: 4px 12px; padding: 8px 16px 10px 14px; align-items: stretch;
+    grid-template-columns: calc(var(--tz-panel-w) - 14px) minmax(0, 1fr) auto auto;
+    grid-template-rows: 50px 19px minmax(32px, auto);
+    /* lewa kolumna (szerokość panelu warstw): tryb i przesuwanie w jednym rzędzie, pod nimi baner */
+    grid-template-areas:
+      "lewa   wykres predkosc krok"
+      "stan   daty   .        .   "
+      "stan   luki   luki     luki";
+  }
+  .tz-os__tryb { grid-area: lewa; justify-self: start; }
+  .tz-os__ruch { grid-area: lewa; justify-self: end; margin-right: 14px; }
+  .tz-os__predkosc { justify-self: end; }
+  .tz-os__szczegoly { left: calc(var(--tz-panel-w) + 2px); right: 16px; max-width: 760px; }
+  /* linia podziału na przedłużeniu prawej krawędzi panelu warstw */
+  .tz-os::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--tz-panel-w) - 1px); width: 1px; background: var(--sc-line); }
+  .tz-os :is(.tz-os__tryb, .tz-os__ruch, .tz-os__predkosc, .tz-os__krok) { align-self: center; }
+  .tz-os__stan { margin-right: 14px; }
+  .tz-os__wykres { height: auto; }
+  .tz-os__luki { align-self: end; }
+  .tz-os__legenda { display: inline; flex: none; color: var(--sc-text-3); }
+  .tz[data-widok="powiat"] .tz-os::before { display: none; }
+}
+@media (max-width: 420px) {
+  .tz-os { padding: 6px 8px 8px; }
+  .tz-os :is(.tz-os__tryb, .tz-os__krok) button { min-width: 44px; padding: 0 9px; }
+}
+@media (max-width: 360px) {
+  .tz-os__tryb button { letter-spacing: .02em; padding: 0 7px; }
+}
+@media (forced-colors: active) {
+  .tz-os :is(.tz-os__tryb, .tz-os__krok) button[aria-pressed="true"] { outline: 2px solid Highlight; }
+  .tz-os__kreski, .tz-os__wzor { background: repeating-linear-gradient(135deg, CanvasText 0 1.5px, transparent 1.5px 5px); }
+  .tz-os__liczba, .tz-os__uchwyt::after { background: CanvasText; }
+}
