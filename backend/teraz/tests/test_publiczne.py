@@ -66,7 +66,9 @@ def test_wszystkie_publiczne_endpointy_stosuja_bramke(client, zrob_zrodlo, zrob_
         nazwa = f"teraz:{wzorzec.name}"
         kwargs = {"pk": jawne_zdarzenie.pk} if wzorzec.name == "zdarzenie" else {}
         adres = reverse(nazwa, kwargs=kwargs)
-        odpowiedz = client.get(adres)
+        parametry = {"od": (timezone.now() - timedelta(days=1)).isoformat(), "do": timezone.now().isoformat()} \
+            if wzorzec.name == "os" else {}
+        odpowiedz = client.get(adres, parametry)
         assert odpowiedz.status_code == 200, nazwa
         assert odpowiedz["Cache-Control"] == "no-store"
         assert all(tekst not in odpowiedz.content.decode() for tekst in zakazane), nazwa
