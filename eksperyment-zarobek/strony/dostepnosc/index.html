@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przegląd dostępności strony 2027 | zbudujmi.com</title>
+<meta name="description" content="Techniczny przegląd dostępności strony instytucji publicznej według WCAG 2.1 AA, lista napraw i projekt deklaracji dostępności. 1490 zł netto.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://zbudujmi.com/dostepnosc/">
+<!-- Strona ofertowa przeglądu dostępności (wersja do publikacji 22.10.2026). Adres: zbudujmi.com/dostepnosc/.
+     Bez śledzenia i zewnętrznych fontów. Jedyny zewnętrzny skrypt: Cloudflare Turnstile (ochrona formularza).
+     Formularz: POST /api/kontakt (ten sam origin, JSON); parametr ?z= z adresu trafia do opisu jako źródło. noindex do decyzji właściciela. -->
+<style>
+:root{--bg:#ffffff;--fg:#14161a;--mut:#4a5060;--line:#d9dce3;--card:#f5f6f8;--acc:#0b57d0;--acc-fg:#ffffff;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--fg:#eceef2;--mut:#a9afbb;--line:#2a2f3a;--card:#171a21;--acc:#8ab4ff;--acc-fg:#0f1115;--bad:#ff8a80}}
+:root[data-theme="dark"]{--bg:#0f1115;--fg:#eceef2;--mut:#a9afbb;--line:#2a2f3a;--card:#171a21;--acc:#8ab4ff;--acc-fg:#0f1115;--bad:#ff8a80}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--acc)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.skip{position:absolute;left:16px;top:-60px;background:var(--acc);color:var(--acc-fg);padding:12px 16px;border-radius:8px;z-index:10}
+.skip:focus{top:8px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header.top{border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;min-height:64px;gap:12px}
+.logo,.nav{display:inline-flex;align-items:center;min-height:44px}
+.logo{font-weight:700;text-decoration:none;color:var(--fg)}
+.hero{padding-top:40px;padding-bottom:48px}
+.hero h1{font-size:clamp(30px,5vw,46px);line-height:1.15;margin:0 0 16px;max-width:20ch}
+.lead{font-size:19px;color:var(--mut);max-width:60ch;margin:0 0 24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 22px;line-height:1.3;border-radius:8px;background:var(--acc);color:var(--acc-fg);font-weight:600;text-decoration:none;border:0;font-size:17px;font-family:inherit;cursor:pointer}
+.btn[disabled]{opacity:.6;cursor:progress}
+.price{margin:16px 0 0;color:var(--mut)}
+section{padding:48px 0;border-top:1px solid var(--line)}
+h2{font-size:28px;line-height:1.25;margin:0 0 24px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;grid-template-rows:auto 1fr auto;gap:8px}
+.box h3{font-size:18px;line-height:1.3;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.box p{margin:0;color:var(--mut)}
+.box .foot{font-size:14px;color:var(--mut);border-top:1px solid var(--line);padding-top:8px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:16px;counter-reset:s}
+.steps li{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;counter-increment:s;display:grid;grid-template-rows:auto auto 1fr;align-content:start}
+.steps li::before{content:counter(s);display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--acc);color:var(--acc-fg);align-items:center;justify-content:center;font-weight:700;margin-bottom:12px}
+.steps b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps span{color:var(--mut)}
+table{width:100%;border-collapse:collapse}
+caption{caption-side:bottom;text-align:left;padding-top:12px}
+th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.k{white-space:nowrap;font-weight:600}
+form{display:grid;gap:16px;max-width:560px}
+label{font-weight:600;display:block;margin-bottom:6px}
+.opt{font-weight:400;color:var(--mut)}
+input,textarea{width:100%;min-height:48px;padding:10px 12px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--mut);border-radius:8px}
+textarea{min-height:96px;resize:vertical}
+[aria-invalid="true"]{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.check{display:flex;gap:12px;align-items:flex-start;min-height:44px}
+.check input{width:24px;min-height:24px;height:24px;margin-top:2px;flex:none}
+.check label{font-weight:400;margin:0}
+.trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.ts{min-height:65px}
+.form-foot{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+#form-msg{font-size:15px;color:var(--mut)}
+#form-msg.bad{color:var(--bad)}
+.note{font-size:15px;color:var(--mut)}
+.rodo{font-size:14px;color:var(--mut);margin:0;border-top:1px solid var(--line);padding-top:14px}
+footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--mut);font-size:15px}
+footer p{margin:0 0 8px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.hero{padding-top:28px;padding-bottom:40px}section{padding:40px 0}.steps{grid-template-columns:1fr}.form-foot .btn,.hero .btn{width:100%}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#tresc">Przejdź do treści</a>
+<header class="top"><div class="wrap"><a class="logo" href="https://zbudujmi.com/">zbudujmi.com</a><a class="nav" href="#zgloszenie">Bezpłatny skan</a></div></header>
+
+<main id="tresc">
+<div class="wrap hero">
+  <h1>Przegląd dostępności strony przed deklaracją 2027</h1>
+  <p class="lead">Dla szkół, gmin, bibliotek, domów kultury i innych instytucji. Sprawdzimy stronę według WCAG 2.1 AA,
+    pokażemy, co naprawić najpierw, i przygotujemy projekt deklaracji dostępności.</p>
+  <a class="btn" href="#zgloszenie">Poproś o bezpłatny skan strony głównej</a>
+  <p class="price">Pełny przegląd: 1490 zł netto (1832,70 zł brutto) dla strony do 50 podstron.
+    To audyt techniczny, nie porada prawna ani certyfikat zgodności.</p>
+</div>
+
+<section aria-labelledby="po-co"><div class="wrap">
+  <h2 id="po-co">Dlaczego teraz</h2>
+  <div class="grid">
+    <div class="box"><h3>Deklaracja dostępności</h3><p>Instytucja publiczna publikuje na stronie deklarację dostępności i dba o to, żeby opisywała aktualny stan strony.</p><div class="foot"><a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20190000848">ustawa o dostępności cyfrowej</a></div></div>
+    <div class="box"><h3>Żądania mieszkańców</h3><p>Każdy może zażądać udostępnienia strony lub jej części. Instytucja musi odpowiedzieć w terminie z ustawy.</p><div class="foot"><a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20190000848">ustawa o dostępności cyfrowej</a></div></div>
+    <div class="box"><h3>Kontrole</h3><p>Brak deklaracji albo deklaracja niezgodna z wymogami może skończyć się karą pieniężną.</p><div class="foot"><a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20190000848">ustawa o dostępności cyfrowej</a></div></div>
+  </div>
+</div></section>
+
+<section aria-labelledby="zakres"><div class="wrap">
+  <h2 id="zakres">Co dostajesz</h2>
+  <div class="grid">
+    <div class="box"><h3>Badanie całej strony</h3><p>Automatyczny skan podstron na komputerze i telefonie: kontrast, opisy obrazów, nagłówki, formularze, język.</p><div class="foot">do 50 podstron</div></div>
+    <div class="box"><h3>Ręczny przegląd</h3><p>Najważniejsze podstrony: klawiatura, czytnik ekranu, powiększenie 200%, formularze i dokumenty do pobrania.</p><div class="foot">10 podstron</div></div>
+    <div class="box"><h3>Raport i deklaracja</h3><p>Lista błędów od najpilniejszych, z miejscem, kryterium WCAG i sposobem naprawy, oraz projekt deklaracji.</p><div class="foot">w 5 dni roboczych</div></div>
+  </div>
+</div></section>
+
+<section aria-labelledby="jak"><div class="wrap">
+  <h2 id="jak">Jak to działa</h2>
+  <ol class="steps">
+    <li><b>Zgłoszenie</b><span>Podajesz adres strony w formularzu niżej.</span></li>
+    <li><b>Bezpłatny skan</b><span>W 2 dni robocze wysyłamy wynik dla strony głównej.</span></li>
+    <li><b>Zamówienie</b><span>Jeśli chcesz pełny przegląd, wysyłamy ofertę.</span></li>
+    <li><b>Raport</b><span>W 5 dni roboczych: raport, deklaracja i rozmowa.</span></li>
+  </ol>
+</div></section>
+
+<section aria-labelledby="cennik"><div class="wrap">
+  <h2 id="cennik">Cennik</h2>
+  <table>
+    <caption class="note">Ceny netto, doliczamy 23% VAT. Faktura VAT od iapply sp. z o.o.</caption>
+    <tr><th scope="col">Zakres</th><th scope="col">Cena netto</th></tr>
+    <tr><td>Strona do 50 podstron, ręczny przegląd 10 podstron, projekt deklaracji</td><td class="k">1490 zł</td></tr>
+    <tr><td>Strona 51-200 podstron, ręczny przegląd 20 podstron</td><td class="k">2490 zł</td></tr>
+    <tr><td>Ponowny przegląd po naprawach</td><td class="k">490 zł</td></tr>
+    <tr><td>Próbka dokumentów PDF (do 10 plików)</td><td class="k">390 zł</td></tr>
+  </table>
+</div></section>
+
+<section aria-labelledby="zgloszenie"><div class="wrap">
+  <h2 id="zgloszenie">Poproś o bezpłatny skan</h2>
+  <form id="form" novalidate>
+    <div><label for="who">Nazwa instytucji</label><input id="who" name="who" required maxlength="200" autocomplete="organization"></div>
+    <div><label for="www">Adres strony do sprawdzenia</label><input id="www" name="www" type="url" required maxlength="300" placeholder="https://" inputmode="url"></div>
+    <div><label for="contact">E-mail lub telefon do odpowiedzi</label><input id="contact" name="contact" required maxlength="200" autocomplete="email"></div>
+    <div><label for="uwagi">Uwagi <span class="opt">(nieobowiązkowe)</span></label><textarea id="uwagi" name="uwagi" maxlength="3000"></textarea></div>
+    <div class="check"><input id="uprawniony" name="uprawniony" type="checkbox" required>
+      <label for="uprawniony">Zgłaszam stronę mojej instytucji i zgadzam się na jej automatyczne sprawdzenie.</label></div>
+    <div class="trap" aria-hidden="true"><label for="hp">Nie wypełniaj</label><input id="hp" name="hp" tabindex="-1" autocomplete="off"></div>
+    <div class="ts" id="ts"></div>
+    <div class="form-foot">
+      <button class="btn" type="submit">Wyślij zgłoszenie</button>
+      <span id="form-msg" role="status" aria-live="polite">Wynik skanu wysyłamy w 2 dni robocze.</span>
+    </div>
+    <p class="rodo">Administrator danych: iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań. Cel: odpowiedź na zgłoszenie
+      i przygotowanie oferty (art. 6 ust. 1 lit. b RODO). Dane przechowujemy do zakończenia rozmowy, nie dłużej niż 12 miesięcy.
+      Masz prawo do dostępu do danych, ich sprostowania, usunięcia i ograniczenia przetwarzania, prawo sprzeciwu oraz skargi
+      do Prezesa UODO. Formularz chroni przed botami Cloudflare Turnstile, który sprawdza dane techniczne przeglądarki.
+      Więcej: <a href="/polityka-prywatnosci/">polityka prywatności</a>.</p>
+  </form>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p>To audyt techniczny, nie opinia prawna ani certyfikat zgodności. W sprawach interpretacji przepisów skontaktuj się z prawnikiem.</p>
+  <p>iapply sp. z o.o., pl. Wolności 16, 61-739 Poznań, KRS 0001133291 · <a href="tel:+48696689088">+48 696 689 088</a> · <a href="mailto:kontakt@iapply.pl">kontakt@iapply.pl</a> · <a href="/polityka-prywatnosci/">polityka prywatności</a></p>
+</div></footer>
+
+<script>
+(function () {
+  var API = '/api/kontakt';
+  var SITEKEY = '0x4AAAAAAFRyJ6A8ZcYfBLPP';
+  var MAIL = 'kontakt@iapply.pl';
+  var SUBJECT = 'Zgłoszenie: bezpłatny skan dostępności (zbudujmi.com)';
+  var PKG = 'dostepnosc-skan';
+
+  var form = document.getElementById('form');
+  var msg = document.getElementById('form-msg');
+  var btn = form.querySelector('button[type=submit]');
+  var token = '';
+  var widget = null;
+  var tsFailed = false;
+
+  // Źródło wejścia z adresu, np. ?z=fb1 (tylko litery, cyfry i myślnik).
+  var z = (new URLSearchParams(location.search).get('z') || '').replace(/[^a-z0-9-]/gi, '').slice(0, 20);
+
+  // Turnstile: render jawny (skrypt ładowany z ?render=explicit&onload=tsReady).
+  window.tsReady = function () {
+    widget = window.turnstile.render('#ts', {
+      sitekey: SITEKEY, language: 'pl', theme: 'auto', size: 'flexible',
+      callback: function (t) { token = t; },
+      'expired-callback': function () { token = ''; },
+      'error-callback': function () { token = ''; tsFailed = true; }
+    });
+  };
+  function resetToken() {
+    token = '';
+    tsFailed = false;
+    if (window.turnstile && widget !== null) window.turnstile.reset(widget);
+  }
+
+  function isContact(v) {
+    v = v.trim();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return true;
+    return /^\d{9,15}$/.test(v.replace(/[\s()+.\-]/g, ''));
+  }
+  function isUrl(v) {
+    return /^(https?:\/\/)?[^\s.]+\.[^\s]{2,}$/i.test(v.trim());
+  }
+
+  function data() {
+    var f = form.elements;
+    var uwagi = f.uwagi.value.trim();
+    return {
+      pkg: PKG,
+      desc: 'Bezpłatny skan strony głównej: ' + f.www.value.trim() +
+        '\nZgłaszający potwierdza: strona własnej instytucji, zgoda na automatyczne sprawdzenie.' +
+        (z ? '\nŹródło: ' + z : '') + (uwagi ? '\n\n' + uwagi : ''),
+      who: f.who.value.trim(),
+      contact: f.contact.value.trim(),
+      hp: f.hp.value,
+      page: location.pathname,
+      lang: 'pl'
+    };
+  }
+
+  function say(text, bad) {
+    msg.textContent = text;
+    msg.className = bad ? 'bad' : '';
+  }
+  function sayMail(text, d) {
+    say(text + ' ', true);
+    var body = 'Instytucja: ' + d.who + '\nKontakt: ' + d.contact + '\n\n' + d.desc;
+    var a = document.createElement('a');
+    a.href = 'mailto:' + MAIL + '?subject=' + encodeURIComponent(SUBJECT) + '&body=' + encodeURIComponent(body);
+    a.textContent = 'Wyślij to samo mailem';
+    msg.appendChild(a);
+  }
+
+  function mark(name, bad) {
+    var el = form.elements[name];
+    if (!el) return;
+    if (bad) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+  }
+  function check() {
+    var f = form.elements;
+    var bad = [];
+    if (!f.who.value.trim()) bad.push('who');
+    if (!isUrl(f.www.value)) bad.push('www');
+    if (!isContact(f.contact.value)) bad.push('contact');
+    if (!f.uprawniony.checked) bad.push('uprawniony');
+    ['who', 'www', 'contact', 'uprawniony'].forEach(function (n) { mark(n, bad.indexOf(n) !== -1); });
+    if (bad.length) form.elements[bad[0]].focus();
+    return bad.length === 0;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!check()) { say('Uzupełnij zaznaczone pola: nazwę, adres strony, e-mail lub telefon i potwierdzenie.', true); return; }
+    var d = data();
+    if (!token) {
+      if (!window.turnstile || tsFailed) { sayMail('Nie udało się wczytać zabezpieczenia formularza.', d); return; }
+      say('Poczekaj chwilę na sprawdzenie zabezpieczenia nad przyciskiem i wyślij ponownie.', true);
+      return;
+    }
+    d.token = token;
+    btn.disabled = true;
+    say('Wysyłamy…');
+    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(d), credentials: 'same-origin' })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { s: r.status, j: j }; }); })
+      .then(function (res) {
+        if (res.s >= 200 && res.s < 300 && res.j.ok) {
+          form.reset();
+          say('Dziękujemy. Wynik skanu wyślemy w 2 dni robocze.');
+        } else if (res.s === 503 || res.j.fallback) {
+          sayMail('Formularz chwilowo nie działa.', d);
+        } else if (res.s === 422) {
+          var errs = res.j.errors || res.j.fields || {};
+          var names = Array.isArray(errs) ? errs : Object.keys(errs);
+          names.forEach(function (n) { mark(n === 'desc' ? 'www' : n, true); });
+          say('Sprawdź pola: adres strony oraz e-mail lub telefon.', true);
+        } else {
+          sayMail('Nie udało się wysłać.', d);
+        }
+      })
+      .catch(function () { sayMail('Nie udało się wysłać.', d); })
+      .then(function () { btn.disabled = false; resetToken(); });
+  });
+})();
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=tsReady" async defer></script>
+</body>
+</html>
