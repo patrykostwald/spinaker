@@ -458,6 +458,8 @@ class Adapter(ABC):
             zrodlo=pobranie.zrodlo, zewnetrzny_id__in=kandydaci)}
         zapisane = []
         osobowe = zmiana = False
+        # grupy (karty), w których którykolwiek wpis tego odczytu naprawdę odwołuje alert (R38g)
+        odwolane = {grupa for _, grupa, status in kandydaci.values() if status == Zdarzenie.Status.ODWOLANE}
         for identyfikator, (nowy, grupa, status) in kandydaci.items():
             wpis = istniejace.get(identyfikator)
             if wpis is None:
@@ -470,13 +472,13 @@ class Adapter(ABC):
                           pobranie.zrodlo.slug == "imgw_hydro" and identyfikator.startswith("stan:"))
                 zmiana |= _aktualizuj_wpis(wpis, nowy, zakres, pobranie.pobrano_at, pomiar=pomiar)
             if grupa:
-                zmiana |= _dolacz_zdarzenie(wpis, grupa, status)
+                zmiana |= _dolacz_zdarzenie(wpis, grupa, status, grupa in odwolane)
             osobowe |= wpis.klasa == Klasa.OSOBA_POSZUKIWANA
             zapisane.append(wpis.pk)
         return zapisane, osobowe, bool(usuniete), zmiana
 
 
-def _dolacz_zdarzenie(wpis, grupa, status):
+def _dolacz_zdarzenie(wpis, grupa, status, grupa_odwolana=False):
     if status not in (Zdarzenie.Status.KOMUNIKAT_OFICJALNY, Zdarzenie.Status.ODWOLANE, Zdarzenie.Status.ZGLOSZONE):
         raise BladFormatu("Nieobsługiwany status zdarzenia automatycznego.")
     czas = wpis.czas_zrodlowy_at if wpis.zrodlo.slug == "rcb" and wpis.czas_zrodlowy_at else wpis.opublikowano_at
@@ -493,6 +495,12 @@ def _dolacz_zdarzenie(wpis, grupa, status):
     if czas > zdarzenie.ostatni_wpis_at:
         pola["ostatni_wpis_at"] = czas
     if status == Zdarzenie.Status.ODWOLANE and zdarzenie.status != status:
+        pola["status"] = status
+    elif (wpis.zrodlo.slug == "rcb" and not grupa_odwolana and zdarzenie.status == Zdarzenie.Status.ODWOLANE
+          and status == Zdarzenie.Status.KOMUNIKAT_OFICJALNY and zdarzenie.przygotowane_automatycznie
+          and zdarzenie.zweryfikowal_id is None):
+        # odczyt całej karty RCB nie zawiera już pełnego odwołania (odwołanie jednostek ze swojego zdania odwołuje tylko je,
+        # R38g): zdarzenie ustawione tak przez starszy parser wraca do komunikatu oficjalnego
         pola["status"] = status
     if pola:
         Zdarzenie.objects.filter(pk=zdarzenie.pk).update(**pola)

@@ -94,7 +94,7 @@
       ],
       "wpisy": [
         {
-          "miejsce": "pomorskie\nzakres: pomorskie: cale\nwyłączone: puckim",
+          "miejsce": "pomorskie\nzakres: pomorskie: cale\nwyłączone: pomorskie: puckim",
           "teryt": [
             "22"
           ],
@@ -217,7 +217,7 @@
       ],
       "wpisy": [
         {
-          "miejsce": "lubelskiego\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "miejsce": "lubelskiego\nlubelskie: chełmski\nzakres: lubelskie: czesc",
           "teryt": [
             "06"
           ],
@@ -231,7 +231,7 @@
       ],
       "wpisy": [
         {
-          "miejsce": "lubelskiego\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "miejsce": "lubelskiego\nlubelskie: chełmski\nzakres: lubelskie: czesc",
           "teryt": [
             "06"
           ],
@@ -289,7 +289,7 @@
       ],
       "wpisy": [
         {
-          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista",
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta\nlubelskie: włodawski",
           "teryt": [
             "06"
           ],
@@ -363,9 +363,11 @@
       ],
       "wpisy": [
         {
-          "miejsce": "wyłączone: pomorskie: kościerski\nwyłączone: nieokreślone",
-          "teryt": [],
-          "zasieg": "brak"
+          "miejsce": "pomorskie\nwyłączone: pomorskie: kartuskiego\npomorskie: kościerski\nzakres: pomorskie: lista_otwarta",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
         }
       ]
     },
@@ -375,9 +377,8 @@
       ],
       "wpisy": [
         {
-          "miejsce": "mazowieckie\npodlaskie\nmiasto Wysokie\nzakres: mazowieckie: czesc\nzakres: podlaskie: czesc",
+          "miejsce": "podlaskie\npodlaskie: miasto Wysokie Mazowieckie\nzakres: podlaskie: lista_otwarta",
           "teryt": [
-            "14",
             "20"
           ],
           "zasieg": "przyblizony"
@@ -391,10 +392,152 @@
       ],
       "wpisy": [
         {
-          "miejsce": "lubelskie\nmazowieckie\nzakres: lubelskie: cale\nmazowieckie: miasto Radom\nzakres: mazowieckie: lista_otwarta",
+          "miejsce": "lubelskie\nzakres: lubelskie: cale",
           "teryt": [
-            "06",
-            "14"
+            "06"
+          ],
+          "zasieg": "obszar"
+        }
+      ]
+    },
+    "z6p7-wybrane-rejony": {
+      "akapity": [
+        "Alert RCB wysłano do mieszkańców wybranych rejonów woj. lubelskiego."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "lubelskiego\nzakres: lubelskie: czesc",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-nie-obowiazuje-bez-podmiotu": {
+      "akapity": [
+        "Alert RCB obowiązuje w powiecie puckim w woj. pomorskim.",
+        "Nie obowiązuje już w powiecie puckim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\nzakres: pomorskie: lista\nwyłączone: pomorskie: puckim",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-juz-tylko": {
+      "akapity": [
+        "Alert RCB obejmuje powiat świdnicki w woj. dolnośląskim oraz powiat chełmski w woj. lubelskim.",
+        "Aktualizacja 11:00",
+        "Od 11:00 alert obejmuje już tylko powiat chełmski w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\nlubelskie\ndolnośląskie: świdnicki\nlubelskie: chełmski\nzakres: dolnośląskie: lista\nzakres: lubelskie: lista",
+          "teryt": [
+            "02",
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-naglowek-aktualizacji": {
+      "akapity": [
+        "Alert RCB obejmuje powiat świdnicki w woj. dolnośląskim oraz powiat chełmski w woj. lubelskim.",
+        "Aktualizacja 11:00: od teraz alert obejmuje wyłącznie powiat chełmski w woj. lubelskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "dolnośląskie\nlubelskie\ndolnośląskie: świdnicki\nlubelskie: chełmski\nzakres: dolnośląskie: lista\nzakres: lubelskie: lista",
+          "teryt": [
+            "02",
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "lubelskie\nlubelskie: chełmski\nzakres: lubelskie: lista_otwarta",
+          "teryt": [
+            "06"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-godz": {
+      "akapity": [
+        "Alert RCB obowiązuje od godz. 11:00 w powiecie wejherowskim w woj. pomorskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: wejherowskim\nzakres: pomorskie: lista_otwarta",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-punkty-li": {
+      "akapity": [
+        "Alert RCB obejmuje wyłącznie następujące powiaty w woj. pomorskim:",
+        "li:pucki",
+        "li:wejherowski"
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: pucki\npomorskie: wejherowski\nzakres: pomorskie: lista_otwarta",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-miasto-mazowiecki": {
+      "akapity": [
+        "Alert RCB obowiązuje w mieście Mazowiecki w woj. podlaskim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "podlaskie\npodlaskie: miasto Mazowiecki\nzakres: podlaskie: lista_otwarta",
+          "teryt": [
+            "20"
+          ],
+          "zasieg": "przyblizony"
+        }
+      ]
+    },
+    "z6p7-odwolanie-jednego-powiatu": {
+      "akapity": [
+        "Alert RCB obowiązuje w powiecie puckim i kartuskim w woj. pomorskim.",
+        "Aktualizacja 12:00",
+        "Odwołano alert w powiecie puckim."
+      ],
+      "wpisy": [
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\npomorskie: kartuskim\nzakres: pomorskie: lista",
+          "teryt": [
+            "22"
+          ],
+          "zasieg": "przyblizony"
+        },
+        {
+          "miejsce": "pomorskie\npomorskie: puckim\npomorskie: kartuskim\nzakres: pomorskie: lista\nwyłączone: pomorskie: puckim",
+          "teryt": [
+            "22"
           ],
           "zasieg": "przyblizony"
         }

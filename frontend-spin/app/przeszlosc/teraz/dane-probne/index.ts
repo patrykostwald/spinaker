@@ -82,7 +82,10 @@ const wpis = (teraz: number, d: Partial<Wpis> & Pick<Wpis, 'id' | 'zrodlo' | 'wa
 export const ATRYBUCJA_IMGW = 'Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej - Państwowy Instytut Badawczy. '
   + 'Dane Instytutu Meteorologii i Gospodarki Wodnej - Państwowego Instytutu Badawczego zostały przetworzone.';
 
-/** Powiaty z alertu RCB z 10.11.2026 (próbka backend/teraz/tests/fixtures): część województwa lubelskiego, bez Lublina. */
+/**
+ * Jednostki wymienione w alercie RCB z 10.11.2026 (próbka backend/teraz/tests/fixtures): część województwa lubelskiego.
+ * To lista wymieniona w próbce, nie zamknięty wykaz adresatów: brak jednostki na niej nie oznacza, że alert jej nie dotyczy.
+ */
 export const POWIATY_ALERTU_RCB_1011 = ['włodawski', 'łęczyński', 'świdnicki', 'Chełm', 'chełmski', 'krasnostawski', 'łukowski',
   'Biała Podlaska', 'bialski', 'rycki', 'radzyński', 'parczewski', 'lubartowski'];
 
