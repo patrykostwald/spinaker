@@ -422,6 +422,24 @@ Zrobione, niesprawdzone: zachowanie na danych produkcyjnych; build z włączoną
 Odnotowane (ryzyka): front nie ma mapy gmina/miasto → powiat, więc przy `lista` z miastem lub gminą spoza słownika powiatów inny powiat tego województwa dostaje „nie ma na liście”, choć miasto może leżeć w jego granicach (np. miasto Rumia i powiat wejherowski); „nie obowiązuje już” bez nazwy województwa w zdaniu daje wyłączenie bez województwa (front: „możliwe”); wyłączenie w osobnym zdaniu nadal nie jest wiązane z województwem.
 
 
+## Teraz: szkice kart dostępu dla źródeł (zlecenie Z2K, 20.11.2026)
+
+Cel: zbieracze Teraz ruszają dopiero po zatwierdzonej karcie dostępu (`news.SourceAccessInstruction`, bramka `scraper/access_gate.py`). Do tej pory kart nie było, więc nic się nie zbierało i 14-dniowy okres cienia nie biegł.
+
+Zrobione i sprawdzone (testy lokalne na SQLite, bez wdrożenia):
+- Nowe polecenie `python manage.py teraz_karty_dostepu [--dry-run] [--zrodlo ID ...] [--powiaz]` (`backend/teraz/management/commands/teraz_karty_dostepu.py`). Dla 10 źródeł z rejestru adapterów (bez adaptera testowego) idempotentnie tworzy `news.Source` (nieaktywny kandydat) i kartę wersji 1: `draft` dla RCB, IMGW meteo, GIOŚ, FIRMS, EMSC, USGS, GDACS, CERT, PSE komunikaty OSP; `contact_required` z limitem 0 dla IMGW hydro. Nigdy nie ustawia statusu `approved`, daty ani autora przeglądu. Istniejących kart i powiązań nie zmienia.
+- Karta zawiera endpoint i wzorce ścieżek ze stałych w adapterach, zakres (metadane: CERT i PSE; treść: reszta), `terms_url`, `evidence` (werdykt, atrybucja, warunki, URL-e z Z0-PRAWNIK i Z0-DOSTEP), odstęp co najmniej 3 s (RCB 5 s, GDACS 60 s), dzienny limit z częstotliwości źródła z zapasem 1,5 (RCB dodatkowo ok. 1200 żądań na archiwum, GIOŚ liczony z obchodu ok. 350 stacji, EMSC 1500 na ponowne połączenia).
+- Kanał `websocket` dodany do `SourceAccessInstruction.Channel` (bramka `KANALY` już go używała) i pole `endpoint` przyjmuje schemat `wss` (bez tego panel administratora odrzucałby kartę EMSC). Migracja `news/migrations/0178_access_instruction_kanal_websocket.py` jest addytywna (zmiana `choices` i walidatora, bez zmian w bazie).
+- Testy: `backend/teraz/tests/test_karty_dostepu.py`, w tym sprawdzenie, że po zatwierdzeniu bramka przepuszcza wszystkie adresy, o które proszą adaptery (z kluczem FIRMS i kartą WebSocket EMSC), a obce adresy odrzuca.
+
+Zrobione, niesprawdzone: uruchomienie polecenia na produkcyjnej bazie i zbieranie na żywo (ani jedno żądanie sieciowe nie było wysyłane).
+
+Zaplanowane, wymaga decyzji człowieka. Po wdrożeniu (jak zawsze z `/srv/spin-clinic`, po kopii bazy `sh deploy/backup.sh` i z migracjami):
+1. `docker compose --env-file .env.production -f deploy/docker-compose.production.yml exec backend python manage.py teraz_karty_dostepu` tworzy szkice i wypisuje tabelę (źródło, status, endpoint, limit, uwagi). Najpierw można dodać `--dry-run`.
+2. W panelu administratora (karty dostępu źródeł) właściciel czyta `evidence` każdej karty i zatwierdza wybrane: status `approved`, data i autor przeglądu, ważność w przyszłości (szkic ma domyślnie 30 dni od utworzenia). Zatwierdzenie to decyzja człowieka, polecenie jej nie podejmuje.
+3. `... exec backend python manage.py teraz_karty_dostepu --powiaz` włącza źródła z zatwierdzoną kartą i wiąże je ze źródłami Teraz (`Zrodlo.zrodlo_dostepu`). Alternatywa: ustawić te pola ręcznie w panelu. Tryb publikacji źródła (`Zrodlo.tryb`) zmienia wydawca osobno.
+4. FIRMS wymaga klucza `TERAZ_FIRMS_MAP_KEY` w środowisku produkcyjnym; RCB wymaga atrybucji „Źródło: RCB, gov.pl”; EMSC zbiera polecenie `teraz_emsc_ws`; USGS nie miał oceny prawnej w Z0, więc przed zatwierdzeniem sprawdzić robots.txt i warunki; IMGW hydro czeka na odpowiedź IMGW.
+
 ## Teraz, PR #38: reszta zasięgu RCB (zlecenie Z6P7, osobny PR, branch z `main` po #38 i #40)
 
 Zasada strukturalna (nie nowe heurystyki): parser nigdy nie zawęża ani nie poszerza zasięgu na podstawie zdania, którego nie rozpoznał w pełni. Zdanie z jednostką lub województwem, ale bez czasownika albo nagłówka odbiorców, nie zmienia zasięgu ani nie dopisuje województwa. Gdy takie zdanie ze słowem wyłączenia lub zawężenia („poza”, „tylko”) mogło zmienić znaczenie wcześniejszego zasięgu, zasięg dostaje `nieustalone: nazwy jednostek` i zostaje `przyblizony`. Przy wątpliwości: szerzej i `przyblizony`.

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from django import forms
+from django.core.validators import URLValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -151,6 +153,21 @@ def access_instruction_default_expiry():
     return timezone.now() + timedelta(days=30)
 
 
+_ENDPOINT_SCHEMES = ['http', 'https', 'wss']
+
+
+class AccessEndpointFormField(forms.URLField):
+    default_validators = [URLValidator(schemes=_ENDPOINT_SCHEMES)]
+
+
+class AccessEndpointField(models.URLField):
+    """Endpoint karty dostępu: http(s) albo wss (strumień WebSocket, np. EMSC)."""
+    default_validators = [URLValidator(schemes=_ENDPOINT_SCHEMES)]
+
+    def formfield(self, **kwargs):
+        return super().formfield(**{'form_class': AccessEndpointFormField, **kwargs})
+
+
 class SourceAccessInstruction(models.Model):
     """Versioned, reviewable permission for one automated source channel.
 
@@ -171,6 +188,7 @@ class SourceAccessInstruction(models.Model):
         OAI_PMH = 'oai_pmh', 'OAI-PMH'
         SITEMAP = 'sitemap', 'Sitemap'
         HTML = 'html', 'Jawnie dozwolony HTML'
+        WEBSOCKET = 'websocket', 'WebSocket'
 
     class Scope(models.TextChoices):
         METADATA = 'metadata', 'Metadane'
@@ -183,7 +201,7 @@ class SourceAccessInstruction(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     channel = models.CharField(max_length=16, choices=Channel.choices)
     allowed_scope = models.CharField(max_length=16, choices=Scope.choices, default=Scope.METADATA)
-    endpoint = models.URLField(max_length=1024)
+    endpoint = AccessEndpointField(max_length=1024)
     allowed_path_patterns = models.JSONField(default=list, blank=True,
         help_text='Opcjonalne ścisłe wzorce ścieżek, np. /sejm/term10/votings/{int}.')
     terms_url = models.URLField(max_length=1024, blank=True)
