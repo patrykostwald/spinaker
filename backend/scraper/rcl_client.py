@@ -10,9 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+import re
 import time
 from urllib.parse import urljoin, urlsplit
-from urllib.robotparser import RobotFileParser
 
 import requests
 from django.utils import timezone
@@ -23,6 +23,56 @@ from scraper.access_gate import AccessDenied
 from scraper.rcl_guard import RCL_BASE_URL, RCL_MIN_INTERVAL_SECONDS, RclRefused
 from scraper.rcl_parser import is_rejected
 from scraper.utils import HostRateLimited, fetch_response_once, retry_after_seconds
+
+
+class RobotsPolicy:
+    """robots.txt według RFC 9309: grupa dla naszego tokenu (inaczej `*`), znaki `*` i `$` w regułach, wygrywa najdłuższa reguła,
+    a przy remisie Allow.  Biblioteka standardowa traktuje `*` w ścieżce dosłownie, więc `Disallow: /projekt/*/komentarz` nic by nie blokowało."""
+
+    def __init__(self, lines):
+        self.groups = []  # (agenci, reguły[(allow, wzorzec)])
+        agents, rules, in_rules = [], [], False
+        for raw in lines:
+            line = raw.split('#', 1)[0].strip()
+            if ':' not in line:
+                continue
+            key, value = (part.strip() for part in line.split(':', 1))
+            key = key.lower()
+            if key == 'user-agent':
+                if in_rules:
+                    self.groups.append((agents, rules))
+                    agents, rules, in_rules = [], [], False
+                agents.append(value.lower())
+            elif key in ('allow', 'disallow') and agents:
+                in_rules = True
+                if value:
+                    rules.append((key == 'allow', value))
+        if agents:
+            self.groups.append((agents, rules))
+
+    @staticmethod
+    def _matches(pattern, path):
+        regex = re.escape(pattern).replace(r'\*', '.*')
+        if regex.endswith(r'\$'):
+            regex = regex[:-2] + '$'
+        return re.match(regex, path) is not None
+
+    def can_fetch(self, token, url):
+        parts = urlsplit(url)
+        path = parts.path or '/'
+        if parts.query:
+            path += '?' + parts.query
+        token = token.lower()
+        named = [rules for agents, rules in self.groups if any(a != '*' and a in token for a in agents)]
+        rules = [r for group in (named or [g for agents, g in self.groups if '*' in agents]) for r in group]
+        best = None  # (długość wzorca, allow)
+        for allow, pattern in rules:
+            if self._matches(pattern, path):
+                candidate = (len(pattern), allow)
+                if best is None or candidate[0] > best[0] or (candidate[0] == best[0] and allow):
+                    best = candidate
+        return best is None or best[1]
+
 
 MAX_REDIRECTS = 2
 HALT_STATUSES = (429, 503, 403)
@@ -163,9 +213,7 @@ class RclClient:
                 lines = response.text.splitlines()
             else:
                 raise RclStop('robots_unavailable', str(response.status))
-            policy = RobotFileParser()
-            policy.parse(lines)
-            self._robots = policy
+            self._robots = RobotsPolicy(lines)
         return self._robots
 
     def _robots_allow(self, url):
