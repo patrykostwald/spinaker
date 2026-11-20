@@ -3,6 +3,8 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useStandalone } from '../ui';
 import { odKiedy, useOnline, useStan, useWarstwy, useWpisy, useWpisyPowiatow, useZdarzenia } from './api';
+import { Os } from './Os';
+import { useHistoria, useWpisyWTrybie } from './useHistoria';
 import { adresWpisu, aktywna, bezPolozenia, dostepna, kodyWylaczonych, maObszar, maPunkt, naGeoJson, podsumujStan, politykaStatusu, posortujWarstwy, potwierdzoneWarstwy, tylkoPotwierdzone, wlaczoneWarstwy, zbudujWidoki, zgodnyZRegionem } from './model';
 import type { WierszStanu } from './model';
 import { warstwyZAdresu, zbudujZapytanie, type Parametry, type Widok } from './parametry';
@@ -77,7 +79,9 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   const online = useOnline();
   const stanQ = useStan(probne);
   const warstwyQ = useWarstwy(probne);
-  const wpisyQ = useWpisy(probne, okres, woj, wMapie && pamiecGotowa);
+  const wpisyNaZywo = useWpisy(probne, okres, woj, wMapie && pamiecGotowa);
+  const historia = useHistoria();
+  const wpisyQ = useWpisyWTrybie(historia, wpisyNaZywo, probne, okres, woj, wMapie && pamiecGotowa);
   const wojKody = useMemo(() => kodyWojewodztw(powiaty), [powiaty]);
   const powiatyQ = useWpisyPowiatow(probne, okres, wojKody, !wMapie && pamiecGotowa);
   const zdarzeniaQ = useZdarzenia(probne);
@@ -225,7 +229,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
   // odpowiedź dla bieżącego filtra (bez danych zastępczych z innego klucza zapytania: P1-4)
   const udanaOdpowiedz = wpisyQ.isSuccess && !wpisyQ.isPlaceholderData;
   // „brak komunikatów” tylko przy kompletnej odpowiedzi: wszystkie strony, nic odrzuconego, warstwy potwierdzone (P1-3)
-  const kompletneWpisy = udanaOdpowiedz && !!wpisyQ.data && !wpisyQ.data.uciete && wpisyQ.data.pominiete === 0 && mapaPotw.ukryte === 0 && warstwyQ.isSuccess;
+  const kompletneWpisy = udanaOdpowiedz && !!wpisyQ.data && !wpisyQ.data.uciete && wpisyQ.data.pominiete === 0 && mapaPotw.ukryte === 0 && warstwyQ.isSuccess && !wpisyQ.data.niepelne;
   const pobraneWpisy = wpisyQ.data?.wpisy.length ?? 0;
   const brakWybranego = wMapie && wybranyId !== null && wczytano && !wpisyNiedostepne && !wybranyWidok;
   const adres = useCallback(
@@ -283,6 +287,7 @@ export function TerazPage({ poczatkowy, poczatkowePowiaty, podkladUrl, glifyUrl 
     </header>
 
     <LiniaStanu probne={probne} podsumowanie={podsumowanie} online={online} blad={blad} odswiezonoWpisy={odswiezonoWpisy} odswiezonoStan={odswiezonoStan} ladowanie={stanQ.isPending} />
+    {wMapie && <Os historia={historia} probne={probne} okres={okres} wpisy={wpisyQ} />}
 
     <div className="tz-glowna">
       {wMapie && <aside id="tz-panel" className="tz-panel" aria-labelledby="tz-panel-tytul">
