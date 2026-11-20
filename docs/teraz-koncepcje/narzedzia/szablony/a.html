@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teraz: koncepcja A, Rzeźba nocna (prototyp)</title>
+<style>
+/*WSPOLNE_CSS*/
+</style>
+</head>
+<body>
+<header class="pasek">
+  <span class="pasek__marka">przeszłość<span>.today</span> · Teraz</span>
+  <span class="etykieta etykieta--akcent">PROTOTYP</span>
+  <span class="pasek__tytul">Koncepcja A: Rzeźba nocna · dane próbne</span>
+  <div class="pasek__narzedzia">
+    <button id="przel-prosty" class="przelacznik" aria-pressed="false"><span class="przelacznik__kropka" aria-hidden="true"></span>Tryb prosty</button>
+    <button id="przel-ruch" class="przelacznik" aria-pressed="true"><span class="przelacznik__kropka" aria-hidden="true"></span>Animacje</button>
+    <a class="przelacznik" href="B-makieta-polski.html">Koncepcja B</a>
+  </div>
+</header>
+
+<main class="uklad">
+  <div class="kolumna">
+    <div class="scena-glowa" style="--o:1">
+      <div><h1 id="tytul-okresu">Komunikaty w okresie</h1><p id="opis-okresu"></p></div>
+      <div class="liczby" id="suma">0<small>komunikatów<span class="dlugi"> w okresie</span></small></div>
+    </div>
+    <div class="scena" id="scena" style="--o:2">
+      <canvas id="plotno" role="img" aria-describedby="t-naj" data-opis="Mapa Polski nocą z rzeźbą terenu. Bursztyn: im jaśniejszy powiat, tym więcej komunikatów. Pierścienie: komunikaty z ostatniego dnia okresu."></canvas>
+      <div class="dymek" id="dymek"></div>
+      <div class="scena__podpis">Rzeźba: AWS Terrain Tiles (SRTM, EU-DEM) · granice: PRG, GUGiK · dane próbne</div>
+    </div>
+    <section class="boks os" aria-label="Oś czasu" style="--o:3">
+      <div class="os__glowa"><span class="os__strona">PRZESZŁOŚĆ</span><span class="os__okres" id="os-okres"></span><span class="os__strona os__strona--dzis" lang="en">TODAY</span></div>
+      <div class="os__wykres" id="os-wykres"><input type="range" id="os-suwak" step="1" aria-label="Koniec okresu (przesuń w lewo, aby cofnąć się w czasie)"></div>
+      <div class="os__daty" id="os-daty"></div>
+      <p class="os__brak" id="os-brak"></p>
+      <div class="os__stopka">
+        <div class="os__dlugosc" id="os-dlugosc" role="group" aria-label="Długość okresu"><button data-dni="1">1 dzień</button><button data-dni="7">7 dni</button><button data-dni="30">30 dni</button></div>
+        <button id="os-dzis" class="przelacznik">Wróć do dziś</button>
+      </div>
+    </section>
+    <section class="boks zdarzenia" aria-labelledby="t-lista" style="--o:5">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-lista">Zdarzenia w okresie</h2><span class="etykieta">SZKIC</span></div>
+      <ol id="lista"></ol>
+      <div class="zdarzenia__stopka" id="lista-stopka"><span></span><button>Pokaż więcej</button></div>
+    </section>
+  </div>
+
+  <aside class="kolumna" aria-label="Legenda i źródła">
+    <section class="boks" aria-labelledby="t-leg" style="--o:4">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-leg">Legenda</h2><span class="etykieta">MIARA</span></div>
+      <div class="legenda" id="legenda"></div>
+    </section>
+    <section class="boks" aria-labelledby="t-naj" style="--o:7">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-naj">Najwięcej komunikatów</h2><span class="etykieta">TEKST</span></div>
+      <ol class="najwiecej" id="najwiecej"></ol>
+      <details class="tabela" id="tabela-powiatow"><summary>Wszystkie powiaty: tabela (odpowiednik mapy)</summary>
+        <div class="tabela__przewijanie"><table><caption class="sr">Liczba komunikatów w okresie dla każdego powiatu</caption><thead><tr></tr></thead><tbody></tbody></table></div></details>
+    </section>
+    <section class="boks zrodla" aria-labelledby="t-zr" style="--o:8">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-zr">Źródła i łącza</h2><span class="etykieta">SZKIC</span></div>
+      <p class="boks__opis" style="margin-bottom:8px">Rodzaje łączy:</p>
+      <div class="zrodla__lacza" id="lacza"></div>
+      <ol id="zrodla"></ol>
+    </section>
+  </aside>
+</main>
+
+<p class="sr" id="ogloszenie" aria-live="polite"></p>
+<script id="dane" type="application/json">/*DANE*/</script>
+<script>
+/*WSPOLNE_JS*/
+</script>
+<script>
+'use strict';
+(() => {
+  const { D, powiaty, kraj, wojLinie, stan } = T;
+  T.init({ uwaga: 'Barwa i ruch', legendaDodatki: [
+    ['<circle cx="17" cy="11" r="2.6" fill="rgb(255,194,122)"/><circle cx="17" cy="11" r="7" fill="none" stroke="rgb(255,194,122)" stroke-width="1.2" opacity=".7"/>', 'pierścień: nowy komunikat z ostatniego dnia okresu (nie oznacza zagrożenia)'],
+    ['<path d="M2 16 C 10 6, 22 18, 32 8" fill="none" stroke="rgb(154,163,154)" stroke-width="1"/><path d="M2 20 C 12 12, 20 22, 32 14" fill="none" stroke="rgb(154,163,154)" stroke-width=".7" opacity=".6"/>', 'warstwice co 50 do 300 m, rzeźba cieniowana (tło, nie dane)'],
+  ] });
+
+  const cv = T.$('#plotno'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1, skala = 1, ox = 0, oy = 0;
+  const xyP = powiaty.map(p => p.rings.map(r => r.map(([lo, la]) => T.xy(lo, la))));
+  const bboxP = xyP.map(rs => { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (const r of rs) for (const [x, y] of r) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); } return [a, b, c, d]; });
+  const G = bboxP.reduce((g, b) => [Math.min(g[0], b[0]), Math.min(g[1], b[1]), Math.max(g[2], b[2]), Math.max(g[3], b[3])], [1e9, 1e9, -1e9, -1e9]);
+  const P = (x, y) => [ox + x * skala, oy - y * skala];
+  const PL = (lon, lat) => { const [x, y] = T.xy(lon, lat); return P(x, y); };
+
+  // ---------- rzeźba: wysokości, cieniowanie, warstwice (raz) ----------
+  const dem = D.dem, dw = dem.w, dh = dem.h;
+  const surowe = Uint8Array.from(atob(dem.b64), c => c.charCodeAt(0));
+  const E = new Float32Array(dw * dh);
+  for (let j = 0; j < dh; j++) for (let i = 0; i < dw; i++) { // wygładzenie 3x3 (siatka jest zgrubna)
+    let s = 0, n = 0;
+    for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { const ii = i + a, jj = j + b; if (ii >= 0 && jj >= 0 && ii < dw && jj < dh) { s += surowe[jj * dw + ii] * 10; n++; } }
+    E[j * dw + i] = s / n;
+  }
+  // maska Polski w rozdzielczości siatki
+  const maska = (() => {
+    const c = document.createElement('canvas'); c.width = dw; c.height = dh; const x = c.getContext('2d');
+    x.fillStyle = '#fff';
+    for (const p of powiaty) { x.beginPath(); for (const r of p.rings) r.forEach(([lo, la], k) => { const px = (lo - dem.lon0) / dem.dlon, py = (dem.lat0 - la) / dem.dlat; k ? x.lineTo(px, py) : x.moveTo(px, py); }); x.fill('evenodd'); }
+    const d = x.getImageData(0, 0, dw, dh).data, m = new Uint8Array(dw * dh);
+    for (let k = 0; k < m.length; k++) m[k] = d[k * 4 + 3] > 0 ? 1 : 0;
+    return m;
+  })();
+  const obrazRzezby = (() => {
+    const c = document.createElement('canvas'); c.width = dw; c.height = dh; const x = c.getContext('2d');
+    const im = x.createImageData(dw, dh), cx = dem.dlon * 68.5e3, cy = dem.dlat * 111.3e3, zf = 5;
+    // cieniowanie jak w ESRI: światło z północnego zachodu (315°), 38° nad horyzontem
+    const azM = ((360 - 315 + 90) % 360) * Math.PI / 180, zen = (90 - 38) * Math.PI / 180, plaski = Math.cos(zen);
+    for (let j = 0; j < dh; j++) for (let i = 0; i < dw; i++) {
+      const e = (a, b) => E[Math.min(dh - 1, Math.max(0, b)) * dw + Math.min(dw - 1, Math.max(0, a))];
+      const dzdx = (e(i + 1, j) - e(i - 1, j)) / (2 * cx) * zf, dzdy = (e(i, j + 1) - e(i, j - 1)) / (2 * cy) * zf;
+      const nach = Math.atan(Math.hypot(dzdx, dzdy)), asp = Math.atan2(dzdy, -dzdx);
+      const cien = Math.cos(zen) * Math.cos(nach) + Math.sin(zen) * Math.sin(nach) * Math.cos(azM - asp);
+      const k = j * dw + i, o = k * 4, w = E[k] / 2500;
+      const morze = surowe[k] === 0 && !maska[k];
+      if (morze) { im.data[o] = 12; im.data[o + 1] = 20; im.data[o + 2] = 28; }
+      else {
+        const v = Math.max(8, Math.min(150, 34 + (cien - plaski) * 300 + w * 40));
+        im.data[o] = v * 0.93; im.data[o + 1] = v; im.data[o + 2] = v * 0.94;
+      }
+      im.data[o + 3] = 255;
+    }
+    x.putImageData(im, 0, 0); return c;
+  })();
+  const POZIOMY = [50, 100, 150, 200, 250, 300, 400, 500, 700, 900, 1100, 1300, 1500, 1800];
+  const warstwice = (() => { // marching squares, odcinki w stopniach
+    const wynik = [];
+    const lon = i => dem.lon0 + i * dem.dlon, lat = j => dem.lat0 - j * dem.dlat;
+    for (const z of POZIOMY) {
+      const seg = [];
+      for (let j = 0; j < dh - 1; j++) for (let i = 0; i < dw - 1; i++) {
+        const a = E[j * dw + i], b = E[j * dw + i + 1], c = E[(j + 1) * dw + i + 1], d = E[(j + 1) * dw + i];
+        const kod = (a > z ? 8 : 0) | (b > z ? 4 : 0) | (c > z ? 2 : 0) | (d > z ? 1 : 0);
+        if (kod === 0 || kod === 15) continue;
+        const t = (p, q) => (z - p) / (q - p);
+        const G_ = [lon(i) + t(a, b) * dem.dlon, lat(j)], R = [lon(i + 1), lat(j) - t(b, c) * dem.dlat], Dn = [lon(i) + t(d, c) * dem.dlon, lat(j + 1)], L = [lon(i), lat(j) - t(a, d) * dem.dlat];
+        const tab = { 1: [[L, Dn]], 2: [[Dn, R]], 3: [[L, R]], 4: [[G_, R]], 5: [[L, G_], [Dn, R]], 6: [[G_, Dn]], 7: [[L, G_]], 8: [[L, G_]], 9: [[G_, Dn]], 10: [[G_, R], [L, Dn]], 11: [[G_, R]], 12: [[L, R]], 13: [[Dn, R]], 14: [[L, Dn]] };
+        for (const s of tab[kod]) seg.push(s);
+      }
+      wynik.push({ z, seg });
+    }
+    return wynik;
+  })();
+
+  // ---------- warstwy ----------
+  const baza = document.createElement('canvas'), dane = document.createElement('canvas');
+  const sciezkaPowiatu = (x, i) => { for (const r of xyP[i]) r.forEach(([a, b], k) => { const [px, py] = P(a, b); k ? x.lineTo(px, py) : x.moveTo(px, py); }); };
+  const linia = (x, l) => l.forEach(([lo, la], k) => { const [px, py] = PL(lo, la); k ? x.lineTo(px, py) : x.moveTo(px, py); });
+
+  function dopasuj() {
+    W = cv.clientWidth; H = cv.clientHeight; dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const c of [cv, baza, dane]) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    const pad = W < 600 ? 14 : 36, bw = G[2] - G[0], bh = G[3] - G[1];
+    skala = Math.min((W - 2 * pad) / bw, (H - 2 * pad - 18) / bh);
+    ox = W / 2 - (G[0] + bw / 2) * skala; oy = (H - 18) / 2 + (G[1] + bh / 2) * skala;
+    rysujBaze(); rysujDane();
+  }
+
+  function rysujBaze() {
+    const x = baza.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    x.fillStyle = '#0b0d0c'; x.fillRect(0, 0, W, H);
+    const pro = stan.prosty;
+    if (!pro) {
+      const [x0, y0] = PL(dem.lon0 - dem.dlon / 2, dem.lat0 + dem.dlat / 2), [x1, y1] = PL(dem.lon0 + (dw - 0.5) * dem.dlon, dem.lat0 - (dh - 0.5) * dem.dlat);
+      x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+      x.drawImage(obrazRzezby, x0, y0, x1 - x0, y1 - y0);
+      const pas = 120; // miękkie krawędzie prostokąta rzeźby
+      for (const [ax, ay, bx, by, rx, ry, rw, rh] of [[x0, 0, x0 + pas, 0, x0, y0, pas, y1 - y0], [x1, 0, x1 - pas, 0, x1 - pas, y0, pas, y1 - y0], [0, y0, 0, y0 + pas, x0, y0, x1 - x0, pas], [0, y1, 0, y1 - pas, x0, y1 - pas, x1 - x0, pas]]) {
+        const gr = x.createLinearGradient(ax, ay, bx, by); gr.addColorStop(0, '#0b0d0c'); gr.addColorStop(1, 'rgba(11,13,12,0)');
+        x.fillStyle = gr; x.fillRect(rx, ry, rw, rh);
+      }
+      x.fillStyle = '#0b0d0c'; x.fillRect(0, 0, W, y0 + 1); x.fillRect(0, y1 - 1, W, H); x.fillRect(0, 0, x0 + 1, H); x.fillRect(x1 - 1, 0, W, H);
+      for (const { z, seg } of warstwice) {
+        const glowna = z === 500 || z === 1000 || z === 1500 || z === 200;
+        x.strokeStyle = glowna ? 'rgba(170,200,152,0.5)' : 'rgba(154,163,154,0.34)'; x.lineWidth = glowna ? 0.8 : 0.6;
+        x.beginPath(); for (const [a, b] of seg) { const [p1, q1] = PL(a[0], a[1]), [p2, q2] = PL(b[0], b[1]); x.moveTo(p1, q1); x.lineTo(p2, q2); } x.stroke();
+      }
+      // przyciemnienie poza Polską
+      const c = document.createElement('canvas'); c.width = baza.width; c.height = baza.height; const m = c.getContext('2d'); m.setTransform(dpr, 0, 0, dpr, 0, 0);
+      m.fillStyle = 'rgba(11,13,12,0.6)'; m.fillRect(0, 0, W, H); m.globalCompositeOperation = 'destination-out';
+      for (let i = 0; i < powiaty.length; i++) { m.beginPath(); sciezkaPowiatu(m, i); m.fill('evenodd'); }
+      x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(c, 0, 0); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    } else {
+      x.fillStyle = '#151816';
+      for (let i = 0; i < powiaty.length; i++) { x.beginPath(); sciezkaPowiatu(x, i); x.fill('evenodd'); }
+    }
+  }
+
+  let wskazany = -1;
+  function rysujDane() {
+    const x = dane.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H);
+    const { naPowiat, zdarzenia } = T.liczby();
+    const brak = T.wzorBraku(x);
+    for (let i = 0; i < powiaty.length; i++) {
+      const n = naPowiat[i]; const f = n === null ? brak : T.kolor(n);
+      if (!f) continue;
+      // pod danymi przygaszamy rzeźbę, żeby jasne zbocza nie myliły się z barwą liczby
+      x.beginPath(); sciezkaPowiatu(x, i); x.fillStyle = 'rgba(11,13,12,0.55)'; x.fill('evenodd'); x.fillStyle = f; x.fill('evenodd');
+    }
+    x.lineJoin = 'round';
+    x.strokeStyle = 'rgba(237,240,232,0.1)'; x.lineWidth = 0.5;
+    x.beginPath(); for (let i = 0; i < powiaty.length; i++) sciezkaPowiatu(x, i); x.stroke();
+    x.strokeStyle = 'rgba(237,240,232,0.3)'; x.lineWidth = 0.9; x.beginPath(); wojLinie.forEach(l => linia(x, l)); x.stroke();
+    x.strokeStyle = 'rgba(237,240,232,0.78)'; x.lineWidth = 1.3; x.beginPath(); kraj.forEach(l => linia(x, l)); x.stroke();
+    const lista = [];
+    // trzy powiaty z największą liczbą komunikatów
+    const top = powiaty.filter(p => naPowiat[p.i]).sort((a, b) => naPowiat[b.i] - naPowiat[a.i]).slice(0, 3);
+    for (const p of top) lista.push([PL(p.lp[0], p.lp[1]), [String(naPowiat[p.i]), p.miasto ? p.nazwa : `pow. ${p.nazwa}`], 'gora']);
+    // obszar bez danych
+    const bW = powiaty.filter(p => naPowiat[p.i] === null);
+    if (bW.length) {
+      const [sx, sy] = bW.reduce((s, p) => [s[0] + p.lp[0] / bW.length, s[1] + p.lp[1] / bW.length], [0, 0]);
+      lista.push([PL(sx, sy), ['brak w naszych danych', 'lubuskie: nie wiemy od 17.11'], 'lewo']);
+    }
+    // zasięgi przybliżone obecne w okresie
+    const przyb = new Set(zdarzenia.map(z => z.przyblizone).filter(Boolean));
+    for (const id of przyb) {
+      const a = T.PRZYBLIZONE[id];
+      x.beginPath(); a.ring.forEach(([lo, la], k) => { const [px, py] = PL(lo, la); k ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath();
+      x.fillStyle = 'rgba(255,194,122,0.07)'; x.fill();
+      x.setLineDash([5, 4]); x.strokeStyle = 'rgb(255,194,122)'; x.lineWidth = 1.4; x.stroke(); x.setLineDash([]);
+      const naj = a.ring.reduce((m, p) => (p[0] > m[0] ? p : m));
+      lista.push([PL(naj[0], naj[1]), [`zasięg przybliżony: ${a.temat}`, a.nazwa], 'prawo']);
+    }
+    if (wskazany >= 0) { x.beginPath(); sciezkaPowiatu(x, wskazany); x.strokeStyle = 'rgb(255,194,122)'; x.lineWidth = 1.8; x.stroke(); }
+    T.podpisy(x, lista, W, H);
+  }
+
+  // ---------- pierścienie ----------
+  function pierscienie() {
+    const { zdarzenia } = T.liczby();
+    return zdarzenia.filter(z => z.punkt && z.dzien === stan.koniec && z.status !== 'odwołane').map((z, k) => ({ p: PL(z.punkt[0], z.punkt[1]), faza: (k * 0.37) % 1 }));
+  }
+  let pier = [], start = performance.now();
+  function klatka(t) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(baza, 0, 0); ctx.drawImage(dane, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ruch = stan.ruch && !stan.prosty;
+    for (const { p: [px, py], faza } of pier) {
+      if (ruch) {
+        for (const off of [0, 0.5]) {
+          const f = ((t - start) / 4200 + faza + off) % 1;
+          ctx.beginPath(); ctx.arc(px, py, 3 + f * 15, 0, 7); ctx.strokeStyle = `rgba(255,194,122,${(1 - f) * 0.75})`; ctx.lineWidth = 1.2; ctx.stroke();
+        }
+      } else { ctx.beginPath(); ctx.arc(px, py, 8, 0, 7); ctx.strokeStyle = 'rgba(255,194,122,0.6)'; ctx.lineWidth = 1.2; ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(px, py, 2.6, 0, 7); ctx.fillStyle = 'rgb(255,194,122)'; ctx.fill();
+    }
+    if (ruch) requestAnimationFrame(klatka); else petla = false;
+  }
+  let petla = false;
+  const odswiez = () => { if (!petla) { petla = true; requestAnimationFrame(klatka); } };
+
+  // ---------- wskazywanie ----------
+  function znajdz(mx, my) {
+    const x = (mx - ox) / skala, y = (oy - my) / skala;
+    for (let i = 0; i < powiaty.length; i++) { const b = bboxP[i]; if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue; if (T.wWielokacie(x, y, xyP[i])) return i; }
+    return -1;
+  }
+  cv.addEventListener('pointermove', e => {
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, i = znajdz(mx, my);
+    if (i !== wskazany) { wskazany = i; rysujDane(); odswiez(); }
+    if (i >= 0) T.dymek.pokaz(mx, my, T.opisPowiatu(powiaty[i])); else T.dymek.ukryj();
+  });
+  cv.addEventListener('pointerleave', () => { wskazany = -1; T.dymek.ukryj(); rysujDane(); odswiez(); });
+
+  let poprzProsty = stan.prosty;
+  T.subskrybuj(() => { if (stan.prosty !== poprzProsty) { poprzProsty = stan.prosty; rysujBaze(); } rysujDane(); pier = pierscienie(); odswiez(); });
+  new ResizeObserver(() => { dopasuj(); pier = pierscienie(); odswiez(); }).observe(cv);
+})();
+</script>
+</body>
+</html>

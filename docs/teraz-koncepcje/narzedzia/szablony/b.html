@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teraz: koncepcja B, Makieta Polski (prototyp)</title>
+<style>
+/*WSPOLNE_CSS*/
+/* Koncepcja B: karty zdań RCB */
+.rcb { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .rcb { grid-template-columns: minmax(0, 1fr); } }
+.rcb__karta { display: grid; grid-template-rows: auto 1fr auto; gap: 6px; height: 214px; min-width: 0; padding: 12px; grid-template-columns: minmax(0, 1fr); text-align: left; border: 1px solid var(--linia);
+  border-radius: 8px; background: transparent; cursor: pointer; }
+.rcb__karta[aria-pressed="true"] { border-color: var(--bursztyn); background: rgba(255, 194, 122, 0.06); }
+.rcb__karta > * { min-width: 0; }
+.rcb__glowa { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rcb__glowa b { min-width: 0; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcb__czas { font: 12px var(--kroj-mono); color: var(--teren); white-space: nowrap; }
+.rcb__zdanie { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--kosc); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.rcb__odczyt { display: grid; grid-template-columns: 92px 1fr; gap: 1px 8px; margin: 0; font-size: 12px; }
+.rcb__odczyt dt { color: var(--teren); }
+.rcb__odczyt dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcb__uwaga { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--linia); font-size: 12px; color: var(--teren); }
+</style>
+</head>
+<body>
+<header class="pasek">
+  <span class="pasek__marka">przeszłość<span>.today</span> · Teraz</span>
+  <span class="etykieta etykieta--akcent">PROTOTYP</span>
+  <span class="pasek__tytul">Koncepcja B: Makieta Polski · dane próbne</span>
+  <div class="pasek__narzedzia">
+    <button id="przel-prosty" class="przelacznik" aria-pressed="false"><span class="przelacznik__kropka" aria-hidden="true"></span>Tryb prosty</button>
+    <button id="przel-ruch" class="przelacznik" aria-pressed="true"><span class="przelacznik__kropka" aria-hidden="true"></span>Animacje</button>
+    <a class="przelacznik" href="A-rzezba-nocna.html">Koncepcja A</a>
+  </div>
+</header>
+
+<main class="uklad">
+  <div class="kolumna">
+    <div class="scena-glowa" style="--o:1">
+      <div><h1 id="tytul-okresu">Komunikaty w okresie</h1><p id="opis-okresu"></p></div>
+      <div class="liczby" id="suma">0<small>komunikatów<span class="dlugi"> w okresie</span></small></div>
+    </div>
+    <div class="scena" id="scena" style="--o:2">
+      <canvas id="plotno" role="img" aria-describedby="t-naj" data-opis="Makieta Polski pod kątem: powiaty jako płytkie bryły, słupki pokazują liczbę komunikatów. Obracaj przyciskami ⟲ i ⟳ albo przeciągnięciem."></canvas>
+      <div class="scena__sterowanie tylko-pelny" role="group" aria-label="Kamera">
+        <button id="k-lewo" aria-label="Obróć w lewo">⟲</button>
+        <button id="k-prawo" aria-label="Obróć w prawo">⟳</button>
+        <button id="k-gora" aria-pressed="false" aria-label="2D, widok z góry">2D</button>
+      </div>
+      <div class="dymek" id="dymek"></div>
+      <div class="scena__podpis">Granice: PRG, GUGiK · wysokość słupka rośnie liniowo z liczbą komunikatów · dane próbne</div>
+    </div>
+    <section class="boks os" aria-label="Oś czasu" style="--o:3">
+      <div class="os__glowa"><span class="os__strona">PRZESZŁOŚĆ</span><span class="os__okres" id="os-okres"></span><span class="os__strona os__strona--dzis" lang="en">TODAY</span></div>
+      <div class="os__wykres" id="os-wykres"><input type="range" id="os-suwak" step="1" aria-label="Koniec okresu (przesuń w lewo, aby cofnąć się w czasie)"></div>
+      <div class="os__daty" id="os-daty"></div>
+      <p class="os__brak" id="os-brak"></p>
+      <div class="os__stopka">
+        <div class="os__dlugosc" id="os-dlugosc" role="group" aria-label="Długość okresu"><button data-dni="1">1 dzień</button><button data-dni="7">7 dni</button><button data-dni="30">30 dni</button></div>
+        <button id="os-dzis" class="przelacznik">Wróć do dziś</button>
+      </div>
+    </section>
+    <section class="boks" aria-labelledby="t-rcb" style="--o:5">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-rcb">Zasięg z treści alertów RCB</h2><span class="etykieta">PRZYKŁADY</span></div>
+      <div class="rcb" id="rcb"></div>
+      <p class="rcb__uwaga">Zasięg czytamy z treści i nie poszerzamy go. Jednostka, której nie rozpoznajemy, daje zasięg przybliżony, a wyłączenia pokazujemy jako wyłączenia.</p>
+    </section>
+    <section class="boks zdarzenia" aria-labelledby="t-lista" style="--o:6">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-lista">Zdarzenia w okresie</h2><span class="etykieta">SZKIC</span></div>
+      <ol id="lista"></ol>
+      <div class="zdarzenia__stopka" id="lista-stopka"><span></span><button>Pokaż więcej</button></div>
+    </section>
+  </div>
+
+  <aside class="kolumna" aria-label="Legenda i źródła">
+    <section class="boks" aria-labelledby="t-leg" style="--o:4">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-leg">Legenda</h2><span class="etykieta">MIARA</span></div>
+      <div class="legenda" id="legenda"></div>
+    </section>
+    <section class="boks" aria-labelledby="t-naj" style="--o:7">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-naj">Najwięcej komunikatów</h2><span class="etykieta">TEKST</span></div>
+      <ol class="najwiecej" id="najwiecej"></ol>
+      <details class="tabela" id="tabela-powiatow"><summary>Wszystkie powiaty: tabela (odpowiednik mapy)</summary>
+        <div class="tabela__przewijanie"><table><caption class="sr">Liczba komunikatów w okresie dla każdego powiatu</caption><thead><tr></tr></thead><tbody></tbody></table></div></details>
+    </section>
+    <section class="boks zrodla" aria-labelledby="t-zr" style="--o:8">
+      <div class="boks__glowa"><h2 class="boks__tytul" id="t-zr">Źródła i łącza</h2><span class="etykieta">SZKIC</span></div>
+      <p class="boks__opis" style="margin-bottom:8px">Rodzaje łączy:</p>
+      <div class="zrodla__lacza" id="lacza"></div>
+      <ol id="zrodla"></ol>
+    </section>
+  </aside>
+</main>
+
+<p class="sr" id="ogloszenie" aria-live="polite"></p>
+<script id="dane" type="application/json">/*DANE*/</script>
+<script>
+/*WSPOLNE_JS*/
+</script>
+<script>
+'use strict';
+(() => {
+  const { powiaty, kraj, wojLinie, stan } = T;
+  T.init({ uwaga: 'Barwa, wysokość słupków i ruch', legendaDodatki: [
+    ['<path d="M13 20 L13 6 L18 3 L22 5 L22 18 Z" fill="rgba(200,140,80,.9)"/><path d="M13 6 L18 3 L22 5 L17 8 Z" fill="rgb(255,225,180)"/><path d="M13 6 L17 8 L17 21 L13 20 Z" fill="rgb(255,194,122)"/>', 'słupek: ile komunikatów; wyższy to więcej komunikatów, nie większe zagrożenie'],
+    ['<path d="M2 18 L32 18 M2 12 L32 12 M8 6 L8 21 M18 6 L18 21 M28 6 L28 21" stroke="rgba(255,194,122,.45)" stroke-width=".8"/>', 'siatka co 50 km (tło, nie dane)'],
+  ] });
+
+  // ---------- karty RCB ----------
+  const kontener = T.$('#rcb');
+  for (const a of T.RCB) {
+    const b = T.el('button', { class: 'rcb__karta', 'aria-pressed': 'false', 'data-id': a.id },
+      T.el('span', { class: 'rcb__glowa' }, T.el('b', {}, (t => t[0].toUpperCase() + t.slice(1))(a.tytul.replace('Alert RCB: ', ''))), T.el('span', { class: 'rcb__czas' }, `${T.dzien(a.dzien)}, ${a.czas}`)),
+      T.el('p', { class: 'rcb__zdanie' }, `„${a.zdanie}”`),
+      (() => { const dl = T.el('dl', { class: 'rcb__odczyt' }); for (const [k, v] of a.odczyt) dl.append(T.el('dt', {}, k), T.el('dd', {}, v)); return dl; })());
+    b.addEventListener('click', () => {
+      const nowy = stan.rcb === a.id ? null : a.id;
+      const zm = { rcb: nowy };
+      if (nowy && (a.dzien > stan.koniec || a.dzien < stan.koniec - stan.dlugosc + 1)) zm.koniec = 29;
+      T.zmien(zm);
+      T.oglos(nowy ? `Zasięg alertu: ${a.wlaczone.length} powiatów wymienionych${a.wylaczone.length ? `, ${a.wylaczone.length} wyłączone w treści` : ''}${a.przyblizone ? ', jeden obszar przybliżony' : ''}. Szczegóły w tabeli powiatów.` : 'Zasięg alertu ukryty.');
+    });
+    kontener.append(b);
+  }
+  T.subskrybuj(() => kontener.querySelectorAll('.rcb__karta').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === stan.rcb))));
+
+  // ---------- geometria w km ----------
+  const xyP = powiaty.map(p => p.rings.map(r => r.map(([lo, la]) => T.xy(lo, la))));
+  const lpP = powiaty.map(p => T.xy(p.lp[0], p.lp[1]));
+  let g = [1e9, 1e9, -1e9, -1e9];
+  xyP.forEach(rs => rs.forEach(r => r.forEach(([x, y]) => { g = [Math.min(g[0], x), Math.min(g[1], y), Math.max(g[2], x), Math.max(g[3], y)]; })));
+  const CX = (g[0] + g[2]) / 2, CY = (g[1] + g[3]) / 2;
+  const krajXY = kraj.map(l => l.map(([lo, la]) => T.xy(lo, la)));
+  const wojXY = wojLinie.map(l => l.map(([lo, la]) => T.xy(lo, la)));
+  const GRUB = 5; // płytka bryła: 5 km przy 690 km szerokości kraju
+
+  // ---------- kamera ----------
+  const DIST = 2200;
+  const DOM = { yaw: -14, tilt: 54 };
+  const kam = { yaw: 0, tilt: 0 }, cel = { ...DOM };
+  let cs, sn, ct, st, fs = 1, fx = 0, fy = 0, W = 0, H = 0, dpr = 1;
+  const cv = T.$('#plotno'), ctx = cv.getContext('2d');
+  function ustawKat() { const y = kam.yaw * Math.PI / 180, t = kam.tilt * Math.PI / 180; cs = Math.cos(y); sn = Math.sin(y); ct = Math.cos(t); st = Math.sin(t); }
+  function rzut(x, y, z) {
+    x -= CX; y -= CY;
+    const xr = x * cs - y * sn, yr = x * sn + y * cs;
+    const vy = yr + DIST * st, vz = z - DIST * ct;
+    const sy = vy * ct + vz * st, sz = vy * st - vz * ct;
+    return [fx + (xr / sz) * DIST * fs, fy - (sy / sz) * DIST * fs, sz];
+  }
+  function dopasujKamere() {
+    fs = 1; fx = 0; fy = 0; ustawKat();
+    let b = [1e9, 1e9, -1e9, -1e9];
+    for (const l of krajXY) for (const [x, y] of l) for (const z of [0, GRUB]) { const [u, v] = rzut(x, y, z); b = [Math.min(b[0], u), Math.min(b[1], v), Math.max(b[2], u), Math.max(b[3], v)]; }
+    const mob = W < 600, padX = mob ? 12 : 40, padG = stan.prosty || kam.tilt < 5 ? (mob ? 16 : 36) : (mob ? 56 : 96), padD = mob ? 30 : 40;
+    fs = Math.min((W - 2 * padX) / (b[2] - b[0]), (H - padG - padD) / (b[3] - b[1]));
+    fx = W / 2 - ((b[0] + b[2]) / 2) * fs; fy = padG + (H - padG - padD) / 2 - ((b[1] + b[3]) / 2) * fs;
+  }
+
+  // ---------- rysowanie ----------
+  let ekranGora = [], kolejnosc = [], wskazany = -1;
+  function rysuj() {
+    dopasujKamere();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#0b0d0c'; ctx.fillRect(0, 0, W, H);
+    const pro = stan.prosty, plaski = kam.tilt < 5;
+    const { naPowiat, zdarzenia } = T.liczby();
+    const rcb = stan.rcb ? T.RCB.find(r => r.id === stan.rcb) : null;
+    const wl = rcb ? new Set(rcb.wlaczone) : null, wy = rcb ? new Set(rcb.wylaczone) : null;
+
+    // siatka świetlna pod makietą
+    if (!pro) {
+      const linie = [];
+      for (let v = -600; v <= 600; v += 50) { linie.push([[v + CX, -500 + CY], [v + CX, 500 + CY], v % 200 === 0]); }
+      for (let v = -500; v <= 500; v += 50) { linie.push([[-600 + CX, v + CY], [600 + CX, v + CY], v % 200 === 0]); }
+      for (const [[x1, y1], [x2, y2], mocna] of linie) {
+        const a = rzut(x1, y1, -1), b = rzut(x2, y2, -1);
+        const gr = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
+        const al = s => Math.max(0, Math.min(1, 1.25 - (s - DIST * 0.82) / (DIST * 0.4))) * (mocna ? 0.42 : 0.22);
+        gr.addColorStop(0, `rgba(255,194,122,${al(a[2])})`); gr.addColorStop(1, `rgba(255,194,122,${al(b[2])})`);
+        ctx.strokeStyle = gr; ctx.lineWidth = mocna ? 1 : 0.6; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      }
+      const halo = ctx.createRadialGradient(W / 2, H * 0.55, 10, W / 2, H * 0.55, Math.max(W, H) * 0.6);
+      halo.addColorStop(0, 'rgba(255,194,122,0.05)'); halo.addColorStop(1, 'rgba(255,194,122,0)');
+      ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+    }
+
+    // bryły powiatów: od najdalszej
+    const gleb = powiaty.map((p, i) => rzut(lpP[i][0], lpP[i][1], 0)[2]);
+    kolejnosc = powiaty.map((p, i) => i).sort((a, b) => gleb[b] - gleb[a]);
+    const brak = T.wzorBraku(ctx), wyl = T.wzorWylaczenia(ctx);
+    ekranGora = new Array(powiaty.length);
+    ctx.lineJoin = 'round';
+    for (const i of kolejnosc) {
+      const gora = xyP[i].map(r => r.map(([x, y]) => rzut(x, y, GRUB)));
+      ekranGora[i] = gora;
+      if (!plaski) {
+        ctx.beginPath();
+        for (const r of xyP[i]) {
+          const dol = r.map(([x, y]) => rzut(x, y, 0)), gg = r.map(([x, y]) => rzut(x, y, GRUB));
+          for (let k = 0; k < r.length; k++) { const m = (k + 1) % r.length; ctx.moveTo(dol[k][0], dol[k][1]); ctx.lineTo(dol[m][0], dol[m][1]); ctx.lineTo(gg[m][0], gg[m][1]); ctx.lineTo(gg[k][0], gg[k][1]); ctx.closePath(); }
+        }
+        ctx.fillStyle = '#2a2f2b'; ctx.fill();
+      }
+      const sciezka = () => { ctx.beginPath(); for (const r of gora) r.forEach(([u, v], k) => (k ? ctx.lineTo(u, v) : ctx.moveTo(u, v))); };
+      sciezka(); ctx.fillStyle = '#141715'; ctx.fill('evenodd');
+      const n = naPowiat[i], kod = powiaty[i].kod;
+      let wyp = n === null ? brak : T.kolor(n);
+      if (wy && wy.has(kod)) wyp = wyl;
+      if (wyp) { ctx.save(); if (wl && !wl.has(kod) && !wy.has(kod)) ctx.globalAlpha = 0.3; ctx.fillStyle = wyp; ctx.fill('evenodd'); ctx.restore(); }
+      ctx.strokeStyle = 'rgba(237,240,232,0.13)'; ctx.lineWidth = 0.5; ctx.stroke();
+    }
+    const liniaZ = (l, z) => { ctx.beginPath(); l.forEach(([x, y], k) => { const [u, v] = rzut(x, y, z); k ? ctx.lineTo(u, v) : ctx.moveTo(u, v); }); ctx.stroke(); };
+    ctx.strokeStyle = 'rgba(237,240,232,0.32)'; ctx.lineWidth = 0.9; wojXY.forEach(l => liniaZ(l, GRUB));
+    ctx.strokeStyle = 'rgba(237,240,232,0.8)'; ctx.lineWidth = 1.3; krajXY.forEach(l => liniaZ(l, GRUB));
+    if (!plaski) { ctx.strokeStyle = 'rgba(255,194,122,0.22)'; ctx.lineWidth = 1; krajXY.forEach(l => liniaZ(l, 0)); }
+
+    // zasięg alertu RCB: obrys wymienionych i wyłączonych
+    if (rcb) {
+      // jeden obrys całej strefy (krawędzie, których nie dzieli dwóch wymienionych powiatów), 2 px w kolorze kości
+      const kraw = new Map();
+      for (const i of kolejnosc) {
+        if (!wl.has(powiaty[i].kod)) continue;
+        for (const r of xyP[i]) for (let k = 0; k < r.length; k++) {
+          const a = r[k], b = r[(k + 1) % r.length], klucz = a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]) ? `${a}|${b}` : `${b}|${a}`;
+          kraw.set(klucz, kraw.has(klucz) ? null : [a, b]);
+        }
+      }
+      ctx.beginPath();
+      for (const e of kraw.values()) if (e) { const p = rzut(e[0][0], e[0][1], GRUB), q = rzut(e[1][0], e[1][1], GRUB); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      ctx.strokeStyle = 'rgb(237,240,232)'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+      for (const i of kolejnosc) {
+        if (!wy.has(powiaty[i].kod)) continue;
+        ctx.beginPath(); for (const r of ekranGora[i]) r.forEach(([u, v], k) => (k ? ctx.lineTo(u, v) : ctx.moveTo(u, v)));
+        ctx.setLineDash([2, 3]); ctx.strokeStyle = 'rgb(237,240,232)'; ctx.lineWidth = 1.8; ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+
+    const podpisy = [];
+    if (rcb && rcb.wylaczone.length) {
+      const w = rcb.wylaczone.map(k => powiaty.find(p => p.kod === k).i);
+      const sx = w.reduce((a, i) => a + lpP[i][0], 0) / w.length, sy = w.reduce((a, i) => a + lpP[i][1], 0) / w.length;
+      podpisy.push([rzut(sx, sy, GRUB), ['wyłączone w treści', `${w.length} jednostki: sprawdź oryginał`], 'lewo']);
+    }
+    // zasięgi przybliżone
+    // przy wybranym alercie RCB pokazujemy tylko jego zasięg przybliżony
+    const przyb = rcb ? new Set(rcb.przyblizone ? [rcb.przyblizone] : []) : new Set(zdarzenia.map(z => z.przyblizone).filter(Boolean));
+    for (const id of przyb) {
+      const a = T.PRZYBLIZONE[id];
+      const pk = a.ring.map(([lo, la]) => { const [x, y] = T.xy(lo, la); return rzut(x, y, GRUB + 0.5); });
+      ctx.beginPath(); pk.forEach(([u, v], k) => (k ? ctx.lineTo(u, v) : ctx.moveTo(u, v))); ctx.closePath();
+      ctx.fillStyle = 'rgba(255,194,122,0.08)'; ctx.fill();
+      ctx.setLineDash([5, 4]); ctx.strokeStyle = 'rgb(255,194,122)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
+      const naj = pk.reduce((m, p) => (p[0] > m[0] ? p : m));
+      podpisy.push([naj, [`zasięg przybliżony: ${a.temat}`, a.nazwa], 'prawo']);
+    }
+
+    // słupki
+    const naKom = { 1: 14, 7: 4, 30: 1.2 }[stan.dlugosc] || 4;
+    const top = powiaty.filter(p => naPowiat[p.i]).sort((a, b) => naPowiat[b.i] - naPowiat[a.i]).slice(0, 3).map(p => p.i);
+    if (!pro && !plaski) {
+      const camW = (() => { // kamera w układzie świata (po obrocie)
+        return [0, -DIST * st, DIST * ct];
+      })();
+      for (const i of [...kolejnosc]) {
+        const n = naPowiat[i]; if (!n) continue;
+        const h = GRUB + n * naKom, s = 2.6, [x, y] = lpP[i];
+        const R = [[x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s]];
+        const dol = R.map(([a, b]) => rzut(a, b, GRUB)), gor = R.map(([a, b]) => rzut(a, b, h));
+        const sciany = [[0, 1, [0, -1]], [1, 2, [1, 0]], [2, 3, [0, 1]], [3, 0, [-1, 0]]];
+        ctx.save(); if (stan.rcb && !wl.has(powiaty[i].kod)) ctx.globalAlpha = 0.3;
+        for (const [a, b, [nx, ny]] of sciany) {
+          const nxr = nx * cs - ny * sn, nyr = nx * sn + ny * cs;
+          const cxr = (x - CX) * cs - (y - CY) * sn, cyr = (x - CX) * sn + (y - CY) * cs;
+          if (nxr * (camW[0] - cxr) + nyr * (camW[1] - cyr) <= 0) continue;
+          const jasn = 0.55 + 0.45 * Math.max(0, -nyr * 0.8 + nxr * 0.4);
+          ctx.beginPath(); ctx.moveTo(dol[a][0], dol[a][1]); ctx.lineTo(dol[b][0], dol[b][1]); ctx.lineTo(gor[b][0], gor[b][1]); ctx.lineTo(gor[a][0], gor[a][1]); ctx.closePath();
+          ctx.fillStyle = `rgba(${Math.round(255 * jasn)},${Math.round(194 * jasn)},${Math.round(122 * jasn)},0.95)`; ctx.fill();
+        }
+        ctx.beginPath(); gor.forEach(([u, v], k) => (k ? ctx.lineTo(u, v) : ctx.moveTo(u, v))); ctx.closePath(); ctx.fillStyle = 'rgb(255,228,190)'; ctx.fill();
+        ctx.restore();
+        if (top.includes(i) && !rcb) { const [u, v] = rzut(x, y, h); podpisy.push([[u, v], [String(n), powiaty[i].miasto ? powiaty[i].nazwa : `pow. ${powiaty[i].nazwa}`], 'gora']); }
+      }
+    } else {
+      for (const i of top) { const [u, v] = rzut(lpP[i][0], lpP[i][1], GRUB); podpisy.push([[u, v], [String(naPowiat[i]), powiaty[i].miasto ? powiaty[i].nazwa : `pow. ${powiaty[i].nazwa}`], 'gora']); }
+    }
+
+    // brak w naszych danych: podpis nad obszarem
+    const bW = powiaty.filter(p => naPowiat[p.i] === null);
+    if (bW.length) {
+      const sx = bW.reduce((s, p) => s + lpP[p.i][0], 0) / bW.length, sy = bW.reduce((s, p) => s + lpP[p.i][1], 0) / bW.length;
+      podpisy.push([rzut(sx, sy, GRUB), ['brak w naszych danych', 'lubuskie: nie wiemy od 17.11'], 'lewo']);
+    }
+    if (wskazany >= 0 && ekranGora[wskazany]) {
+      ctx.beginPath(); for (const r of ekranGora[wskazany]) r.forEach(([u, v], k) => (k ? ctx.lineTo(u, v) : ctx.moveTo(u, v)));
+      ctx.strokeStyle = 'rgb(255,194,122)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    T.podpisy(ctx, podpisy, W, H);
+  }
+
+  // ---------- ruch kamery ----------
+  let ramka = 0;
+  function zamow() { if (!ramka) ramka = requestAnimationFrame(krok); }
+  function krok() {
+    ramka = 0;
+    const c = stan.prosty ? { yaw: 0, tilt: 0 } : cel;
+    const dy = c.yaw - kam.yaw, dt = c.tilt - kam.tilt;
+    if (!stan.ruch || (Math.abs(dy) < 0.05 && Math.abs(dt) < 0.05)) { kam.yaw = c.yaw; kam.tilt = c.tilt; }
+    else { kam.yaw += dy * 0.12; kam.tilt += dt * 0.12; zamow(); }
+    rysuj();
+  }
+  function dopasuj() {
+    W = cv.clientWidth; H = cv.clientHeight; dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); zamow();
+  }
+  const bGora = T.$('#k-gora');
+  const odswiezGora = () => bGora.setAttribute('aria-pressed', String(cel.tilt < 5));
+  T.$('#k-lewo').addEventListener('click', () => { cel.yaw = Math.max(-45, cel.yaw - 15); zamow(); });
+  T.$('#k-prawo').addEventListener('click', () => { cel.yaw = Math.min(45, cel.yaw + 15); zamow(); });
+  bGora.addEventListener('click', () => { if (cel.tilt < 5) Object.assign(cel, DOM); else Object.assign(cel, { yaw: 0, tilt: 0 }); odswiezGora(); zamow(); });
+
+  // przeciąganie obraca, ruch myszy wskazuje powiat
+  let ciag = null;
+  cv.addEventListener('pointerdown', e => { if (!stan.prosty) { ciag = [e.clientX, e.clientY, cel.yaw, cel.tilt, false]; } });
+  window.addEventListener('pointerup', () => { ciag = null; });
+  cv.addEventListener('pointermove', e => {
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    if (ciag && (e.buttons & 1)) {
+      const dx = e.clientX - ciag[0], dy = e.clientY - ciag[1];
+      if (Math.abs(dx) + Math.abs(dy) > 4) ciag[4] = true;
+      if (ciag[4]) { cel.yaw = Math.max(-45, Math.min(45, ciag[2] + dx * 0.25)); cel.tilt = Math.max(0, Math.min(62, ciag[3] - dy * 0.2)); odswiezGora(); T.dymek.ukryj(); zamow(); return; }
+    }
+    let traf = -1;
+    for (let k = kolejnosc.length - 1; k >= 0; k--) { const i = kolejnosc[k]; if (ekranGora[i] && T.wWielokacie(mx, my, ekranGora[i])) { traf = i; break; } }
+    if (traf !== wskazany) { wskazany = traf; zamow(); }
+    if (traf >= 0) T.dymek.pokaz(mx, my, T.opisPowiatu(powiaty[traf])); else T.dymek.ukryj();
+  });
+  cv.addEventListener('pointerleave', () => { wskazany = -1; T.dymek.ukryj(); zamow(); });
+
+  T.subskrybuj(zamow);
+  new ResizeObserver(dopasuj).observe(cv);
+})();
+</script>
+</body>
+</html>
