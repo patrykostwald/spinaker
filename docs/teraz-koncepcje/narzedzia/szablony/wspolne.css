@@ -1,0 +1,188 @@
+/* Wspólny język wizualny prototypów A i B (paleta rysy.ai, ciemny motyw, grafika liniowa). */
+:root {
+  --kosc: rgb(237, 240, 232);
+  --bursztyn: rgb(255, 194, 122);
+  --czerwien: rgb(229, 53, 43);
+  --woda: rgb(130, 180, 225);
+  --igla: rgb(170, 200, 152);
+  --teren: rgb(154, 163, 154);
+  --tlo: #0b0d0c;
+  --tlo-boks: #111412;
+  --linia: rgba(237, 240, 232, 0.12);
+  --linia-mocna: rgba(237, 240, 232, 0.26);
+  --krok: 24px;
+  --krok-maly: 12px;
+  --kroj: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --kroj-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--tlo); color: var(--kosc); font: 14px/1.45 var(--kroj); }
+button { font: inherit; color: inherit; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--bursztyn); outline-offset: 2px; }
+
+/* Pasek */
+.pasek { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 var(--krok);
+  background: rgba(11, 13, 12, 0.94); border-bottom: 1px solid var(--linia); }
+.pasek__marka { font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+.pasek__marka span { color: var(--teren); font-weight: 400; }
+.pasek__tytul { color: var(--teren); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etykieta { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border: 1px solid var(--linia-mocna); border-radius: 4px;
+  font: 600 11px/1 var(--kroj-mono); letter-spacing: 0.04em; color: var(--teren); white-space: nowrap; }
+.etykieta--akcent { color: var(--bursztyn); border-color: rgba(255, 194, 122, 0.45); }
+.pasek__narzedzia { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.przelacznik { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--linia-mocna);
+  border-radius: 6px; background: transparent; cursor: pointer; white-space: nowrap; }
+.przelacznik[aria-pressed="true"] { border-color: var(--bursztyn); color: var(--bursztyn); }
+.przelacznik[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+.przelacznik__kropka { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
+.przelacznik[aria-pressed="true"] .przelacznik__kropka { background: currentColor; }
+a.przelacznik { text-decoration: none; color: var(--kosc); }
+
+/* Układ: scena i panel */
+.uklad { display: grid; grid-template-columns: minmax(0, 1fr) 392px; gap: var(--krok); max-width: 1440px; margin: 0 auto;
+  padding: var(--krok); }
+.kolumna { display: flex; flex-direction: column; gap: var(--krok); min-width: 0; }
+.kolumna > :last-child { flex: 1 0 auto; }
+.kolumna > * { flex: 0 0 auto; }
+.boks { background: var(--tlo-boks); border: 1px solid var(--linia); border-radius: 10px; padding: 16px; }
+.boks__glowa { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: var(--krok-maly); }
+.boks__tytul { margin: 0; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.boks__opis { margin: 0; color: var(--teren); font-size: 12.5px; }
+
+.scena-glowa { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; height: 52px; }
+.krotki { display: none; }
+.scena-glowa h1 { margin: 0; font-size: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scena-glowa p { margin: 2px 0 0; color: var(--teren); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scena-glowa .liczby { text-align: right; font: 600 22px/1 var(--kroj-mono); color: var(--bursztyn); }
+.scena-glowa .liczby small { display: block; margin-top: 4px; font: 12px/1.2 var(--kroj); color: var(--teren); }
+.scena { position: relative; height: 600px; border: 1px solid var(--linia); border-radius: 10px; overflow: hidden; background: var(--tlo); }
+.scena canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.scena__podpis { position: absolute; left: 12px; bottom: 10px; font-size: 11.5px; color: var(--teren); pointer-events: none; }
+.scena__sterowanie { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; }
+.scena__sterowanie button { min-width: 44px; min-height: 44px; border-radius: 6px; border: 1px solid var(--linia-mocna);
+  background: rgba(11, 13, 12, 0.85); cursor: pointer; }
+.scena__sterowanie button[aria-pressed="true"] { border-color: var(--bursztyn); color: var(--bursztyn); }
+.dymek { position: absolute; z-index: 3; max-width: 280px; padding: 10px 12px; border: 1px solid var(--linia-mocna); border-radius: 8px;
+  background: rgba(11, 13, 12, 0.96); font-size: 12.5px; pointer-events: none; display: none; }
+.dymek b { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.dymek .liczba { font: 600 15px var(--kroj-mono); color: var(--bursztyn); }
+.dymek .brak { color: var(--kosc); }
+.dymek .male { color: var(--teren); }
+
+/* Oś czasu */
+.os { padding: 14px 16px 12px; }
+.os__glowa { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-bottom: 8px; }
+.os__strona { font: 700 12px/1 var(--kroj-mono); letter-spacing: 0.14em; color: var(--teren); }
+.os__strona--dzis { color: var(--kosc); }
+.os__strona--dzis::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%;
+  background: var(--czerwien); vertical-align: 1px; }
+.os__okres { justify-self: center; font-size: 13px; white-space: nowrap; }
+.os__okres b { font-family: var(--kroj-mono); color: var(--bursztyn); font-weight: 600; }
+.os__wykres { position: relative; height: 64px; }
+.os__wykres svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.os__wykres input[type=range] { position: absolute; left: 0; right: 0; bottom: -14px; width: 100%; height: 44px; margin: 0; opacity: 0; cursor: ew-resize; }
+.os__daty { display: flex; justify-content: space-between; margin-top: 6px; font: 11.5px var(--kroj-mono); color: var(--teren); }
+.os__dlugosc { display: inline-flex; gap: 0; border: 1px solid var(--linia-mocna); border-radius: 6px; overflow: hidden; }
+.os__dlugosc button { min-height: 44px; padding: 0 10px; border: 0; background: transparent; cursor: pointer; font-size: 12px; color: var(--teren); }
+.os__dlugosc button[aria-pressed="true"] { background: rgba(255, 194, 122, 0.14); color: var(--bursztyn); box-shadow: inset 0 -2px 0 var(--bursztyn); }
+.os__dlugosc button[aria-pressed="true"]::before { content: "✓ "; }
+.os__uchwyt { position: absolute; top: -8px; bottom: -4px; width: 0; border-left: 2px solid var(--bursztyn); pointer-events: none; transform: translateX(-1px); }
+.os__uchwyt::after { content: ""; position: absolute; left: -8px; top: 50%; width: 14px; height: 28px; margin-top: -14px; border-radius: 4px;
+  background: var(--bursztyn); box-shadow: 0 0 0 3px var(--tlo-boks); }
+.os__brak { margin: 6px 0 0; font-size: 12px; color: var(--teren); }
+.os__stopka { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
+.os__stopka p { margin: 0; color: var(--teren); font-size: 12px; }
+
+/* Lista zdarzeń */
+.zdarzenia { padding: 0; display: flex; flex-direction: column; }
+.zdarzenia .zdarzenia__stopka { margin-top: auto; }
+.zdarzenia .boks__glowa { padding: 14px 16px 0; }
+.zdarzenia ol { list-style: none; margin: 0; padding: 0; }
+.zdarzenie { display: grid; grid-template-columns: 92px 96px minmax(0, 1fr); align-items: center; gap: 12px; height: 56px;
+  padding: 0 16px; border-top: 1px solid var(--linia); }
+.zdarzenie .etykieta { justify-self: start; }
+.zdarzenie__czas { font: 12.5px var(--kroj-mono); color: var(--teren); white-space: nowrap; }
+.zdarzenie__tresc { min-width: 0; }
+.zdarzenie__tytul { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.zdarzenie__tekst { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zdarzenie__miejsce { display: block; font-size: 12px; color: var(--teren); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zdarzenie__status { flex: none; height: 18px; font-size: 10.5px; }
+.zdarzenie__status--odwolane { text-decoration: line-through; }
+.zdarzenia__stopka { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px 14px; border-top: 1px solid var(--linia);
+  font-size: 12px; color: var(--teren); }
+.zdarzenia__stopka button { min-height: 44px; padding: 0 14px; border: 1px solid var(--linia-mocna); border-radius: 6px; background: transparent; cursor: pointer; }
+
+/* Legenda */
+.legenda { display: grid; gap: 10px; }
+.legenda__skala { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.legenda__skala span { height: 12px; border-radius: 2px; }
+.legenda__progi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; font: 11px var(--kroj-mono); color: var(--teren); text-align: center; }
+.legenda__wiersz { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; font-size: 12.5px; }
+.legenda__wiersz svg { width: 34px; height: 22px; }
+.legenda__uwaga { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--linia); font-size: 12px; color: var(--teren); }
+
+/* Źródła */
+.zrodla__lacza { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.zrodla ol { list-style: none; margin: 0; padding: 0; }
+.zrodla { display: flex; flex-direction: column; }
+.zrodlo { display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 58px; border-top: 1px solid var(--linia); }
+.zrodlo__wiersz { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-width: 0; }
+.zrodlo__nazwa { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
+.zrodlo__zakres { min-width: 0; font-size: 12px; color: var(--teren); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zrodlo__zdrowie { flex: none; font-size: 12px; white-space: nowrap; color: var(--teren); }
+.zrodla__stopka { margin: auto 0 0; padding-top: 12px; border-top: 1px solid var(--linia); font-size: 12px; color: var(--teren); }
+.zdrowie-znak { display: inline-block; width: 12px; text-align: center; margin-right: 4px; font-weight: 700; }
+.zdrowie--dziala .zdrowie-znak { color: var(--igla); }
+.zdrowie--opoznione .zdrowie-znak { color: var(--bursztyn); }
+.zdrowie--blad .zdrowie-znak { color: var(--czerwien); }
+.zdrowie--blad { color: var(--kosc); }
+
+.os__wykres:focus-within { outline: 2px solid var(--bursztyn); outline-offset: 6px; border-radius: 4px; }
+
+/* Najwięcej komunikatów i tabela powiatów: tekstowy odpowiednik mapy */
+.najwiecej { list-style: none; margin: 0; padding: 0; }
+.najwiecej li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--linia); font-size: 13px; }
+.najwiecej li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.najwiecej li b { white-space: nowrap; font-family: var(--kroj-mono); color: var(--bursztyn); }
+.najwiecej li.brak-wiersz b { color: var(--teren); }
+
+/* Tabela wszystkich powiatów: tekstowy odpowiednik mapy */
+.tabela { margin-top: 10px; border-top: 1px solid var(--linia); }
+.tabela summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: 13px; }
+.tabela__przewijanie { max-height: 320px; overflow: auto; }
+.tabela table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tabela th { position: sticky; top: 0; background: var(--tlo-boks); text-align: left; font-weight: 600; color: var(--teren); padding: 6px 4px; }
+.tabela td { padding: 5px 4px; border-top: 1px solid var(--linia); }
+.tabela td:nth-child(3) { font-family: var(--kroj-mono); }
+
+/* Tryb prosty */
+body.prosty .uklad { font-size: 15px; }
+body.prosty .tylko-pelny { display: none !important; }
+
+@media (max-width: 900px) {
+  :root { --krok: 16px; }
+  .pasek { height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px 12px; padding: 8px var(--krok); }
+  .pasek__tytul { display: none; }
+  .pasek__narzedzia { width: 100%; margin-left: 0; }
+  .pasek__narzedzia .przelacznik { flex: 1; justify-content: center; padding: 0 8px; }
+  .uklad { grid-template-columns: minmax(0, 1fr); }
+  /* jedna kolumna: legenda zaraz pod mapą, panel źródeł na końcu */
+  .uklad > .kolumna { display: contents; }
+  .uklad > .kolumna > * { order: var(--o, 10); }
+  .scena { height: 400px; }
+  .scena-glowa { height: 64px; align-items: start; }
+  .scena-glowa h1 { font-size: 16px; }
+  .scena-glowa p { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .dlugi { display: none; }
+  .krotki { display: inline; }
+  .scena-glowa .liczby { font-size: 18px; }
+  .zdarzenie { grid-template-columns: 54px minmax(0, 1fr); height: 78px; gap: 10px; }
+  .zdarzenie__miejsce { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .zdarzenie .zdarzenie__lacze { display: none; }
+  .zdarzenie .etykieta { justify-self: start; }
+.zdarzenie__czas { white-space: normal; line-height: 1.25; }
+  .os__glowa { grid-template-columns: 1fr auto; }
+  .os__okres { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
+}
