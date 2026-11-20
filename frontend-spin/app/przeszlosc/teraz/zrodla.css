@@ -1,0 +1,83 @@
+/* =====================================================================
+   „Teraz”: łącze i zdrowie źródeł (etykieta rodzaju łącza, stan źródła, panel „Źródła i ich stan”, legenda „Skąd i jak”).
+   Wygląd z prototypu A (docs/teraz-koncepcje: etykieta z ramką, znak i słowo stanu), na tokenach --sc-* strony Teraz.
+   Kolor nie jest jedynym nośnikiem: etykieta ma ikonę i słowo, stan ma znak (●, ◐, ✕, ‖) i słowo.
+   Tekst pomocniczy jest w --sc-text-2 (nie -3): kontrast co najmniej 4,5:1 na każdej powierzchni (test 150).
+   Nic tu się nie rusza, więc prefers-reduced-motion nie wymaga wyjątków.
+   ===================================================================== */
+
+/* Barwy znaków stanu: osobne wartości dla motywu ciemnego, jasnego (v3.css traktuje „pastel” jak jasny) i wyższego kontrastu. */
+.tz { --tz-dziala: #9bd29a; --tz-blad: #ff9a8f; --tz-luka: #ffb454; }
+html[data-theme="light"] .tz, html[data-theme="pastel"] .tz { --tz-dziala: #1d6a2a; --tz-blad: #a31d12; --tz-luka: #8a4b00; }
+@media (prefers-contrast: more) {
+  html:not([data-theme="light"]):not([data-theme="pastel"]) .tz { --tz-dziala: #c4f0c2; --tz-blad: #ffc4bd; --tz-luka: #ffd08a; }
+  html[data-theme="light"] .tz, html[data-theme="pastel"] .tz { --tz-dziala: #0f4d1a; --tz-blad: #7d140b; --tz-luka: #5e3300; }
+}
+
+/* ---------- Etykieta rodzaju łącza ---------- */
+.tz .tz-lacze { display: inline-flex; flex: none; align-items: center; gap: 4px; min-height: 22px; padding: 0 7px; border: 1px solid var(--sc-line-strong); border-radius: 4px;
+  color: var(--sc-text-2); font: 600 12px/1 var(--sc-font-sans); letter-spacing: .02em; white-space: nowrap; }
+.tz .tz-lacze[data-lacze="nieznane"] { border-style: dashed; }
+.tz .tz-lacze__ik { flex: none; }
+
+/* ---------- Stan źródła: znak i słowo ---------- */
+.tz .tz-zdrowie { display: inline-flex; align-items: baseline; gap: 4px; min-width: 0; color: var(--sc-text); font: 600 13px/1.4 var(--sc-font-sans); }
+.tz .tz-zdrowie__znak { flex: none; width: 14px; text-align: center; font-weight: 700; }
+.tz .tz-zdrowie__czas { color: var(--sc-text-2); font-weight: 400; }
+.tz [data-stan="dziala"] > .tz-zdrowie__znak, .tz .tz-zdrowie[data-stan="dziala"] .tz-zdrowie__znak { color: var(--tz-dziala); }
+.tz .tz-zdrowie[data-stan="luka"] .tz-zdrowie__znak { color: var(--tz-luka); }
+.tz .tz-zdrowie[data-stan="blad"] .tz-zdrowie__znak { color: var(--tz-blad); }
+.tz .tz-zdrowie[data-stan="wstrzymane"] .tz-zdrowie__znak { color: var(--tz-luka); }
+.tz .tz-zdrowie[data-stan="nieznany"] { color: var(--sc-text-2); }
+/* zdrowy stan nie konkuruje z problemami (Von Restorff): zwykła waga, pogrubione są tylko luka, błąd i wstrzymanie */
+.tz .tz-zdrowie[data-stan="dziala"] .tz-zdrowie__slowo { font-weight: 400; }
+.tz .tz-zdrowie--znak { flex: none; font-size: 12px; }
+.tz .tz-zdrowie-blok { display: grid; gap: 2px; min-width: 0; }
+.tz .tz-zdrowie__linia { display: block; color: var(--sc-text-2); font-size: 13px; line-height: 1.4; }
+.tz .tz-zdrowie__brak { display: block; padding-left: 8px; box-shadow: inset 3px 0 0 var(--tz-luka); color: var(--sc-text); font-size: 13px; font-weight: 600; line-height: 1.4; }
+
+/* ---------- Przy warstwie w panelu ---------- */
+.tz .tz-warstwa__zrodla { display: grid; gap: 4px; margin-top: 2px; }
+.tz .tz-warstwa__lacza { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+/* ---------- Przy wpisie na liście ---------- */
+.tz .tz-pozycja__meta--zrodlo { display: flex; align-items: center; gap: 8px; min-height: 24px; overflow: visible; }
+.tz .tz-pozycja__tekst { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Na karcie wpisu ---------- */
+.tz .tz-karta__lacze { display: grid; gap: 6px; justify-items: start; }
+.tz .tz-karta__lacze small { color: var(--sc-text-2); }
+
+/* ---------- Panel źródeł ---------- */
+.tz .tz-zrodla { display: grid; gap: 8px; }
+.tz .tz-zrodla__komunikat { display: flex; gap: 6px; align-items: flex-start; padding: 6px 8px; border-radius: 8px; background: var(--tz-ostrz-tlo); box-shadow: inset 3px 0 0 var(--tz-ostrz);
+  color: var(--sc-text); font-size: 13px; line-height: 1.4; }
+.tz .tz-zrodla__komunikat svg { flex: none; margin-top: 2px; color: var(--tz-ostrz); }
+.tz .tz-zrodla__szczegoly { padding: 0 12px 10px; border-radius: var(--tz-r); background: var(--sc-surface-2); color: var(--sc-text-2); font-size: 13px; }
+.tz .tz-zrodla__szczegoly > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; min-height: var(--tz-tap); padding: 4px 0; cursor: pointer; }
+.tz .tz-zrodla__szczegoly > summary::after { content: "▸"; content: "▸" / ""; grid-column: 2; grid-row: 1 / span 2; color: var(--sc-text-2); }
+.tz .tz-zrodla__szczegoly[open] > summary::after { content: "▾"; content: "▾" / ""; }
+.tz .tz-zrodla__tytul { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz .tz-zrodla__licznik { color: var(--sc-text); font-size: 13px; font-weight: 600; }
+.tz .tz-zrodla__lista { display: grid; }
+.tz .tz-zrodlo { display: grid; align-content: start; gap: 2px; padding: 8px 0; border-top: 1px solid var(--sc-line); }
+.tz .tz-zrodlo__wiersz { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; min-width: 0; }
+.tz .tz-zrodlo__nazwa { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sc-text); font: 600 14px/1.3 var(--sc-font-sans); }
+.tz .tz-zrodlo__instytucja { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sc-text-2); font-size: 13px; line-height: 1.4; }
+.tz .tz-zrodla__stopka, .tz .tz-zrodla__pusty { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--sc-line); color: var(--sc-text-2); font-size: 13px; line-height: 1.4; }
+
+/* ---------- Legenda „Skąd i jak” ---------- */
+.tz .tz-skad { display: grid; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--sc-line); }
+.tz .tz-skad__tytul { font: 650 12px/1.3 var(--sc-font-sans); letter-spacing: .07em; text-transform: uppercase; color: var(--sc-text-2); }
+.tz .tz-skad .tz-legenda__lead { margin: 0; }
+.tz .tz-legenda .tz-skad__lacza, .tz .tz-legenda .tz-skad__zdrowie { display: grid; gap: 8px; margin-bottom: 0; }
+.tz .tz-legenda .tz-skad__lacza li { grid-template-columns: 104px minmax(0, 1fr); gap: 10px; align-items: start; }
+.tz .tz-legenda .tz-skad__zdrowie li { grid-template-columns: 112px minmax(0, 1fr); gap: 10px; align-items: start; }
+.tz .tz-skad__zdrowie .tz-zdrowie { align-items: baseline; }
+
+@media (forced-colors: active) {
+  .tz .tz-lacze { border-color: ButtonText; }
+  .tz .tz-zdrowie__brak { border-left: 3px solid ButtonText; box-shadow: none; }
+  .tz .tz-zrodla__szczegoly { border: 1px solid CanvasText; }
+  .tz .tz-zrodla__komunikat { border-left: 3px solid CanvasText; box-shadow: none; }
+}

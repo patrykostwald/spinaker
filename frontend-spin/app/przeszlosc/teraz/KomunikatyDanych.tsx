@@ -1,5 +1,7 @@
 import { NIEPEWNOSC } from './warstwy';
 import { liczbaKomunikatow } from './powiaty';
+import type { DaneZrodel } from './zrodla';
+import { komunikatZrodel } from './zrodla';
 
 /**
  * Komunikaty o stanie danych, każdy stan osobno (zlecenie Z6-poprawki, P1-2):
@@ -32,11 +34,14 @@ export interface KomunikatyDanychProps {
   wpisy?: StanPobrania;
   warstwy: StanPobrania;
   zdarzenia: StanPobrania;
+  /** Stan źródeł (łącze, zdrowie): awaria jego pobrania to osobny komunikat, nigdy „brak danych”. */
+  zrodla?: DaneZrodel;
   /** Wybrany wpis (z adresu) nie istnieje w bieżących danych. */
   brakWybranego?: boolean;
 }
 
-export function KomunikatyDanych({ wpisy, warstwy, zdarzenia, brakWybranego }: KomunikatyDanychProps) {
+export function KomunikatyDanych({ wpisy, warstwy, zdarzenia, zrodla, brakWybranego }: KomunikatyDanychProps) {
+  const opisZrodel = zrodla ? komunikatZrodel(zrodla) : null;
   return <>
     {wpisy?.ladowanie && <p className="tz-komunikat" role="status">Wczytujemy komunikaty…</p>}
     {wpisy?.niedostepne && <p className="tz-komunikat tz-komunikat--blad" role="alert">
@@ -57,6 +62,8 @@ export function KomunikatyDanych({ wpisy, warstwy, zdarzenia, brakWybranego }: K
       <strong>Lista warstw nieaktualna.</strong> Nie udało się jej odświeżyć, więc nie pokazujemy komunikatów z warstw bez aktualnego potwierdzenia: {NIEPEWNOSC}.</p>}
     {!!warstwy.niepotwierdzone && <p className="tz-komunikat tz-komunikat--blad" role="status">
       <strong>Warstwy niepotwierdzone.</strong> Nie mamy aktualnej listy warstw, więc ukrywamy komunikaty z warstw bez potwierdzenia ({warstwy.niepotwierdzone}): {NIEPEWNOSC}.</p>}
+    {zrodla && opisZrodel && <p className="tz-komunikat tz-komunikat--blad" role="status">
+      <strong>{zrodla.niedostepne ? 'Stan źródeł niedostępny.' : zrodla.nieaktualne ? 'Stan źródeł nieaktualny.' : 'Stan części źródeł nieznany.'}</strong> {opisZrodel}</p>}
     {brakWybranego && <p className="tz-komunikat tz-komunikat--blad" role="status">Tego wpisu nie ma w bieżących danych (inny okres, region, warstwa wyłączona albo wpis wycofany). Zmień okres w panelu warstw.</p>}
   </>;
 }

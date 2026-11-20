@@ -7,6 +7,10 @@ import { nazwaZrodla } from './model';
 import { kopiujDoSchowka } from './schowek';
 import { metaStatusu, metaWarstwy } from './warstwy';
 import { EtykietaStatusu, IkonaWarstwy } from './Ikony';
+import type { DaneZrodel } from './zrodla';
+import { metaLacza, znajdzZrodlo } from './zrodla';
+import { ZrodloBadge } from './ZrodloBadge';
+import { StanZrodlaWpisu } from './ZdrowieZrodla';
 
 /**
  * Karta wpisu (boczny panel na komputerze, dolny arkusz na telefonie): tytuł, źródło, dwie godziny (publikacja u źródła
@@ -14,16 +18,19 @@ import { EtykietaStatusu, IkonaWarstwy } from './Ikony';
  * Godziny podajemy zawsze jako dwie osobne informacje: pobranie nie jest chwilą wydarzenia. Gdy źródło podało tylko datę,
  * pokazujemy samą datę (bez fikcyjnej północy); brak czasu pobrania to „brak danych”. Podpis źródła (`atrybucja` z API,
  * np. IMGW o przetworzeniu danych) jest osobnym wierszem (recenzja PR #38, P1-5 i P1-6).
+ * Wiersz „Łącze i stan źródła” (gdy podano `zrodla`): rodzaj łącza z opisem oraz zdrowie źródła; luka albo błąd to „brak w naszych danych”.
  */
 export interface KartaWpisuProps {
   widok: WidokWpisu;
   warstwy: Warstwa[] | undefined;
+  /** Stan źródeł (łącze, zdrowie); pominięty = bez wiersza „Łącze i stan źródła”. */
+  zrodla?: DaneZrodel;
   /** Zwraca adres do skopiowania (liczony w chwili kliknięcia, bo zależy od adresu strony). */
   adres: () => string;
   onZamknij: () => void;
 }
 
-export function KartaWpisu({ widok, warstwy, adres, onZamknij }: KartaWpisuProps) {
+export function KartaWpisu({ widok, warstwy, zrodla, adres, onZamknij }: KartaWpisuProps) {
   const { wpis, zdarzenie, status } = widok;
   const naglowek = useRef<HTMLHeadingElement>(null);
   const [skopiowano, setSkopiowano] = useState<'tak' | 'nie' | null>(null);
@@ -56,6 +63,13 @@ export function KartaWpisu({ widok, warstwy, adres, onZamknij }: KartaWpisuProps
 
     <dl className="tz-karta__dane">
       <div><dt>Źródło</dt><dd>{zrodlo.nazwa}{zrodlo.instytucja && zrodlo.instytucja !== zrodlo.nazwa ? `, ${zrodlo.instytucja}` : ''}</dd></div>
+      {zrodla && <div><dt>Łącze i stan źródła</dt><dd className="tz-karta__lacze">
+        {!zrodla.ladowanie && <>
+          <ZrodloBadge rodzaj={znajdzZrodlo(zrodla, wpis.zrodlo)?.rodzaj_lacza} />
+          <small>{metaLacza(znajdzZrodlo(zrodla, wpis.zrodlo)?.rodzaj_lacza).opis}</small>
+        </>}
+        <StanZrodlaWpisu zrodla={zrodla} slug={wpis.zrodlo} />
+      </dd></div>}
       <div><dt>Opublikowano u źródła</dt><dd>{czasPublikacji(wpis)}{meta.uwagaCzas && <small>{meta.uwagaCzas}</small>}</dd></div>
       <div><dt>Pobrano przez nas</dt><dd>{czasPobrania(wpis.pobrano_at)}</dd></div>
       <div><dt>Miejsce</dt><dd>{opisMiejsca(wpis)}<small>Dokładność: {etykietaDokladnosci(wpis.dokladnosc)}</small></dd></div>
