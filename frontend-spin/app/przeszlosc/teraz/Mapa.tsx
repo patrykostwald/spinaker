@@ -133,7 +133,7 @@ export default function Mapa(p: MapaProps) {
         const poczatkowy = najnowsze.current.region ?? POLSKA_BBOX;
         const mapaGL = new ml.Map({
           container: kontener.current, style, attributionControl: false, dragRotate: false, pitchWithRotate: false,
-          bounds: poczatkowy, fitBoundsOptions: { padding: 12 }, minZoom: 3.5, maxZoom: 14, maxBounds: [[6, 44], [32, 58.5]],
+          bounds: poczatkowy, fitBoundsOptions: { padding: 40 }, minZoom: 3.5, maxZoom: 14, maxBounds: [[6, 44], [32, 58.5]],
           fadeDuration: reduced() ? 0 : 200,
         });
         mapa.current = mapaGL;
@@ -226,7 +226,15 @@ export default function Mapa(p: MapaProps) {
         // się ustala (nagłówek, linia stanu), płótno zostaje za niskie. Własny obserwator przelicza rozmiar po każdej zmianie kontenera.
         let obserwator: ResizeObserver | null = null;
         if (typeof ResizeObserver !== 'undefined' && kontener.current) {
-          obserwator = new ResizeObserver(() => { if (mapa.current) mapa.current.resize(); });
+          // Dopóki nikt nie ruszył widoku, każda zmiana rozmiaru kontenera dopasowuje cały obszar (cała Polska ma być widoczna w komplecie).
+          let ruszono = false;
+          mapaGL.on('dragstart', () => { ruszono = true; });
+          mapaGL.on('zoomstart', e => { if ((e as { originalEvent?: unknown }).originalEvent) ruszono = true; });
+          obserwator = new ResizeObserver(() => {
+            if (!mapa.current) return;
+            mapa.current.resize();
+            if (!ruszono) mapa.current.fitBounds(poczatkowy, { padding: 40, duration: 0 });
+          });
           obserwator.observe(kontener.current);
         }
         usun = () => { obserwator?.disconnect(); mapaGL.remove(); mapa.current = null; odepnijProtokol?.(); };
@@ -272,7 +280,7 @@ export default function Mapa(p: MapaProps) {
   const pierwszyRegion = useRef(true);
   useEffect(() => {
     if (pierwszyRegion.current) { pierwszyRegion.current = false; return; }
-    mapa.current?.fitBounds(p.region ?? POLSKA_BBOX, { padding: 12, duration: reduced() ? 0 : 600, maxZoom: 9 });
+    mapa.current?.fitBounds(p.region ?? POLSKA_BBOX, { padding: 40, duration: reduced() ? 0 : 600, maxZoom: 9 });
   }, [p.region]);
 
   return <div ref={kontener} className="tz-mapa" role="region"
