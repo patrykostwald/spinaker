@@ -31,6 +31,7 @@ services:
         NEXT_PUBLIC_THREADS_ENABLED: ${NEXT_PUBLIC_THREADS_ENABLED:-false}
         NEXT_PUBLIC_PUSH_ENABLED: ${NEXT_PUBLIC_PUSH_ENABLED:-false}
         NEXT_PUBLIC_APP_ENABLED: ${NEXT_PUBLIC_APP_ENABLED:-false}
+        NEXT_PUBLIC_TERAZ_ENABLED: ${NEXT_PUBLIC_TERAZ_ENABLED:-false}
     env_file: ../.env.production
     environment:
       API_INTERNAL_URL: http://backend:8000
